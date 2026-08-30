@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Danjjak API
+  version: 0.1.0
+  description: 고령 사용자의 금융 업무 흐름을 지원하는 단짝 서비스 API입니다.
+servers:
+  - url: http://localhost:8080/danjjak
+    description: 로컬 Tomcat
+tags:
+  - name: Health
+    description: 애플리케이션 상태 확인
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: 애플리케이션 상태 확인
+      security: []
+      responses:
+        '200':
+          description: 애플리케이션이 실행 중임
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/health/db:
+    get:
+      tags: [Health]
+      operationId: getDatabaseHealth
+      summary: 데이터베이스 연결 상태 확인
+      security: []
+      responses:
+        '200':
+          description: 데이터베이스 상태 확인 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseHealthResponse'
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: UP
+    DatabaseHealthResponse:
+      type: object
+      required: [status, database]
+      properties:
+        status:
+          type: string
+          example: UP
+        database:
+          type: string
+          enum: [UP, DOWN]
+          example: UP

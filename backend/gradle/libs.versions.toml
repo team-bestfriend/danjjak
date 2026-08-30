@@ -1,0 +1,38 @@
+[versions]
+spring = "5.3.39"
+mybatis = "3.5.19"
+mybatis-spring = "2.1.2"
+mysql = "8.4.0"
+hikari = "5.1.0"
+jackson = "2.18.6"
+log4j = "2.26.1"
+servlet = "4.0.1"
+lombok = "1.18.46"
+hibernate-validator = "6.2.5.Final"
+jakarta-el = "3.0.3"
+junit = "5.11.4"
+mockito = "5.15.2"
+hamcrest = "2.2"
+
+[libraries]
+spring-webmvc = { module = "org.springframework:spring-webmvc", version.ref = "spring" }
+spring-jdbc = { module = "org.springframework:spring-jdbc", version.ref = "spring" }
+spring-tx = { module = "org.springframework:spring-tx", version.ref = "spring" }
+mybatis-core = { module = "org.mybatis:mybatis", version.ref = "mybatis" }
+mybatis-spring = { module = "org.mybatis:mybatis-spring", version.ref = "mybatis-spring" }
+mysql-connector = { module = "com.mysql:mysql-connector-j", version.ref = "mysql" }
+hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+log4j-slf4j2-impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "log4j" }
+javax-servlet-api = { module = "javax.servlet:javax.servlet-api", version.ref = "servlet" }
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+hibernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernate-validator" }
+jakarta-el = { module = "org.glassfish:jakarta.el", version.ref = "jakarta-el" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+spring-test = { module = "org.springframework:spring-test", version.ref = "spring" }

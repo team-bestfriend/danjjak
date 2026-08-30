@@ -1,0 +1,28 @@
+# Environment and secrets
+.env
+*.local
+
+# Gradle
+.gradle/
+**/build/
+
+# Java and IDE
+*.class
+*.iml
+.idea/
+.vscode/
+.classpath
+.project
+.settings/
+
+# Frontend
+**/node_modules/
+**/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+

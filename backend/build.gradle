@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+    id 'war'
+}
+
+group = 'com.bestfriend.danjjak'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    implementation libs.spring.webmvc
+    implementation libs.spring.jdbc
+    implementation libs.spring.tx
+
+    implementation libs.mybatis.core
+    implementation libs.mybatis.spring
+    implementation libs.mysql.connector
+    implementation libs.hikari
+
+    implementation libs.jackson.databind
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.hibernate.validator
+    implementation libs.log4j.api
+    runtimeOnly libs.log4j.core
+    runtimeOnly libs.log4j.slf4j2.impl
+
+    providedCompile libs.javax.servlet.api
+
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
+    testCompileOnly libs.lombok
+    testAnnotationProcessor libs.lombok
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testImplementation libs.mockito.core
+    testImplementation libs.hamcrest
+    testImplementation libs.spring.test
+    testRuntimeOnly libs.jakarta.el
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-parameters']
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.named('war') {
+    archiveFileName = 'danjjak.war'
+}
