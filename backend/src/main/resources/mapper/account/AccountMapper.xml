@@ -3,30 +3,39 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.bestfriend.danjjak.account.mapper.AccountMapper">
-    <select id="findOwnedAccounts"
-            resultType="com.bestfriend.danjjak.account.model.AccountRecord">
-        SELECT bank_account_id AS account_id,
+    <resultMap id="ownedAccountMap"
+               type="com.bestfriend.danjjak.account.model.AccountRecord">
+        <id property="accountId" column="bank_account_id"/>
+        <result property="bankCode" column="bank_code"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="accountNumber" column="account_number"/>
+        <result property="accountAlias" column="account_alias"/>
+        <result property="balance" column="balance"/>
+        <result property="primary" column="is_primary"/>
+    </resultMap>
+
+    <select id="findOwnedAccounts" resultMap="ownedAccountMap">
+        SELECT bank_account_id,
                bank_code,
                bank_name,
                account_number,
                account_alias,
                balance,
-               is_primary AS primary
+               is_primary
         FROM bank_accounts
         WHERE user_id = #{userId}
           AND registered_person_id IS NULL
         ORDER BY is_primary DESC, bank_account_id
     </select>
 
-    <select id="findOwnedAccount"
-            resultType="com.bestfriend.danjjak.account.model.AccountRecord">
-        SELECT bank_account_id AS account_id,
+    <select id="findOwnedAccount" resultMap="ownedAccountMap">
+        SELECT bank_account_id,
                bank_code,
                bank_name,
                account_number,
                account_alias,
                balance,
-               is_primary AS primary
+               is_primary
         FROM bank_accounts
         WHERE user_id = #{userId}
           AND bank_account_id = #{accountId}

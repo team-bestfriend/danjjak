@@ -2,6 +2,7 @@ package com.bestfriend.danjjak.transfer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bestfriend.danjjak.common.error.ApiException;
 import com.bestfriend.danjjak.config.RootConfig;
@@ -94,6 +95,32 @@ class TransferDatabaseIntegrationTest {
     }
 
     @Test
+    void insufficientBalanceLeavesAllFinancialRecordsUnchanged() {
+        BigDecimal balanceBefore = balance();
+        int transactionCountBefore = transactionCount();
+        int anomalyCountBefore = anomalyCount();
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () ->
+                                transferService.transfer(
+                                        1L,
+                                        new TransferRequest(
+                                                1L,
+                                                3L,
+                                                null,
+                                                new BigDecimal("50000001"),
+                                                null,
+                                                "1234")));
+
+        assertEquals("INSUFFICIENT_BALANCE", exception.getCode());
+        assertEquals(balanceBefore, balance());
+        assertEquals(transactionCountBefore, transactionCount());
+        assertEquals(anomalyCountBefore, anomalyCount());
+    }
+
+    @Test
     void mediumAnomalyCancellationCreatesNoTransaction() {
         int transactionCountBefore = transactionCount();
         var attempt =
@@ -156,6 +183,30 @@ class TransferDatabaseIntegrationTest {
         assertEquals(resolution.transactionId(), anomalyTransactionId(attempt.anomalyEventId()));
     }
 
+    @Test
+    void repeatedTransferAloneCreatesMediumAnomalyWithoutThirdTransaction() {
+        int transactionCountBefore = transactionCount();
+        transferService.transfer(
+                1L,
+                new TransferRequest(
+                        1L, 3L, null, new BigDecimal("1000"), null, "1234"));
+        transferService.transfer(
+                1L,
+                new TransferRequest(
+                        1L, 3L, null, new BigDecimal("1000"), null, "1234"));
+
+        var attempt =
+                transferService.transfer(
+                        1L,
+                        new TransferRequest(
+                                1L, 3L, null, new BigDecimal("1000"), null, "1234"));
+
+        assertEquals("MEDIUM", attempt.riskLevel());
+        assertEquals(2, attempt.recentTransferCount());
+        assertTrue(attempt.reasons().contains("REPEATED_TRANSFER"));
+        assertEquals(transactionCountBefore + 2, transactionCount());
+    }
+
     private BigDecimal balance() {
         return jdbcTemplate.queryForObject(
                 "SELECT balance FROM bank_accounts WHERE bank_account_id = 1",
@@ -172,6 +223,11 @@ class TransferDatabaseIntegrationTest {
                 "SELECT COUNT(*) FROM bank_accounts WHERE user_id = 1 "
                         + "AND registered_person_id IS NOT NULL",
                 Integer.class);
+    }
+
+    private int anomalyCount() {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM anomaly_events WHERE user_id = 1", Integer.class);
     }
 
     private String anomalyFinalAction(long anomalyEventId) {
