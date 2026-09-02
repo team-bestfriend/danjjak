@@ -24,6 +24,7 @@ dependencies {
 
     implementation libs.jackson.databind
     implementation libs.jackson.datatype.jsr310
+    implementation libs.jbcrypt
     implementation libs.hibernate.validator
     implementation libs.log4j.api
     runtimeOnly libs.log4j.core

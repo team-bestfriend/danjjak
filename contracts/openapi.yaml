@@ -13,6 +13,8 @@ tags:
     description: 본인 계좌와 거래내역 조회
   - name: Registered People
     description: 등록 인물과 수취 계좌 관리
+  - name: Transfers
+    description: Mock 송금 처리
 paths:
   /api/health:
     get:
@@ -157,6 +159,30 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /api/transfers:
+    post:
+      tags: [Transfers]
+      operationId: createMockTransfer
+      summary: 등록 수취 계좌 또는 직접 입력 계좌로 Mock 송금
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: 송금 완료 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 components:
   parameters:
     AccountId:
@@ -348,3 +374,63 @@ components:
         transactionAt:
           type: string
           format: date-time
+    DirectRecipientRequest:
+      type: object
+      required: [name, bankCode, bankName, accountNumber]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        bankCode:
+          type: string
+          maxLength: 20
+        bankName:
+          type: string
+          maxLength: 50
+        accountNumber:
+          type: string
+          maxLength: 50
+    TransferRequest:
+      type: object
+      required: [sourceAccountId, amount, pin]
+      oneOf:
+        - required: [registeredRecipientAccountId]
+        - required: [directRecipient]
+      properties:
+        sourceAccountId:
+          type: integer
+          format: int64
+          minimum: 1
+        registeredRecipientAccountId:
+          type: integer
+          format: int64
+          minimum: 1
+        directRecipient:
+          $ref: '#/components/schemas/DirectRecipientRequest'
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        patternExecutionId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+        pin:
+          type: string
+          writeOnly: true
+          maxLength: 30
+    TransferResponse:
+      type: object
+      required: [status, transactionId, balanceAfter]
+      properties:
+        status:
+          type: string
+          enum: [COMPLETED]
+        transactionId:
+          type: integer
+          format: int64
+        balanceAfter:
+          type: integer
+          format: int64
+          minimum: 0

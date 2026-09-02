@@ -13,6 +13,7 @@ jakarta-el = "3.0.3"
 junit = "5.11.4"
 mockito = "5.15.2"
 hamcrest = "2.2"
+jbcrypt = "0.4"
 
 [libraries]
 spring-webmvc = { module = "org.springframework:spring-webmvc", version.ref = "spring" }
@@ -36,3 +37,4 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 spring-test = { module = "org.springframework:spring-test", version.ref = "spring" }
+jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
