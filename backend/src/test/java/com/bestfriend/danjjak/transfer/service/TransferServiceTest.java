@@ -38,7 +38,8 @@ class TransferServiceTest {
                 Clock.fixed(
                         Instant.parse("2026-09-03T00:00:00Z"),
                         ZoneId.of("Asia/Seoul"));
-        transferService = new TransferService(transferMapper, pinVerifier, clock);
+        transferService =
+                new TransferService(transferMapper, new FdsEvaluator(), pinVerifier, clock);
     }
 
     @Test

@@ -6,6 +6,7 @@ info:
 servers:
   - url: http://localhost:8080/danjjak
     description: 로컬 Tomcat
+security: []
 tags:
   - name: Health
     description: 애플리케이션 상태 확인
@@ -172,7 +173,7 @@ paths:
               $ref: '#/components/schemas/TransferRequest'
       responses:
         '200':
-          description: 송금 완료 결과
+          description: 정상 송금 완료 또는 이상거래 재확인 필요 결과
           content:
             application/json:
               schema:
@@ -181,6 +182,34 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /api/anomaly-events/{anomalyEventId}/resolve:
+    post:
+      tags: [Transfers]
+      operationId: resolveAnomaly
+      summary: 이상거래 재확인 후 계속 송금 또는 취소
+      parameters:
+        - $ref: '#/components/parameters/AnomalyEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveAnomalyRequest'
+      responses:
+        '200':
+          description: 이상거래 최종 처리 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveAnomalyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 components:
@@ -195,6 +224,14 @@ components:
         minimum: 1
     RegisteredPersonId:
       name: registeredPersonId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    AnomalyEventId:
+      name: anomalyEventId
       in: path
       required: true
       schema:
@@ -422,15 +459,59 @@ components:
           maxLength: 30
     TransferResponse:
       type: object
-      required: [status, transactionId, balanceAfter]
+      required: [status, riskLevel, reasons, recentTransferCount, balanceAfter]
       properties:
         status:
           type: string
-          enum: [COMPLETED]
+          enum: [COMPLETED, REQUIRES_REVIEW]
+        riskLevel:
+          type: string
+          enum: [NORMAL, MEDIUM, HIGH]
+        reasons:
+          type: array
+          items:
+            type: string
+            enum: [HIGH_AMOUNT, REPEATED_TRANSFER]
+        recentTransferCount:
+          type: integer
+          minimum: 0
+        anomalyEventId:
+          type: integer
+          format: int64
+          nullable: true
         transactionId:
           type: integer
           format: int64
+          nullable: true
         balanceAfter:
           type: integer
           format: int64
           minimum: 0
+    ResolveAnomalyRequest:
+      type: object
+      required: [action, rechecked]
+      properties:
+        action:
+          type: string
+          enum: [CONTINUE, CANCEL]
+        rechecked:
+          type: boolean
+    ResolveAnomalyResponse:
+      type: object
+      required: [anomalyEventId, action]
+      properties:
+        anomalyEventId:
+          type: integer
+          format: int64
+        action:
+          type: string
+          enum: [CONTINUE, CANCEL]
+        transactionId:
+          type: integer
+          format: int64
+          nullable: true
+        balanceAfter:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true

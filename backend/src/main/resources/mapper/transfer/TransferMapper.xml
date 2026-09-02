@@ -3,6 +3,21 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.bestfriend.danjjak.transfer.mapper.TransferMapper">
+    <resultMap id="anomalyRecordMap"
+               type="com.bestfriend.danjjak.transfer.model.AnomalyRecord">
+        <id property="anomalyEventId" column="anomaly_event_id"/>
+        <result property="patternExecutionId" column="pattern_execution_id"/>
+        <result property="sourceAccountId" column="source_bank_account_id"/>
+        <result property="recipientAccountId" column="recipient_bank_account_id"/>
+        <result property="recipientName" column="recipient_name"/>
+        <result property="recipientBankCode" column="recipient_bank_code"/>
+        <result property="recipientBankName" column="recipient_bank_name"/>
+        <result property="recipientAccountNumber" column="recipient_account_number"/>
+        <result property="amount" column="amount"/>
+        <result property="riskLevel" column="risk_level"/>
+        <result property="finalAction" column="final_action"/>
+    </resultMap>
+
     <select id="findSourceAccountForUpdate"
             resultType="com.bestfriend.danjjak.transfer.model.TransferAccountRecord">
         SELECT bank_account_id AS account_id,
@@ -40,6 +55,15 @@
           AND pe.pattern_execution_id = #{patternExecutionId}
           AND pe.source_bank_account_id = #{sourceAccountId}
           AND pe.status = 'STARTED'
+    </select>
+
+    <select id="countRecentTransfers" resultType="int">
+        SELECT COUNT(*)
+        FROM transactions
+        WHERE user_id = #{userId}
+          AND transaction_type = 'TRANSFER_OUT'
+          AND transaction_at &gt;= #{from}
+          AND transaction_at &lt;= #{to}
     </select>
 
     <update id="debitAccount">
@@ -88,9 +112,85 @@
         )
     </insert>
 
+    <insert id="insertAnomaly"
+            useGeneratedKeys="true"
+            keyProperty="anomalyEventId"
+            keyColumn="anomaly_event_id">
+        INSERT INTO anomaly_events (
+            user_id,
+            pattern_execution_id,
+            source_bank_account_id,
+            recipient_bank_account_id,
+            recipient_name,
+            recipient_bank_code,
+            recipient_bank_name,
+            recipient_account_number,
+            amount,
+            high_amount_detected,
+            repeated_transfer_detected,
+            recent_transfer_count,
+            risk_level,
+            detected_at
+        ) VALUES (
+            #{userId},
+            #{patternExecutionId},
+            #{sourceAccountId},
+            #{recipientAccountId},
+            #{recipientName},
+            #{recipientBankCode},
+            #{recipientBankName},
+            #{recipientAccountNumber},
+            #{amount},
+            #{highAmountDetected},
+            #{repeatedTransferDetected},
+            #{recentTransferCount},
+            #{riskLevel},
+            #{detectedAt}
+        )
+    </insert>
+
+    <select id="findAnomalyForUpdate" resultMap="anomalyRecordMap">
+        SELECT anomaly_event_id,
+               pattern_execution_id,
+               source_bank_account_id,
+               recipient_bank_account_id,
+               recipient_name,
+               recipient_bank_code,
+               recipient_bank_name,
+               recipient_account_number,
+               amount,
+               risk_level,
+               final_action
+        FROM anomaly_events
+        WHERE user_id = #{userId}
+          AND anomaly_event_id = #{anomalyEventId}
+        FOR UPDATE
+    </select>
+
+    <update id="resolveAnomalyAsCancelled">
+        UPDATE anomaly_events
+        SET rechecked = #{rechecked},
+            final_action = 'CANCEL',
+            resolved_at = #{resolvedAt}
+        WHERE user_id = #{userId}
+          AND anomaly_event_id = #{anomalyEventId}
+          AND final_action IS NULL
+    </update>
+
+    <update id="resolveAnomalyAsContinued">
+        UPDATE anomaly_events
+        SET transaction_id = #{transactionId},
+            rechecked = #{rechecked},
+            final_action = 'CONTINUE',
+            resolved_at = #{resolvedAt}
+        WHERE user_id = #{userId}
+          AND anomaly_event_id = #{anomalyEventId}
+          AND final_action IS NULL
+    </update>
+
     <update id="finishPatternExecution">
         UPDATE pattern_executions
-        SET status = 'COMPLETED',
+        SET status = #{status},
             ended_at = #{endedAt}
         WHERE pattern_execution_id = #{patternExecutionId}
           AND status = 'STARTED'

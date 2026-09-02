@@ -32,8 +32,13 @@ class TransferMapperBindingTest {
                         "findSourceAccountForUpdate",
                         "findRegisteredRecipient",
                         "countAvailablePatternExecution",
+                        "countRecentTransfers",
                         "debitAccount",
                         "insertTransaction",
+                        "insertAnomaly",
+                        "findAnomalyForUpdate",
+                        "resolveAnomalyAsCancelled",
+                        "resolveAnomalyAsContinued",
                         "finishPatternExecution")
                 .forEach(name -> assertTrue(configuration.hasStatement(namespace + name)));
     }
