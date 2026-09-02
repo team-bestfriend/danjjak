@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bestfriend.danjjak.transfer.mapper.TransferMapper">
+    <select id="findSourceAccountForUpdate"
+            resultType="com.bestfriend.danjjak.transfer.model.TransferAccountRecord">
+        SELECT bank_account_id AS account_id,
+               account_pin_hash AS pin_hash,
+               balance
+        FROM bank_accounts
+        WHERE user_id = #{userId}
+          AND bank_account_id = #{accountId}
+          AND registered_person_id IS NULL
+        FOR UPDATE
+    </select>
+
+    <select id="findRegisteredRecipient"
+            resultType="com.bestfriend.danjjak.transfer.model.RecipientRecord">
+        SELECT ba.bank_account_id AS account_id,
+               rp.name,
+               ba.bank_code,
+               ba.bank_name,
+               ba.account_number
+        FROM bank_accounts ba
+        JOIN registered_persons rp
+          ON rp.registered_person_id = ba.registered_person_id
+         AND rp.user_id = ba.user_id
+        WHERE ba.user_id = #{userId}
+          AND ba.bank_account_id = #{accountId}
+          AND ba.registered_person_id IS NOT NULL
+    </select>
+
+    <select id="countAvailablePatternExecution" resultType="int">
+        SELECT COUNT(*)
+        FROM pattern_executions pe
+        JOIN financial_patterns fp
+          ON fp.financial_pattern_id = pe.financial_pattern_id
+        WHERE fp.user_id = #{userId}
+          AND pe.pattern_execution_id = #{patternExecutionId}
+          AND pe.source_bank_account_id = #{sourceAccountId}
+          AND pe.status = 'STARTED'
+    </select>
+
+    <update id="debitAccount">
+        UPDATE bank_accounts
+        SET balance = balance - #{amount}
+        WHERE user_id = #{userId}
+          AND bank_account_id = #{accountId}
+          AND registered_person_id IS NULL
+          AND balance &gt;= #{amount}
+    </update>
+
+    <insert id="insertTransaction"
+            useGeneratedKeys="true"
+            keyProperty="transactionId"
+            keyColumn="transaction_id">
+        INSERT INTO transactions (
+            user_id,
+            bank_account_id,
+            counterparty_bank_account_id,
+            pattern_execution_id,
+            transaction_type,
+            transaction_category,
+            amount,
+            counterparty_name,
+            counterparty_bank_code,
+            counterparty_bank_name,
+            counterparty_account_number,
+            description,
+            balance_after,
+            transaction_at
+        ) VALUES (
+            #{userId},
+            #{sourceAccountId},
+            #{recipientAccountId},
+            #{patternExecutionId},
+            'TRANSFER_OUT',
+            'TRANSFER',
+            #{amount},
+            #{recipientName},
+            #{recipientBankCode},
+            #{recipientBankName},
+            #{recipientAccountNumber},
+            #{description},
+            #{balanceAfter},
+            #{transactionAt}
+        )
+    </insert>
+
+    <update id="finishPatternExecution">
+        UPDATE pattern_executions
+        SET status = 'COMPLETED',
+            ended_at = #{endedAt}
+        WHERE pattern_execution_id = #{patternExecutionId}
+          AND status = 'STARTED'
+    </update>
+</mapper>

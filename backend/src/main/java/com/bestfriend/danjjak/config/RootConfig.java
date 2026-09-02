@@ -1,6 +1,7 @@
 package com.bestfriend.danjjak.config;
 
 import com.zaxxer.hikari.HikariDataSource;
+import java.time.Clock;
 import javax.sql.DataSource;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -72,5 +73,10 @@ public class RootConfig implements EnvironmentAware {
     @Bean
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
+    }
+
+    @Bean
+    public Clock clock() {
+        return Clock.systemDefaultZone();
     }
 }
