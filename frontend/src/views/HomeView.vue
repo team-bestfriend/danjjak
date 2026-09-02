@@ -1,0 +1,336 @@
+<template>
+  <div ref="containerRef" className="flex flex-col h-full" style="background: #FAFAF8;">
+    <SafeArea />
+
+    <!-- Header -->
+    <div className="px-5 bg-white border-b border-[#EEEEED] flex-shrink-0" style="padding-top: 18px; padding-bottom: 16px;">
+      <div className="flex items-center gap-2 mb-2">
+        <DanjjakMark :size="20" />
+        <span className="font-semibold" style="color: #B8860B; font-size: 13px; letter-spacing: 0.02em;">단짝</span>
+      </div>
+      <p className="font-bold text-[#111827] leading-tight" style="font-size: 26px;">안녕하세요, {{ store.userName }}님 👵</p>
+      <p className="font-normal text-[#6B7280] mt-1" style="font-size: 15px;">오늘도 안전한 금융 생활 되세요.</p>
+    </div>
+
+    <div
+      className="flex-1 flex flex-col px-4 overflow-hidden"
+      style="padding-top: 12px; padding-bottom: 10px; gap: 10px;"
+      @touchstart="onTouchStart"
+      @touchend="onTouchEnd"
+    >
+      <!-- 직접 송금하기 — Primary CTA -->
+      <button
+        @click="store.navigate('direct-transfer')"
+        className="w-full flex items-center justify-center gap-2.5 active:scale-[0.985] transition-transform flex-shrink-0"
+        style="height: 64px; border-radius: 18px; background: #FFBC00;"
+      >
+        <span style="font-size: 18px; color: #111827;">→</span>
+        <span style="font-size: 20px; font-weight: 600; color: #111827;">직접 송금하기</span>
+      </button>
+
+      <!-- 음성으로 말하기 — Secondary CTA -->
+      <div className="flex-shrink-0">
+        <button
+          @click="toggleStt"
+          :class="['w-full flex items-center justify-center gap-2.5 font-bold transition-all']"
+          :style="
+            sttState === 'listening'
+              ? 'height:56px;border-radius:18px;background:#FEF2F2;border:1px solid #FCA5A5;color:#B91C1C;font-size:17px;font-weight:500;'
+              : sttState === 'processing'
+              ? 'height:56px;border-radius:18px;background:#FFFBEB;border:1px solid #FFBC00;color:#92650A;font-size:17px;font-weight:500;'
+              : 'height:56px;border-radius:18px;background:#FFFFFF;border:1px solid #D1D5DB;color:#374151;font-size:17px;font-weight:500;'"
+        >
+          <template v-if="sttState === 'listening'">
+            <div className="w-3 h-3 rounded-full bg-[#EF4444] animate-pulse" />
+            <span>듣고 있어요...</span>
+          </template>
+          <template v-else-if="sttState === 'processing'">
+            <span className="animate-spin inline-block">⟳</span>
+            <span>확인하고 있어요...</span>
+          </template>
+          <template v-else>
+            <Ic name="Mic" />
+            <span>음성으로 말하기</span>
+          </template>
+        </button>
+
+        <div v-if="sttState === 'listening'" className="flex items-end gap-px h-7 px-3 mt-2">
+          <div
+            v-for="(_, i) in 32"
+            :key="i"
+            className="wave-bar flex-1 bg-[#EF4444] rounded-sm opacity-70"
+            :style="{ animationDelay: `${i * 0.06}s` }"
+          />
+        </div>
+      </div>
+
+      <!-- 내 단축번호 + 그리드 + 페이지 도트 -->
+      <div className="flex-1 flex flex-col" style="min-height: 0; gap: 8px;">
+        <div className="flex items-center flex-shrink-0">
+          <p className="font-semibold text-[#111827]" style="font-size: 16px;">내 단축번호</p>
+        </div>
+
+        <div className="flex-1" style="min-height: 0;">
+          <PatternGrid
+            :pageNums="pageNums"
+            :patterns="store.patterns"
+            :dragState="drag"
+            @pointer-down="handlePointerDown"
+            @pointer-move="handlePointerMove"
+            @pointer-up="handlePointerUp"
+            @pointer-cancel="handlePointerCancel"
+            @card-click="handleCardClick"
+          />
+        </div>
+
+        <!-- 페이지 도트 -->
+        <div className="flex items-center justify-center gap-2.5 flex-shrink-0" style="height: 20px;">
+          <button
+            v-for="p in [1, 2, 3]"
+            :key="p"
+            @click="store.homePage = p"
+            className="transition-all"
+            :style="store.homePage === p
+              ? 'width:28px;height:10px;border-radius:5px;background:#FFBC00;border:none;'
+              : 'width:10px;height:10px;border-radius:50%;background:#D1D5DB;border:none;'"
+          />
+        </div>
+      </div>
+    </div>
+
+    <NavBar active="home" :onSelect="store.navTo" />
+
+    <!-- Focus mode overlay -->
+    <div
+      v-if="focusedPat"
+      className="absolute inset-0 z-40 flex items-center justify-center"
+      style="background: rgba(0, 0, 0, 0.60)"
+      @click="focusedPat = null"
+    >
+      <FocusModeCard
+        :pat="focusedPat"
+        @cancel="focusedPat = null"
+        @start="startFocusedPattern"
+      />
+    </div>
+
+    <!-- Drag ghost -->
+    <div
+      v-if="drag && ghostPat"
+      className="pointer-events-none z-[9999] rounded-[22px] flex flex-col items-center justify-center gap-1.5 shadow-2xl"
+      :style="{
+        position: 'fixed',
+        left: `${drag.ghostX - 60}px`,
+        top: `${drag.ghostY - 68}px`,
+        width: '120px',
+        height: '136px',
+        backgroundColor: ghostPat.color,
+        transform: 'scale(1.08)',
+        opacity: 0.93
+      }"
+    >
+      <span className="text-[32px] font-black text-white leading-none">{{ ghostPat.num }}</span>
+      <span className="text-[11px] font-bold text-white text-center px-2 leading-tight">{{ ghostPat.label }}</span>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onUnmounted } from 'vue';
+import { useAppStore } from '../stores/appStore';
+import { TASKTYPE_SCREEN } from '../constants/data';
+import SafeArea from '../components/common/SafeArea.vue';
+import DanjjakMark from '../components/common/DanjjakMark.vue';
+import Card from '../components/common/Card.vue';
+import Btn from '../components/common/Btn.vue';
+import Ic from '../components/common/Ic.vue';
+import NavBar from '../components/common/NavBar.vue';
+import PatternGrid from '../components/common/PatternGrid.vue';
+import FocusModeCard from '../components/common/FocusModeCard.vue';
+
+const store = useAppStore();
+
+const sttState = ref('idle');
+const focusedPat = ref(null);
+
+const drag = ref(null);
+const justDropped = ref(false);
+let longPressTimer = null;
+let edgeTimer = null;
+const startPos = ref({ x: 0, y: 0 });
+const containerRef = ref(null);
+
+const LONG_PRESS_MS = 500;
+const MOVE_THRESHOLD = 8;
+const EDGE_PX = 50;
+
+const pageNums = computed(() => {
+  if (store.homePage === 1) return [1, 2, 3, 4];
+  if (store.homePage === 2) return [5, 6, 7, 8];
+  return [9, 10, 11, 12];
+});
+const ghostPat = computed(() => (drag.value ? store.patterns.find((p) => p.num === drag.value.sourceNum) : null));
+
+// STT simulation
+let sttTimer = null;
+watch(sttState, (newVal) => {
+  if (sttTimer) clearTimeout(sttTimer);
+  if (newVal === 'listening') {
+    sttTimer = setTimeout(() => { sttState.value = 'processing'; }, 2000);
+  } else if (newVal === 'processing') {
+    sttTimer = setTimeout(() => {
+      const p1 = store.patterns.find((x) => x.num === 1) || store.patterns[0];
+      if (p1) focusedPat.value = p1;
+      sttState.value = 'idle';
+    }, 1200);
+  }
+});
+
+function toggleStt() {
+  if (sttState.value === 'idle') sttState.value = 'listening';
+}
+
+function findSlotAtPoint(x, y) {
+  const els = document.elementsFromPoint(x, y);
+  for (const el of els) {
+    const s = el.dataset?.slotNum;
+    if (s) {
+      const n = parseInt(s);
+      if (n >= 1 && n <= 12) return n;
+    }
+  }
+  return null;
+}
+
+function checkEdge(clientX) {
+  const r = containerRef.value?.getBoundingClientRect();
+  if (!r) return;
+  if (clientX > r.right - EDGE_PX && store.homePage < 3) {
+    if (!edgeTimer) edgeTimer = setTimeout(() => { store.homePage = Math.min(store.homePage + 1, 3); edgeTimer = null; }, 500);
+  } else if (clientX < r.left + EDGE_PX && store.homePage > 1) {
+    if (!edgeTimer) edgeTimer = setTimeout(() => { store.homePage = Math.max(store.homePage - 1, 1); edgeTimer = null; }, 500);
+  } else {
+    if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null; }
+  }
+}
+
+// Document-level drag handlers — reliable across the whole screen regardless of pointer position
+function onDocPointerMove(e) {
+  if (!drag.value) return;
+  const x = e.clientX, y = e.clientY;
+  drag.value = { ...drag.value, ghostX: x, ghostY: y, targetNum: findSlotAtPoint(x, y) };
+  checkEdge(x);
+}
+
+function onDocPointerUp() {
+  removeDocListeners();
+  if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null; }
+  if (drag.value) {
+    const { sourceNum, targetNum } = drag.value;
+    const didReorder = targetNum !== null && targetNum !== sourceNum;
+    if (didReorder) store.reorder(sourceNum, targetNum);
+    drag.value = null;
+    justDropped.value = didReorder;
+  }
+}
+
+function onDocPointerCancel() {
+  removeDocListeners();
+  if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null; }
+  drag.value = null;
+  justDropped.value = false;
+}
+
+function removeDocListeners() {
+  document.removeEventListener('pointermove', onDocPointerMove);
+  document.removeEventListener('pointerup', onDocPointerUp);
+  document.removeEventListener('pointercancel', onDocPointerCancel);
+}
+
+function handlePointerDown(num, e) {
+  if (!store.patterns.find((p) => p.num === num)) return;
+  e.preventDefault();
+  const x = e.clientX, y = e.clientY;
+  startPos.value = { x, y };
+
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+    drag.value = { sourceNum: num, ghostX: x, ghostY: y, targetNum: null };
+    // Track drag at document level so events fire regardless of pointer position
+    document.addEventListener('pointermove', onDocPointerMove, { passive: true });
+    document.addEventListener('pointerup', onDocPointerUp);
+    document.addEventListener('pointercancel', onDocPointerCancel);
+  }, LONG_PRESS_MS);
+}
+
+function handlePointerMove(e) {
+  // Only used before drag starts: cancel long press if finger drifted
+  if (drag.value || longPressTimer === null) return;
+  const dx = e.clientX - startPos.value.x;
+  const dy = e.clientY - startPos.value.y;
+  if (Math.hypot(dx, dy) > MOVE_THRESHOLD) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+function handlePointerUp() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  // Drag cleanup handled by document-level listener
+}
+
+function handlePointerCancel() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  // Drag cleanup handled by document-level listener
+}
+
+function handleCardClick(num, pat) {
+  if (justDropped.value) { justDropped.value = false; return; }
+  if (drag.value) return;
+  if (pat) {
+    focusedPat.value = pat;
+  } else {
+    store.navigate("pattern-register");
+  }
+}
+
+function startFocusedPattern() {
+  if (!focusedPat.value) return;
+  const pat = focusedPat.value;
+  store.activePattern = pat;
+  focusedPat.value = null;
+
+  if (pat.taskType === "transfer") {
+    if (pat.personId) {
+      const accs = store.accountsByPerson[pat.personId] || [];
+      store.navigate(accs.length > 1 ? "guide-account" : "amount-input");
+    } else {
+      store.navigate("direct-transfer");
+    }
+  } else {
+    store.navigate(TASKTYPE_SCREEN[pat.taskType] || "home");
+  }
+}
+
+// Swipe page navigation
+const swipeStartX = ref(null);
+function onTouchStart(e) {
+  swipeStartX.value = e.touches[0].clientX;
+}
+function onTouchEnd(e) {
+  if (swipeStartX.value === null) return;
+  const delta = e.changedTouches[0].clientX - swipeStartX.value;
+  if (Math.abs(delta) > 60) {
+    if (delta < 0) store.homePage = Math.min(store.homePage + 1, 3);
+    else store.homePage = Math.max(store.homePage - 1, 1);
+  }
+  swipeStartX.value = null;
+}
+
+onUnmounted(() => {
+  if (sttTimer) clearTimeout(sttTimer);
+  if (longPressTimer) clearTimeout(longPressTimer);
+  if (edgeTimer) clearTimeout(edgeTimer);
+  removeDocListeners();
+});
+</script>
