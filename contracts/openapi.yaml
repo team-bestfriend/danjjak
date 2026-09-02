@@ -16,6 +16,8 @@ tags:
     description: 등록 인물과 수취 계좌 관리
   - name: Transfers
     description: Mock 송금 처리
+  - name: Support
+    description: 보호자 연락처, 고객센터 및 카카오 알림
 paths:
   /api/health:
     get:
@@ -212,6 +214,57 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /api/support:
+    get:
+      tags: [Support]
+      operationId: getSupport
+      summary: 보호자 연락처와 고객센터 전화번호 조회
+      responses:
+        '200':
+          description: 전화 연결에 사용할 지원 연락처
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportResponse'
+  /api/support/guardian:
+    put:
+      tags: [Support]
+      operationId: updateGuardianContact
+      summary: 사용자당 보호자 연락처 1개 수정
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuardianContactRequest'
+      responses:
+        '200':
+          description: 수정된 보호자 연락처
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuardianContact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/anomaly-events/{anomalyEventId}/guardian-notification:
+    post:
+      tags: [Support]
+      operationId: sendGuardianNotification
+      summary: 사용자가 선택한 HIGH 이상거래 카카오 알림 전송
+      description: 보호자 전화번호가 아니라 로그인한 시연 계정의 카카오 나에게 보내기를 사용한다.
+      parameters:
+        - $ref: '#/components/parameters/AnomalyEventId'
+      responses:
+        '200':
+          description: 실제 발송 또는 Mock 대체 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   parameters:
     AccountId:
@@ -515,3 +568,51 @@ components:
           format: int64
           minimum: 0
           nullable: true
+    GuardianContact:
+      type: object
+      required: [guardianContactId, phoneNumber]
+      properties:
+        guardianContactId:
+          type: integer
+          format: int64
+        phoneNumber:
+          type: string
+          pattern: '^[0-9-]{8,20}$'
+    GuardianContactRequest:
+      type: object
+      required: [phoneNumber]
+      properties:
+        phoneNumber:
+          type: string
+          pattern: '^[0-9-]{8,20}$'
+    SupportResponse:
+      type: object
+      required: [guardian, customerCenterPhone]
+      properties:
+        guardian:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/GuardianContact'
+          nullable: true
+        customerCenterPhone:
+          type: string
+    NotificationResponse:
+      type: object
+      required:
+        [anomalyEventId, deliveryMode, result, actualAttempted, actualSucceeded, detail]
+      properties:
+        anomalyEventId:
+          type: integer
+          format: int64
+        deliveryMode:
+          type: string
+          enum: [ACTUAL, MOCK]
+        result:
+          type: string
+          enum: [SENT, MOCKED_NO_TOKEN, MOCKED_AFTER_ACTUAL_FAILURE]
+        actualAttempted:
+          type: boolean
+        actualSucceeded:
+          type: boolean
+        detail:
+          type: string
