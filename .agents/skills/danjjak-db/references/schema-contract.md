@@ -222,7 +222,7 @@ Create the transaction and update the owned account balance in one Spring transa
 
 The current rules are deterministic:
 
-- `high_amount_detected`: amount is at least KRW 1,000,000.
+- `high_amount_detected`: amount is at least KRW 10,000,000.
 - `repeated_transfer_detected`: at least two completed outgoing transfers occurred during the previous ten minutes, so the current attempt is the third.
 - One triggered rule produces `MEDIUM` risk.
 - Both triggered rules produce `HIGH` risk.
@@ -341,7 +341,7 @@ Prefer no schema change when the value is derived, temporary, fixed for the demo
 
 ## Migration and Seed Rules
 
-- Follow `db/README.md` for migration names and allocated versions.
+- Follow `db/README.md` for migration naming and immutability rules.
 - Do not edit a migration after it has been shared and applied.
 - Keep schema changes and demo seed data in separate migrations.
 - Store no real credentials, OAuth identifiers, account details, or raw PINs in Git.
