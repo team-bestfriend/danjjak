@@ -10,10 +10,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bestfriend.danjjak.common.error.GlobalExceptionHandler;
 import com.bestfriend.danjjak.common.session.DemoSessionUserResolver;
+import com.bestfriend.danjjak.transfer.dto.TransferDtos.ResolveAnomalyResponse;
 import com.bestfriend.danjjak.transfer.dto.TransferDtos.TransferResponse;
 import com.bestfriend.danjjak.transfer.service.TransferService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import javax.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +48,14 @@ class TransferControllerTest {
     void completesRegisteredRecipientTransfer() throws Exception {
         when(transferService.transfer(org.mockito.ArgumentMatchers.eq(1L), any()))
                 .thenReturn(
-                        new TransferResponse("COMPLETED", 30L, new BigDecimal("49900000")));
+                        new TransferResponse(
+                                "COMPLETED",
+                                "NORMAL",
+                                List.of(),
+                                0,
+                                null,
+                                30L,
+                                new BigDecimal("49900000")));
 
         mockMvc.perform(
                         post("/api/transfers")
@@ -57,5 +66,19 @@ class TransferControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("\"status\":\"COMPLETED\"")))
                 .andExpect(content().string(containsString("\"transactionId\":30")));
+    }
+
+    @Test
+    void resolvesAnomalyWithUserDecision() throws Exception {
+        when(transferService.resolve(org.mockito.ArgumentMatchers.eq(1L),
+                        org.mockito.ArgumentMatchers.eq(40L), any()))
+                .thenReturn(new ResolveAnomalyResponse(40L, "CANCEL", null, null));
+
+        mockMvc.perform(
+                        post("/api/anomaly-events/40/resolve")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"action\":\"CANCEL\",\"rechecked\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"action\":\"CANCEL\"")));
     }
 }

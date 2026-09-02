@@ -1,6 +1,7 @@
 package com.bestfriend.danjjak.transfer.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Digits;
@@ -29,6 +30,18 @@ public final class TransferDtos {
 
     public record TransferResponse(
             String status,
+            String riskLevel,
+            List<String> reasons,
+            int recentTransferCount,
+            Long anomalyEventId,
+            Long transactionId,
+            BigDecimal balanceAfter) {}
+
+    public record ResolveAnomalyRequest(@NotBlank String action, boolean rechecked) {}
+
+    public record ResolveAnomalyResponse(
+            long anomalyEventId,
+            String action,
             Long transactionId,
             BigDecimal balanceAfter) {}
 }
