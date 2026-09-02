@@ -143,13 +143,13 @@ PowerShell 콘솔에서만 깨져 보이는 경우도 있습니다. `chcp 65001`
 
 ### `Migration checksum mismatch`
 
-누군가 이미 적용된 마이그레이션 파일을 수정했습니다.
-최신 코드를 받은 뒤 DB를 초기화하세요.
+이미 적용된 마이그레이션 파일의 내용이 바뀌었습니다.
+**DB를 지우기 전에** 파일을 원래대로 되돌려 보세요. 대부분 이걸로 해결됩니다.
 
 ```powershell
-git pull
-docker compose down -v
-docker compose up -d
+git checkout -- db/migration/문제파일.sql
+docker compose up -d ; docker compose logs flyway --tail 20
 ```
 
-**그리고 슬랙에 알리세요.** 팀원 전원이 같은 작업을 해야 합니다.
+복구 순서와 `flyway repair` 사용 기준은 [`db/README.md`](../db/README.md)에 정리돼 있습니다.
+**그리고 슬랙에 알리세요.** 공유된 파일이 문제라면 팀원 전원이 같은 조치를 해야 합니다.

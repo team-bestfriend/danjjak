@@ -122,7 +122,8 @@ git clone https://github.com/team-bestfriend/danjjak.git
 cd danjjak
 ```
 
-로컬 개발은 데이터베이스를 먼저 띄우고 시작합니다. Docker Desktop 외에 설치할 것은 없습니다.
+로컬 개발은 데이터베이스를 먼저 띄우고 시작합니다. **DB와 Flyway 실행에는 Docker Desktop만 있으면 됩니다.**
+프론트엔드는 Node.js, 백엔드는 JDK 17과 Tomcat 9가 별도로 필요합니다.
 
 ```powershell
 cd infra

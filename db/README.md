@@ -15,7 +15,10 @@ cd C:\danjjak\infra
 docker compose up -d ; docker compose logs flyway --tail 20
 ```
 
-`Successfully applied N migration(s)` 이 보여야 합니다.
+- 적용할 파일이 있으면 `Successfully applied N migration(s)`
+- 아직 파일이 없거나 이미 다 적용됐으면 `No migrations found` 또는 `Schema is up to date`
+
+둘 다 정상입니다. `ERROR` 로 끝나지만 않으면 됩니다.
 자세한 실행·문제 해결은 [`infra/README.md`](../infra/README.md)를 보세요.
 
 ## 파일 이름 규칙
@@ -54,7 +57,6 @@ Flyway는 파일 내용의 체크섬을 DB에 기록합니다.
 Migration checksum mismatch for migration version 1
 ```
 
-그 사람은 `docker compose down -v` 로 DB를 통째로 날려야 복구됩니다.
 파일을 이미 공유했다면 **팀원 전원에게 같은 일이 벌어집니다.**
 
 고칠 게 있으면 수정하지 말고 **새 번호로 파일을 하나 더** 만드세요.
@@ -64,8 +66,41 @@ Migration checksum mismatch for migration version 1
 ALTER TABLE users MODIFY guardian_phone VARCHAR(20);
 ```
 
-아직 아무에게도 공유하지 않았고 자기 DB에만 적용한 상태라면,
-`down -v` 로 초기화한 뒤 수정해도 됩니다.
+### 체크섬 오류가 났을 때
+
+**위에서부터 순서대로** 시도하세요. `down -v` 는 마지막 수단입니다.
+
+**1. 파일을 원래대로 되돌린다** — 실수로 고친 경우가 대부분입니다.
+
+```powershell
+git checkout -- db/migration/V1__initial_schema.sql
+```
+
+이걸로 대부분 해결되고, 로컬 데이터도 그대로 남습니다.
+
+**2. 변경이 의도한 것이었다면 새 번호로 만든다**
+
+이미 커밋·공유된 파일은 되돌리고, 필요한 변경은 `V{n+1}__` 로 추가합니다.
+
+**3. 팀이 합의했다면 `repair`**
+
+파일 변경이 의도적이고 팀 전원이 동의한 경우에만 씁니다.
+DB에 기록된 체크섬을 현재 파일에 맞춰 갱신합니다.
+
+```powershell
+docker compose run --rm flyway repair
+```
+
+**4. 마지막 수단 — 초기화**
+
+위 세 가지가 안 되고 **로컬 DB에 잃어도 되는 데이터만 있을 때**만.
+
+```powershell
+docker compose down -v
+docker compose up -d ; docker compose logs flyway --tail 20
+```
+
+어느 경우든 **슬랙에 알리세요.** 공유된 파일이 문제라면 팀원 전원이 같은 조치를 해야 합니다.
 
 ## 작성할 때
 
