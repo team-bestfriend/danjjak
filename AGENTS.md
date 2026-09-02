@@ -37,6 +37,7 @@
 - Backend work: read `.agents/skills/danjjak-backend/SKILL.md`.
 - API contract work: read `.agents/skills/danjjak-api/SKILL.md`.
 - Shortcut, transfer, FDS, or usage-analysis work: read `.agents/skills/danjjak-domain/SKILL.md` and only the relevant reference.
+- Database schema or local environment work: read `db/README.md` and `infra/README.md`.
 - Read multiple skills only when the task spans multiple areas.
 
 ## Shared Rules
@@ -44,4 +45,5 @@
 - Keep changes small and demo-focused.
 - Do not add production-grade security, concurrency, idempotency, or deployment work unless requested.
 - Follow `CONTRIBUTING.md` for commit and code conventions.
+- Change the database schema by adding a new `db/migration/V{n}__description.sql` file. Never edit a migration that has already been applied.
 - Do not commit secrets, build output, IDE metadata, or local database data.

@@ -88,8 +88,8 @@ KB IT's Your Life 해커톤
 | Frontend | Vue 3 · Vite · JavaScript |
 | Backend | Java 17 · Spring Framework 5.3 · Spring MVC · MyBatis |
 | Runtime | Gradle WAR · Apache Tomcat 9 |
-| Database | MySQL · Flyway 예정 |
-| Local environment | Docker Compose 예정 |
+| Database | MySQL 8.4 · Flyway |
+| Local environment | Docker Compose |
 | API contract | OpenAPI 3.0 · Redocly |
 | Logging | Log4j2 |
 
@@ -122,8 +122,18 @@ git clone https://github.com/team-bestfriend/danjjak.git
 cd danjjak
 ```
 
+로컬 개발은 데이터베이스를 먼저 띄우고 시작합니다. Docker Desktop 외에 설치할 것은 없습니다.
+
+```powershell
+cd infra
+Copy-Item .env.example .env   # 최초 1회, MYSQL_ROOT_PASSWORD 만 채우면 됩니다
+docker compose up -d ; docker compose logs flyway --tail 20
+```
+
 | 항목 | 안내 |
 | --- | --- |
+| Database · 로컬 환경 | [infra/README.md](infra/README.md) |
+| DB 스키마 · 마이그레이션 | [db/README.md](db/README.md) |
 | Frontend | [frontend/README.md](frontend/README.md) |
 | Backend | [backend/README.md](backend/README.md) |
 | API contract | [contracts/openapi.yaml](contracts/openapi.yaml) |
@@ -135,7 +145,8 @@ danjjak/
 |-- frontend/              Vue application
 |-- backend/               Spring Framework WAR application
 |-- contracts/             OpenAPI contract
-|-- infra/                 Docker and database configuration
+|-- db/migration/          Flyway database migrations
+|-- infra/                 Docker Compose and local environment
 |-- .agents/skills/        Shared agent instructions
 |-- AGENTS.md              Agent routing and shared rules
 |-- CONTRIBUTING.md        Collaboration conventions
