@@ -19,6 +19,7 @@
         <div className="flex items-center gap-3">
           <button
             @click="togglePlaying"
+            :disabled="loading"
             className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[14px] font-bold"
             style="background: #FFF3CC; color: #92650A;"
           >
@@ -62,9 +63,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { computed } from 'vue';
 import { useAppStore } from '../../stores/appStore';
 import { generatePatternDesc } from '../../constants/data';
+import { useTtsAudio } from '../../composables/useTtsAudio';
 
 const props = defineProps({
   pat: { type: Object, required: true }
@@ -74,11 +76,6 @@ defineEmits(['cancel', 'start']);
 
 const store = useAppStore();
 
-const playing = ref(false);
-const prog = ref(0);
-let timer = null;
-let initTimer = null;
-
 const person = computed(() => {
   return props.pat.personId ? store.people.find((p) => p.id === props.pat.personId) : null;
 });
@@ -87,31 +84,5 @@ const quote = computed(() => {
   return generatePatternDesc(props.pat, store.people, store.accountsByPerson);
 });
 
-function togglePlaying() {
-  playing.value = !playing.value;
-  if (playing.value && prog.value >= 100) prog.value = 0;
-}
-
-watch([playing, prog], ([newPlaying, newProg]) => {
-  if (timer) clearTimeout(timer);
-  if (newPlaying && newProg < 100) {
-    timer = setTimeout(() => {
-      prog.value = Math.min(prog.value + 3, 100);
-    }, 150);
-  } else if (newProg >= 100) {
-    playing.value = false;
-    prog.value = 0;
-  }
-});
-
-onMounted(() => {
-  initTimer = setTimeout(() => {
-    playing.value = true;
-  }, 600);
-});
-
-onUnmounted(() => {
-  if (timer) clearTimeout(timer);
-  if (initTimer) clearTimeout(initTimer);
-});
+const { playing, loading, progress: prog, toggle: togglePlaying } = useTtsAudio(quote);
 </script>

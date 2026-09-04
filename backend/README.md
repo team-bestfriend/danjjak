@@ -27,6 +27,13 @@ MySQL은 `infra/`의 Docker Compose로 띄웁니다. [infra/README.md](../infra/
 기본값 그대로 사용하면 환경변수를 따로 설정하지 않아도 접속됩니다.
 `infra/.env`에서 `MYSQL_PORT`를 바꾼 경우에만 `DANJJAK_DB_URL`을 함께 맞추면 됩니다.
 
+## TTS 설정
+
+실제 음성 안내를 생성하려면 `OPENAI_API_KEY` 환경변수가 필요합니다.
+IntelliJ에서 Tomcat을 실행할 때는 Tomcat Run Configuration의 `Environment variables`에 설정하세요.
+API key가 없거나 OpenAI API 크레딧을 사용할 수 없으면 실제 TTS 호출이 실패할 수 있습니다.
+실제 secret 값은 코드, 설정 파일, 로그에 작성하지 않습니다.
+
 ## Tomcat 실행
 
 1. `build/libs/danjjak.war`를 Tomcat의 `webapps`에 복사합니다.

@@ -11,10 +11,12 @@
       <div className="flex items-center gap-3 px-4 pt-4 pb-2">
         <button
           @click="togglePlay"
+          :disabled="loading"
+          :aria-label="playing ? '음성 안내 일시정지' : '음성 안내 재생'"
           className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-transform"
           style="background: #FFBC00;"
         >
-          <span style="font-size: 17px; line-height: 1; color: #111827;">{{ playing ? '⏸' : '▶' }}</span>
+          <span style="font-size: 17px; line-height: 1; color: #111827;">{{ loading ? '…' : playing ? '⏸' : '▶' }}</span>
         </button>
         <p
           className="font-bold text-[#111827] flex-1 leading-snug"
@@ -43,18 +45,23 @@
         <!-- 다시 듣기 버튼 -->
         <button
           @click="replay"
+          :disabled="loading"
           className="flex-shrink-0 flex items-center gap-1 font-semibold rounded-full px-3 py-1.5"
           style="font-size: 13px; color: #92650A; background: #FFF3CC; border: 1px solid #FFBC00;"
         >
           <span style="font-size: 15px;">↺</span> 다시 듣기
         </button>
       </div>
+      <p v-if="error" className="px-4 pb-3 text-sm font-semibold text-red-600" role="alert">
+        {{ error }}
+      </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { toRef } from 'vue';
+import { useTtsAudio } from '../../composables/useTtsAudio';
 
 const props = defineProps({
   text: { type: String, required: true }
@@ -63,29 +70,5 @@ const props = defineProps({
 // 파형 높이 (픽셀, 최대 26px)
 const WAVE = [6,12,22,8,18,26,10,5,23,26,14,19,26,5,16,24,9,21,12,26,7,18,26,10,22,14,25,15,8,20];
 
-const playing = ref(true);
-let stopTimer = null;
-
-function startTimer() {
-  if (stopTimer) clearTimeout(stopTimer);
-  stopTimer = setTimeout(() => { playing.value = false; }, 5000);
-}
-
-watch(() => props.text, () => {
-  playing.value = true;
-  startTimer();
-});
-
-onMounted(() => startTimer());
-onUnmounted(() => { if (stopTimer) clearTimeout(stopTimer); });
-
-function togglePlay() {
-  playing.value = !playing.value;
-  if (playing.value) startTimer();
-}
-
-function replay() {
-  playing.value = true;
-  startTimer();
-}
+const { playing, loading, error, toggle: togglePlay, replay } = useTtsAudio(toRef(props, 'text'));
 </script>
