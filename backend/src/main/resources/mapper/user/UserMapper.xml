@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bestfriend.danjjak.user.mapper.UserMapper">
+    <select id="findCurrentUser"
+            resultType="com.bestfriend.danjjak.user.model.UserSettingsRecord">
+        SELECT user_id,
+               name,
+               usage_log_agreed,
+               guardian_share_agreed,
+               consent_completed,
+               font_size,
+               voice_speed,
+               guide_voice_type
+        FROM users
+        WHERE user_id = #{userId}
+    </select>
+
+    <update id="updateConsents">
+        UPDATE users
+        SET usage_log_agreed = #{usageLogAgreed},
+            guardian_share_agreed = #{guardianShareAgreed},
+            consent_completed = TRUE
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateSettings">
+        UPDATE users
+        SET font_size = #{fontSize},
+            voice_speed = #{voiceSpeed},
+            guide_voice_type = #{guideVoiceType}
+        WHERE user_id = #{userId}
+    </update>
+</mapper>
