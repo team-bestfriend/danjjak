@@ -38,6 +38,7 @@
 - API contract work: read `.agents/skills/danjjak-api/SKILL.md`.
 - Shortcut, transfer, FDS, or usage-analysis work: read `.agents/skills/danjjak-domain/SKILL.md` and only the relevant reference.
 - Database or local MySQL work: read `.agents/skills/danjjak-db/SKILL.md`.
+- Feature implementation or Issue planning: read `docs/specs/requirements.md`, then only the relevant linked requirement documents.
 - Read multiple skills only when the task spans multiple areas.
 
 ## Shared Rules
