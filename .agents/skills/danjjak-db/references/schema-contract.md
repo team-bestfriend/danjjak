@@ -14,6 +14,7 @@ The persistence model supports:
 
 - Kakao OAuth user identification
 - Accessibility preferences
+- Current usage-log and guardian-sharing consent choices
 - One guardian contact
 - Registered people and mock accounts
 - Numbered financial-task patterns and their steps
@@ -40,7 +41,7 @@ The schema contains ten application tables.
 
 | Area | Tables | Responsibility |
 |---|---|---|
-| User | `users`, `guardian_contacts` | OAuth identity, accessibility preferences, and one guardian contact |
+| User | `users`, `guardian_contacts` | OAuth identity, current consent and accessibility preferences, and one guardian contact |
 | Mock finance | `registered_persons`, `bank_accounts`, `transactions` | Recipients, owned and recipient accounts, balances, and transaction history |
 | Guidance | `financial_patterns`, `pattern_steps` | Shortcut configuration, task type, ordered guidance, UI target, and recorded voice path |
 | Execution and safety | `pattern_executions`, `step_execution_logs`, `anomaly_events` | Task runs, step behavior, deterministic anomaly detection, and the user's final decision |
@@ -82,12 +83,14 @@ Use these concepts consistently:
 
 ### `users`
 
-`users` stores the Kakao identity and accessibility preferences for the senior user.
+`users` stores the Kakao identity, current consent choices, and accessibility preferences for the senior user.
 
 - `kakao_user_id` is unique but nullable before the first OAuth login.
 - A seeded demo user owns the mock accounts, patterns, and transactions before OAuth binding.
 - On the first successful OAuth callback, bind the returned Kakao user ID to that seeded user.
 - Later logins resolve the same user by `kakao_user_id`.
+- Usage-log and guardian-sharing consent values store only the current choices.
+- `consent_completed` distinguishes two rejected choices from a user who has not completed the consent step.
 - Font size, voice speed, and guide voice type stay on this table because each user has one current setting and no settings history is required.
 
 The login flow uses Kakao OAuth only. Do not add a login password or login PIN unless the authentication requirement changes explicitly.
@@ -246,7 +249,7 @@ Resolution rules:
 1. Kakao OAuth returns an external user ID.
 2. Look for an existing user with that `kakao_user_id`.
 3. If none exists, bind the ID to the unbound seeded demo user.
-4. Return the user and the accessibility preferences from `users`.
+4. Return the user, current consent choices, and accessibility preferences from `users`.
 
 The demo has one seeded user. Do not build a general account-claiming or pairing system around this flow.
 
