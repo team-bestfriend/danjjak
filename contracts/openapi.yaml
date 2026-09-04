@@ -306,6 +306,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CurrentUserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/users/me/consents:
     put:
       tags: [Users]
@@ -327,6 +329,8 @@ paths:
                 $ref: '#/components/schemas/ConsentSettings'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/users/me/settings:
     put:
       tags: [Users]
@@ -347,6 +351,8 @@ paths:
                 $ref: '#/components/schemas/AccessibilitySettings'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/pattern-templates:
     get:
       tags: [Patterns]
