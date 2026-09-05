@@ -1,5 +1,7 @@
 <template>
-  <!-- Patterns List -->
+  <div className="relative h-full">
+
+  <!-- 패턴 목록 -->
   <div v-if="viewMode === 'patterns'" className="flex flex-col h-full" style="background: #FAFAF8;">
     <SafeArea />
     <div className="bg-white px-5 border-b border-[#EEEEED] flex-shrink-0" style="padding-top: 18px; padding-bottom: 16px;">
@@ -34,15 +36,6 @@
             <p className="font-semibold text-[#111827]" style="font-size: 19px;">{{ p.label }}</p>
             <p className="text-[#6B7280] mt-0.5 truncate" style="font-size: 13px;">{{ p.sub }}</p>
             <span className="inline-flex mt-1 font-bold text-[#16A34A] bg-green-50 px-2 py-0.5 rounded-full border border-green-200" style="font-size: 11px;">사용 중</span>
-          </div>
-          <div className="flex items-center flex-shrink-0">
-            <button
-              @click.stop="sheetPat = p; sheet = true;"
-              className="w-10 h-10 flex items-center justify-center text-[#9CA3AF] font-bold rounded-full"
-              style="font-size: 22px;"
-            >
-              ⋮
-            </button>
           </div>
         </div>
       </div>
@@ -85,34 +78,25 @@
         <span className="font-black text-[#111827]" style="font-size: 17px;">{{ ghostPat.label }}</span>
       </div>
     </div>
-
-    <!-- Sheets -->
-    <BottomSheet :open="sheet && !delConfirm" @close="sheet = false">
-      <SheetRow label="패턴 수정" :sub="sheetPat?.label" @click="editSheetPattern" />
-      <SheetRow label="패턴 삭제" color="#EF4444" :sub="sheetPat?.label" @click="delConfirm = true" />
-    </BottomSheet>
-
-    <BottomSheet :open="delConfirm" @close="delConfirm = false; sheet = false;" :title="`${sheetPat?.label} 패턴을 삭제할까요?`">
-      <p className="text-[#6B7280] px-2 pb-3" style="font-size: 14px;">삭제하면 홈의 단축번호에서도 사용할 수 없습니다.</p>
-      <Btn variant="secondary" className="mb-2" @click="delConfirm = false; sheet = false;">취소</Btn>
-      <Btn variant="danger" @click="doDelete">삭제하기</Btn>
-    </BottomSheet>
   </div>
 
-  <!-- Pattern Detail -->
+  <!-- 패턴 상세 -->
   <div v-else-if="viewMode === 'pattern-detail'" className="flex flex-col h-full" style="background: #FAFAF8;">
     <SafeArea />
     <TopBar title="패턴 상세" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
+    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
+      <!-- 패턴 헤더 -->
       <div className="flex items-center gap-4">
-        <div className="w-18 h-18 rounded-2xl flex items-center justify-center flex-shrink-0" :style="{ width: '72px', height: '72px', background: pDetail.color || '#FFBC00' }">
+        <div className="rounded-2xl flex items-center justify-center flex-shrink-0" :style="{ width: '72px', height: '72px', background: pDetail.color || '#FFBC00' }">
           <span className="font-bold text-white" style="font-size: 30px;">{{ pDetail.num }}</span>
         </div>
         <div>
           <p className="font-bold text-[#111827]" style="font-size: 23px;">{{ pDetail.label }}</p>
-          <span className="font-bold text-[#16A34A] bg-green-50 px-2 py-0.5 rounded-full border border-green-200" style="font-size: 12px;">사용 중</span>
+          <span className="inline-flex mt-1 font-bold text-[#16A34A] bg-green-50 px-2 py-0.5 rounded-full border border-green-200" style="font-size: 12px;">사용 중</span>
         </div>
       </div>
+
+      <!-- 패턴 정보 -->
       <Card className="overflow-hidden">
         <div
           v-for="(r, i) in detailRows"
@@ -123,13 +107,59 @@
           <span className="font-bold text-[#111827] text-right" style="font-size: 16px;">{{ r.v }}</span>
         </div>
       </Card>
-      <Btn variant="secondary" @click="store.navigate('voice-edit')">패턴 설명 음성 수정</Btn>
+
+      <!-- 액션 버튼 -->
+      <div className="space-y-2 pt-1">
+        <Btn variant="secondary" @click="editDetailPattern">패턴 수정</Btn>
+        <Btn variant="info" @click="openNumPickerForDetail">패턴 번호 수정</Btn>
+        <Btn variant="danger" @click="openDeleteForDetail">패턴 삭제</Btn>
+      </div>
     </div>
+  </div>
+
+  <!-- 공유 시트 (목록·상세 양쪽에서 사용) -->
+
+  <!-- 삭제 확인 -->
+  <BottomSheet :open="delConfirm" @close="delConfirm = false" :title="`${sheetPat?.label} 패턴을 삭제할까요?`">
+    <p className="text-[#6B7280] px-2 pb-3" style="font-size: 14px;">삭제하면 홈의 단축번호에서도 사용할 수 없습니다.</p>
+    <Btn variant="secondary" className="mb-2" @click="delConfirm = false">취소</Btn>
+    <Btn variant="danger" :disabled="store.patternMutationSaving" @click="doDelete">
+      {{ store.patternMutationSaving ? '삭제 중…' : '삭제하기' }}
+    </Btn>
+  </BottomSheet>
+
+  <!-- 번호 변경 -->
+  <BottomSheet :open="numPickerOpen" @close="numPickerOpen = false" title="몇 번으로 바꿀까요?">
+    <p className="font-normal text-[#6B7280] px-1 pb-3" style="font-size: 14px;">번호를 선택하면 자동으로 자리가 바뀌어요.</p>
+    <div className="grid grid-cols-3 gap-2 pb-2">
+      <button
+        v-for="n in 12"
+        :key="n"
+        :disabled="store.patternOrderSaving || n === sheetPat?.num"
+        @click="n !== sheetPat?.num && selectNum(n)"
+        className="rounded-[14px] flex flex-col items-center justify-center gap-0.5 transition-all"
+        :class="n !== sheetPat?.num ? 'active:scale-95' : ''"
+        :style="{
+          height: '68px',
+          background: n === sheetPat?.num ? '#F3F4F6' : '#FFBC00',
+          opacity: n === sheetPat?.num ? 0.4 : 1,
+          cursor: n === sheetPat?.num ? 'default' : 'pointer',
+        }"
+      >
+        <span className="font-bold text-[#111827]" style="font-size: 24px;">{{ n }}</span>
+        <span className="font-medium text-[#111827]" style="font-size: 10px; opacity: 0.7;">
+          {{ n === sheetPat?.num ? '현재' : getPatternByNum(n) ? getPatternByNum(n).label.slice(0, 4) : '빈 칸' }}
+        </span>
+      </button>
+    </div>
+  </BottomSheet>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAppStore } from '../stores/appStore';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
@@ -138,17 +168,17 @@ import Btn from '../components/common/Btn.vue';
 import Ic from '../components/common/Ic.vue';
 import NavBar from '../components/common/NavBar.vue';
 import BottomSheet from '../components/common/BottomSheet.vue';
-import SheetRow from '../components/common/SheetRow.vue';
 
 const props = defineProps({
   viewMode: { type: String, required: true }
 });
 
 const store = useAppStore();
+const route = useRoute();
 
-const sheet = ref(false);
 const sheetPat = ref(null);
 const delConfirm = ref(false);
+const numPickerOpen = ref(false);
 
 const drag = ref(null);
 const justDropped = ref(false);
@@ -216,6 +246,7 @@ function removeDocListeners() {
 }
 
 function handlePointerDown(num, e) {
+  if (store.patternOrderSaving) return;
   e.preventDefault();
   const x = e.clientX, y = e.clientY;
   startPos.value = { x, y };
@@ -247,36 +278,79 @@ function handlePointerCancel() {
   if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 }
 
-function handleCardClick(p) {
+async function handleCardClick(p) {
   if (justDropped.value) { justDropped.value = false; return; }
   if (drag.value) return;
-  store.activePattern = p;
-  store.navigate('pattern-detail');
-}
-
-function editSheetPattern() {
-  if (sheetPat.value) {
-    store.editingId = sheetPat.value.id;
-    sheet.value = false;
-    store.navigate('pattern-register');
+  try {
+    await store.loadPatternDetail(p.patternId);
+    store.navigate('pattern-detail', { params: { patternId: p.patternId } });
+  } catch {
+    // 오래된 항목이면 서버 목록을 다시 불러온 상태를 유지한다.
   }
 }
+
+// 상세 페이지 액션
+function editDetailPattern() {
+  store.editingId = pDetail.value.id;
+  store.navigate('pattern-register', { query: { edit: pDetail.value.patternId } });
+}
+
+function openNumPickerForDetail() {
+  sheetPat.value = pDetail.value;
+  numPickerOpen.value = true;
+}
+
+function openDeleteForDetail() {
+  sheetPat.value = pDetail.value;
+  delConfirm.value = true;
+}
+
+function getPatternByNum(num) {
+  return store.patterns.find((p) => p.num === num) || null;
+}
+
+async function selectNum(targetNum) {
+  if (!sheetPat.value || store.patternOrderSaving) return;
+  const occupied = getPatternByNum(targetNum);
+  if (occupied && !window.confirm(`${occupied.label} 패턴과 번호를 서로 바꿀까요?`)) return;
+  const changed = await store.reorder(sheetPat.value.num, targetNum);
+  if (changed) numPickerOpen.value = false;
+}
+
+onMounted(async () => {
+  if (props.viewMode === 'patterns') {
+    await store.loadPatterns();
+    return;
+  }
+  const patternId = Number(route.params.patternId);
+  if (!Number.isInteger(patternId) || patternId < 1) {
+    store.navigate('patterns', { replace: true });
+    return;
+  }
+  try {
+    await store.loadPatternDetail(patternId);
+  } catch {
+    store.navigate('patterns', { replace: true });
+  }
+});
 
 onUnmounted(() => {
   if (longPressTimer) clearTimeout(longPressTimer);
   removeDocListeners();
 });
 
-function doDelete() {
+async function doDelete() {
   if (!sheetPat.value) return;
-  const targetId = sheetPat.value.id;
+  const targetId = sheetPat.value.patternId;
   const targetLabel = sheetPat.value.label;
-  const prev = [...store.patterns];
-  store.setPatterns((ps) => ps.filter((p) => p.id !== targetId));
-  delConfirm.value = false;
-  sheet.value = false;
-  store.showToast(`${targetLabel} 패턴을 삭제했어요.`, "되돌리기", () => {
-    store.patterns = prev;
-  });
+  const wasOnDetail = props.viewMode === 'pattern-detail';
+  try {
+    await store.deactivatePattern(targetId);
+    delConfirm.value = false;
+    store.showToast(`${targetLabel} 패턴을 삭제했어요.`);
+    if (wasOnDetail) store.navigate('patterns', { replace: true });
+  } catch {
+    // 서버가 확인한 목록을 유지하고 저장소 오류를 화면에 남긴다.
+  }
 }
 </script>

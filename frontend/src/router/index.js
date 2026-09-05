@@ -1,64 +1,138 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import OnboardingView from '../views/OnboardingView.vue';
-import LoginView from '../views/LoginView.vue';
-import SignupView from '../views/SignupView.vue';
+import { useAppStore } from '../stores/appStore.js';
+import AddPersonView from '../views/AddPersonView.vue';
+import AnalysisView from '../views/AnalysisView.vue';
+import AuthCallbackView from '../views/AuthCallbackView.vue';
+import ConsentView from '../views/ConsentView.vue';
+import ContactManageView from '../views/ContactManageView.vue';
 import HomeView from '../views/HomeView.vue';
-import TaskView from '../views/TaskView.vue';
-import TransferFlowView from '../views/TransferFlowView.vue';
+import LoginView from '../views/LoginView.vue';
+import NotFoundView from '../views/NotFoundView.vue';
+import OnboardingView from '../views/OnboardingView.vue';
 import PatternListView from '../views/PatternListView.vue';
 import PatternRegisterView from '../views/PatternRegisterView.vue';
-import VoiceEditView from '../views/VoiceEditView.vue';
-import AnalysisView from '../views/AnalysisView.vue';
 import SettingsView from '../views/SettingsView.vue';
-import ContactManageView from '../views/ContactManageView.vue';
+import StepVoiceEditView from '../views/StepVoiceEditView.vue';
+import TaskView from '../views/TaskView.vue';
+import TransferFlowView from '../views/TransferFlowView.vue';
+import VoiceEditView from '../views/VoiceEditView.vue';
+
+const protectedMeta = { requiresAuth: true, requiresConsent: true };
+
+const taskRoutes = [
+  ['task-transfer', '/tasks/transfer'],
+  ['task-2', '/tasks/pension'],
+  ['task-3', '/tasks/maintenance-fee'],
+  ['task-4', '/tasks/balance'],
+  ['task-5', '/tasks/transactions'],
+  ['task-6', '/tasks/customer-center'],
+  ['task-8', '/tasks/utilities'],
+  ['task-9', '/tasks/automatic-transfers'],
+  ['task-10', '/tasks/card-usage'],
+  ['task-11', '/tasks/deposit-maturity'],
+  ['task-12', '/tasks/exchange-rate'],
+  ['pension-history', '/tasks/pension/history'],
+].map(([name, path]) => ({
+  path,
+  name,
+  component: TaskView,
+  props: { taskName: name },
+  meta: protectedMeta,
+}));
+
+const transferRoutes = [
+  ['transfer-source', '/transfer/source'],
+  ['direct-transfer', '/transfer/recipient'],
+  ['direct-newaccount', '/transfer/new-account'],
+  ['guide-person', '/transfer/person'],
+  ['guide-account', '/transfer/account'],
+  ['amount-input', '/transfer/amount'],
+  ['pin-entry', '/transfer/pin'],
+  ['fraud-warning', '/transfer/review'],
+  ['final-confirm', '/transfer/confirm'],
+  ['complete', '/transfer/complete'],
+  ['cancelled', '/transfer/cancelled'],
+].map(([name, path]) => ({
+  path,
+  name,
+  component: TransferFlowView,
+  props: { flowStep: name },
+  meta: protectedMeta,
+}));
 
 const routes = [
-  { path: '/', redirect: '/onboarding' },
+  { path: '/', redirect: { name: 'onboarding' } },
   { path: '/onboarding', name: 'onboarding', component: OnboardingView },
   { path: '/login', name: 'login', component: LoginView },
-  { path: '/signup', name: 'signup', component: SignupView },
-  { path: '/home', name: 'home', component: HomeView },
-
-  // Task screens
-  { path: '/task-transfer', name: 'task-transfer', component: TaskView, props: { taskName: 'task-transfer' } },
-  { path: '/task-2', name: 'task-2', component: TaskView, props: { taskName: 'task-2' } },
-  { path: '/task-3', name: 'task-3', component: TaskView, props: { taskName: 'task-3' } },
-  { path: '/task-4', name: 'task-4', component: TaskView, props: { taskName: 'task-4' } },
-  { path: '/task-5', name: 'task-5', component: TaskView, props: { taskName: 'task-5' } },
-  { path: '/task-6', name: 'task-6', component: TaskView, props: { taskName: 'task-6' } },
-  { path: '/task-8', name: 'task-8', component: TaskView, props: { taskName: 'task-8' } },
-  { path: '/task-9', name: 'task-9', component: TaskView, props: { taskName: 'task-9' } },
-  { path: '/task-10', name: 'task-10', component: TaskView, props: { taskName: 'task-10' } },
-  { path: '/task-11', name: 'task-11', component: TaskView, props: { taskName: 'task-11' } },
-  { path: '/task-12', name: 'task-12', component: TaskView, props: { taskName: 'task-12' } },
-  { path: '/pension-history', name: 'pension-history', component: TaskView, props: { taskName: 'pension-history' } },
-
-  // Transfer flow screens
-  { path: '/direct-transfer', name: 'direct-transfer', component: TransferFlowView, props: { flowStep: 'direct-transfer' } },
-  { path: '/direct-newaccount', name: 'direct-newaccount', component: TransferFlowView, props: { flowStep: 'direct-newaccount' } },
-  { path: '/guide-person', name: 'guide-person', component: TransferFlowView, props: { flowStep: 'guide-person' } },
-  { path: '/guide-account', name: 'guide-account', component: TransferFlowView, props: { flowStep: 'guide-account' } },
-  { path: '/amount-input', name: 'amount-input', component: TransferFlowView, props: { flowStep: 'amount-input' } },
-  { path: '/pin-entry', name: 'pin-entry', component: TransferFlowView, props: { flowStep: 'pin-entry' } },
-  { path: '/fraud-warning', name: 'fraud-warning', component: TransferFlowView, props: { flowStep: 'fraud-warning' } },
-  { path: '/final-confirm', name: 'final-confirm', component: TransferFlowView, props: { flowStep: 'final-confirm' } },
-  { path: '/complete', name: 'complete', component: TransferFlowView, props: { flowStep: 'complete' } },
-
-  // Patterns
-  { path: '/patterns', name: 'patterns', component: PatternListView, props: { viewMode: 'patterns' } },
-  { path: '/pattern-detail', name: 'pattern-detail', component: PatternListView, props: { viewMode: 'pattern-detail' } },
-  { path: '/pattern-register', name: 'pattern-register', component: PatternRegisterView },
-  { path: '/voice-edit', name: 'voice-edit', component: VoiceEditView },
-
-  // Other tabs
-  { path: '/analysis', name: 'analysis', component: AnalysisView },
-  { path: '/settings', name: 'settings', component: SettingsView },
-  { path: '/contact-manage', name: 'contact-manage', component: ContactManageView },
+  { path: '/auth/callback', name: 'auth-callback', component: AuthCallbackView },
+  { path: '/consent', name: 'consent', component: ConsentView, meta: { requiresAuth: true } },
+  { path: '/home', name: 'home', component: HomeView, meta: protectedMeta },
+  ...taskRoutes,
+  ...transferRoutes,
+  { path: '/patterns', name: 'patterns', component: PatternListView, props: { viewMode: 'patterns' }, meta: protectedMeta },
+  { path: '/patterns/:patternId', name: 'pattern-detail', component: PatternListView, props: { viewMode: 'pattern-detail' }, meta: protectedMeta },
+  { path: '/patterns/new', name: 'pattern-register', component: PatternRegisterView, meta: protectedMeta },
+  { path: '/patterns/:patternId/voice', name: 'voice-edit', component: VoiceEditView, meta: protectedMeta },
+  { path: '/patterns/:patternId/steps/:stepOrder/voice', name: 'step-voice-edit', component: StepVoiceEditView, meta: protectedMeta },
+  { path: '/analysis', name: 'analysis', component: AnalysisView, meta: protectedMeta },
+  { path: '/settings', name: 'settings', component: SettingsView, meta: protectedMeta },
+  { path: '/settings/people', name: 'contact-manage', component: ContactManageView, meta: protectedMeta },
+  { path: '/settings/people/edit', name: 'add-person', component: AddPersonView, meta: protectedMeta },
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
+
+const TRANSFER_CONTEXT_ROUTES = new Set([
+  'direct-transfer',
+  'direct-newaccount',
+  'guide-person',
+  'guide-account',
+  'amount-input',
+  'pin-entry',
+  'fraud-warning',
+  'final-confirm',
+]);
+
+export function installRouterGuards(pinia) {
+  router.beforeEach(async (to) => {
+    const store = useAppStore(pinia);
+    const authenticated = await store.checkSession();
+    const consentCompleted = Boolean(store.currentUser?.consents?.completed);
+
+    if (to.meta.requiresAuth && !authenticated) {
+      return { name: 'login', query: { redirect: to.fullPath } };
+    }
+    if (authenticated && (to.name === 'onboarding' || to.name === 'login')) {
+      return { name: consentCompleted ? 'home' : 'consent' };
+    }
+    if (to.name === 'consent' && consentCompleted && to.query.edit !== '1') {
+      return { name: 'home' };
+    }
+    if (to.meta.requiresConsent && !consentCompleted) return { name: 'consent' };
+
+    if (TRANSFER_CONTEXT_ROUTES.has(String(to.name)) && !store.selectedSourceAccountId) {
+      store.startTransfer();
+      return { name: 'transfer-source' };
+    }
+    if (to.name === 'complete' && !store.transferResult?.transactionId) {
+      store.startTransfer();
+      return { name: 'transfer-source' };
+    }
+    if (to.name === 'cancelled' && !store.transferCancelled) {
+      return { name: 'transfer-source' };
+    }
+
+    return true;
+  });
+
+  router.afterEach((to, from) => {
+    const store = useAppStore(pinia);
+    store.recordPatternNavigation(String(from.name ?? ''), String(to.name ?? ''));
+  });
+}
 
 export default router;

@@ -6,17 +6,35 @@
       <p className="font-normal text-[#9CA3AF] mt-1" style="font-size: 15px;">최근 7일</p>
     </div>
     <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
-      <!-- 최근 7일 Summary -->
-      <div className="grid grid-cols-3 gap-2">
-        <div
-          v-for="s in summaryData"
-          :key="s.l"
-          className="rounded-2xl p-3 text-center bg-white border border-[#F0F0EE]"
-        >
-          <p className="font-normal text-[#6B7280] leading-tight" style="font-size: 13px;">{{ s.l }}</p>
-          <p className="font-bold text-[#111827] mt-1" style="font-size: 28px;">{{ s.v }}</p>
-        </div>
-      </div>
+<!-- 최근 7일 Summary -->
+<div
+  className="rounded-[20px] border border-[#FFBC00] flex items-center justify-between px-6"
+  style="background: #FFFBEB; min-height: 92px;"
+>
+  <div className="flex flex-col gap-1">
+    <p
+      className="font-semibold"
+      style="font-size: 16px; color: #92650A;"
+    >
+      금융 업무 실행
+    </p>
+  </div>
+
+  <div className="flex items-baseline gap-1">
+    <span
+      className="font-bold text-[#111827]"
+      style="font-size: 38px; line-height: 1;"
+    >
+      12
+    </span>
+    <span
+      className="font-semibold"
+      style="font-size: 17px; color: #92650A;"
+    >
+      회
+    </span>
+  </div>
+</div>
 
       <!-- 패턴별 이용 현황 -->
       <Card className="p-4">
@@ -100,11 +118,6 @@ import NavBar from '../components/common/NavBar.vue';
 
 const store = useAppStore();
 
-const summaryData = [
-  { l: "금융 업무 실행", v: "12회" },
-  { l: "혼자 완료", v: "10회" },
-  { l: "도움 필요 단계", v: "3개" }
-];
 
 const rawUsage = [
   { id: "p4", count: 4 }, { id: "p1", count: 3 }, { id: "p2", count: 2 },

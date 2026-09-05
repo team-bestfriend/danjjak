@@ -1,288 +1,304 @@
 <template>
-  <!-- Task Transfer -->
-  <div v-if="taskName === 'task-transfer'" className="flex flex-col h-full" style="background: #FAFAF8;">
+  <!-- 등록 수취인 송금 시작 확인 -->
+  <div v-if="taskName === 'task-transfer'" class="flex flex-col h-full bg-[#FAFAF8]">
     <SafeArea />
-    <TopBar :title="`${person.relation}에게 송금`" :onBack="store.goBack" />
-    <div className="flex-1 flex flex-col items-center justify-center px-5 gap-6">
-      <div className="w-24 h-24 rounded-full flex items-center justify-center" style="background: #FFBC00;">
-        <Ic name="Transfer" />
+    <TopBar :title="(person?.relation || '가족') + '에게 송금'" :onBack="leaveTask" />
+    <div class="flex-1 flex flex-col items-center justify-center px-5 gap-6">
+      <div class="w-24 h-24 rounded-full flex items-center justify-center bg-[#FFBC00]"><Ic name="Transfer" /></div>
+      <div v-if="store.financeLoading" class="text-center text-[#6B7280]">등록 정보를 불러오고 있어요…</div>
+      <div v-else-if="store.financeError" class="w-full rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-5 text-center space-y-3">
+        <p class="text-[#991B1B]" role="alert">{{ store.financeError }}</p>
+        <Btn variant="secondary" @click="store.loadFinancialData(true)">다시 시도</Btn>
       </div>
-      <div className="text-center">
-        <p className="font-bold text-[#111827]" style="font-size: 28px;">{{ person.emoji }} {{ person.name }}</p>
-        <p className="text-[#6B7280] mt-1" style="font-size: 16px;">{{ acc.bank }} · {{ acc.masked }}</p>
+      <div v-else-if="person" class="text-center">
+        <p class="font-bold text-[#111827] text-[28px]">{{ person.emoji }} {{ person.name }}</p>
+        <p class="text-[#6B7280] mt-1 text-[16px]">{{ account?.bankName }} · {{ account?.masked }}</p>
       </div>
-      <div className="w-full space-y-3">
-        <Btn @click="store.navigate('guide-person')">시작하기</Btn>
+      <div v-else class="w-full rounded-2xl bg-white p-5 text-center">
+        <p class="font-bold text-[#111827]">연결된 수취인을 찾을 수 없어요.</p>
+        <p class="text-[#6B7280] mt-2">등록 정보를 확인한 뒤 다시 시작해 주세요.</p>
+      </div>
+      <div class="w-full space-y-3">
+        <Btn :disabled="!person || !account" @click="beginPatternTransfer">시작하기</Btn>
         <Btn variant="secondary" @click="store.goBack">돌아가기</Btn>
       </div>
     </div>
   </div>
 
-  <!-- Task 2 (Pension) -->
-  <div v-else-if="taskName === 'task-2'" className="flex flex-col h-full" style="background: #FAFAF8;">
+  <!-- 잔액·거래·분류 조회 -->
+  <div v-else-if="isInquiryTask" class="flex flex-col h-full bg-[#FAFAF8]">
     <SafeArea />
-    <TopBar title="연금 입금 확인" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
-      <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-[20px] p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-[#DCFCE7] border-2 border-[#4ADE80] flex items-center justify-center text-[#16A34A]">
-          <Ic name="Check" />
-        </div>
-        <div>
-          <p className="font-bold text-[#16A34A]" style="font-size: 14px;">입금 완료</p>
-          <p className="font-bold text-[#111827]" style="font-size: 21px;">이번 달 연금이 들어왔어요.</p>
-        </div>
+    <TopBar :title="inquiryTitle" :onBack="leaveTask" />
+    <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
+      <label v-if="store.ownedAccounts.length > 0" class="block space-y-2">
+        <span class="font-bold text-[#374151]">조회할 본인 계좌</span>
+        <select
+          :value="store.selectedInquiryAccountId || ''"
+          @change="changeAccount"
+          class="w-full min-h-[52px] rounded-[14px] border-2 border-[#E5E7EB] bg-white px-4 text-[17px] font-bold text-[#111827]"
+        >
+          <option v-for="owned in store.ownedAccounts" :key="owned.accountId" :value="owned.accountId">
+            {{ owned.accountAlias || owned.bankName }} · {{ owned.masked }}
+          </option>
+        </select>
+      </label>
+
+      <p v-if="store.financeWarning" class="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-3 text-[#92400E]" role="status">{{ store.financeWarning }}</p>
+
+      <p v-if="store.financeLoading || store.inquiryLoading" class="rounded-2xl bg-white p-5 text-[#6B7280]">금융 정보를 불러오고 있어요…</p>
+      <div v-else-if="store.financeError || store.inquiryError" class="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-5 space-y-3">
+        <p class="text-[#991B1B]" role="alert">{{ store.financeError || store.inquiryError }}</p>
+        <Btn variant="secondary" @click="prepareInquiry(true)">다시 시도</Btn>
       </div>
-      <Card className="overflow-hidden">
-        <div
-          v-for="(r, i) in pensionRows"
-          :key="i"
-          :class="['flex items-center justify-between px-5 py-4', i < pensionRows.length - 1 ? 'border-b border-[#F3F4F6]' : '']"
-        >
-          <span className="text-[#6B7280]" style="font-size: 16px;">{{ r.l }}</span>
-          <span :class="['font-bold', r.a ? 'text-[#111827]' : 'text-[#111827]']" :style="r.a ? 'font-size:22px;font-weight:900;' : 'font-size:17px;'">{{ r.v }}</span>
-        </div>
-      </Card>
-      <Btn variant="info" @click="store.navigate('pension-history')">최근 연금 내역 보기</Btn>
-    </div>
-  </div>
-
-  <!-- Task 3 (Building) -->
-  <div v-else-if="taskName === 'task-3'" className="flex flex-col h-full" style="background: #FAFAF8;">
-    <SafeArea />
-    <TopBar title="이번 달 관리비" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
-      <Card className="p-5">
-        <p className="text-[#6B7280]" style="font-size: 15px;">행복아파트 · 2026년 8월</p>
-        <div className="mt-3 flex items-end justify-between">
-          <div>
-            <p className="text-[#6B7280]" style="font-size: 14px;">납부 총액</p>
-            <p className="font-bold text-[#111827]" style="font-size: 36px;">182,400<span style="font-size:18px;">원</span></p>
+      <div v-else-if="store.ownedAccounts.length === 0" class="rounded-2xl bg-white p-5 text-center space-y-2">
+        <p class="font-bold text-[#111827] text-[19px]">조회할 본인 계좌가 없어요.</p>
+        <p class="text-[#6B7280]">수취 계좌는 조회 계좌로 사용할 수 없어요.</p>
+      </div>
+      <template v-else>
+        <Card v-if="showAccountBalance" class="p-5">
+          <p class="text-[#6B7280]">{{ selectedInquiryAccount?.bankName }} · {{ selectedInquiryAccount?.masked }}</p>
+          <div class="mt-4 flex items-center gap-3">
+            <p class="font-black text-[#111827] text-[32px]">
+              {{ balanceVisible ? formatWon(store.inquiryBalance?.balance) : '• • • • • •' }}
+            </p>
+            <button
+              @click="balanceVisible = !balanceVisible"
+              class="ml-auto min-h-[48px] rounded-xl bg-[#F3F4F6] px-4 font-bold text-[#374151]"
+            >{{ balanceVisible ? '숨기기' : '잔액 보기' }}</button>
           </div>
-          <span className="bg-[#FFF0F0] text-[#EF4444] font-bold px-3 py-1.5 rounded-full" style="font-size: 14px;">납부 전</span>
-        </div>
-        <p className="text-[#EF4444] font-medium mt-2" style="font-size: 14px;">납부 기한: 2026.08.31</p>
-      </Card>
-      <Card className="overflow-hidden">
-        <div
-          v-for="(r, i) in buildingRows"
-          :key="i"
-          :class="['flex items-center justify-between px-5 py-4', i < buildingRows.length - 1 ? 'border-b border-[#F3F4F6]' : '']"
-        >
-          <span className="text-[#374151]" style="font-size: 17px;">{{ r.l }}</span>
-          <span className="font-bold text-[#111827]" style="font-size: 17px;">{{ r.v }}</span>
-        </div>
-      </Card>
-      <Btn>관리비 납부하기</Btn>
-    </div>
-  </div>
+        </Card>
 
-  <!-- Task 4 (Balance) -->
-  <div v-else-if="taskName === 'task-4'" className="flex flex-col h-full" style="background: #FAFAF8;">
-    <SafeArea />
-    <TopBar title="내 계좌 잔액" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
-      <Card className="p-5">
-        <p className="text-[#6B7280]" style="font-size: 15px;">KB국민은행 · 생활비 계좌</p>
-        <div className="mt-4 flex items-center gap-3">
-          <p className="font-bold text-[#111827]" style="font-size: 34px;">{{ showBalance ? '2,458,300원' : '• • • • • •' }}</p>
+        <div v-if="taskName === 'task-5'" class="flex gap-2">
           <button
-            @click="showBalance = !showBalance"
-            className="ml-auto font-bold text-[#374151] bg-[#F3F4F6] px-3 py-1.5 rounded-lg"
-            style="font-size: 14px;"
+            v-for="filter in historyFilters"
+            :key="filter.key"
+            @click="historyFilter = filter.key"
+            :class="[
+              'flex-1 min-h-[48px] rounded-xl border font-bold',
+              historyFilter === filter.key ? 'bg-[#FFBC00] border-[#FFBC00] text-[#111827]' : 'bg-white border-[#E5E7EB] text-[#374151]'
+            ]"
+          >{{ filter.label }}</button>
+        </div>
+
+        <div v-if="filteredTransactions.length === 0" class="rounded-2xl bg-white p-5 text-center space-y-2">
+          <p class="font-bold text-[#111827]">{{ emptyTitle }}</p>
+          <p class="text-[#6B7280]">{{ emptyDescription }}</p>
+        </div>
+        <Card v-else class="overflow-hidden">
+          <article
+            v-for="(transaction, index) in filteredTransactions"
+            :key="transaction.transactionId"
+            :class="['px-5 py-4 space-y-2', index < filteredTransactions.length - 1 ? 'border-b border-[#F3F4F6]' : '']"
           >
-            {{ showBalance ? '숨기기' : '잔액 보기' }}
-          </button>
-        </div>
-      </Card>
-      <div
-        v-for="(t, i) in TRANSACTIONS"
-        :key="i"
-        className="flex items-center justify-between py-4 border-b border-[#F3F4F6] last:border-0"
-      >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="font-bold text-[#111827] text-[18px]">{{ transaction.counterpartyName || transaction.description }}</p>
+                <p class="text-[#6B7280] text-[14px]">{{ typeLabel(transaction.transactionType) }} · {{ formatDate(transaction.transactionAt) }}</p>
+              </div>
+              <p :class="['font-black text-[18px]', isDeposit(transaction) ? 'text-[#2563EB]' : 'text-[#374151]']">
+                {{ isDeposit(transaction) ? '+' : '-' }}{{ formatWon(transaction.amount) }}
+              </p>
+            </div>
+            <div class="flex justify-between gap-4 text-[14px] text-[#6B7280]">
+              <span>{{ transaction.description }}</span>
+              <span>거래 후 {{ formatWon(transaction.balanceAfter) }}</span>
+            </div>
+          </article>
+        </Card>
+      </template>
+    </div>
+  </div>
+
+  <!-- 고객센터 -->
+  <div v-else-if="taskName === 'task-6'" class="flex flex-col h-full bg-[#FAFAF8]">
+    <SafeArea />
+    <TopBar title="고객센터 연결" :onBack="leaveTask" />
+    <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-4">
+      <p class="font-bold text-[#111827] text-[25px]">도움이 필요하신가요?</p>
+      <p v-if="store.supportLoading" class="rounded-2xl bg-white p-5 text-[#6B7280]">고객센터 번호를 불러오고 있어요…</p>
+      <div v-else-if="store.supportError" class="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-5 space-y-3">
+        <p class="text-[#991B1B]">{{ store.supportError }}</p>
+        <Btn variant="secondary" @click="store.loadSupport(true)">다시 시도</Btn>
+      </div>
+      <Card v-else-if="store.support?.customerCenterPhone" class="p-6 text-center space-y-4">
+        <div class="w-16 h-16 mx-auto rounded-full bg-[#DBEAFE] flex items-center justify-center text-[#2563EB]"><Ic name="Phone" /></div>
         <div>
-          <p className="font-bold text-[#111827]" style="font-size: 17px;">{{ t.desc }}</p>
-          <p className="text-[#9CA3AF]" style="font-size: 13px;">{{ t.date }}</p>
+          <p class="text-[#6B7280]">단짝 고객센터</p>
+          <p class="font-black text-[#111827] text-[28px] mt-1">{{ store.support.customerCenterPhone }}</p>
         </div>
-        <span :class="['font-bold', t.income ? 'text-[#2563EB]' : 'text-[#374151]']" style="font-size: 17px;">{{ t.amount }}원</span>
+        <a
+          :href="'tel:' + store.support.customerCenterPhone"
+          @click="completeSupportTask"
+          class="flex min-h-[58px] w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-5 text-[18px] font-bold text-white"
+        >전화 연결하기</a>
+        <p class="text-[#6B7280] text-[14px]">컴퓨터에서는 전화번호를 확인한 뒤 휴대전화로 걸어 주세요.</p>
+      </Card>
+      <div v-else class="rounded-2xl bg-white p-5 text-center space-y-3">
+        <p class="font-bold text-[#111827]">고객센터 번호가 없어요.</p>
+        <p class="text-[#6B7280] mt-2">잠시 후 다시 조회해 주세요.</p>
+        <Btn variant="secondary" @click="store.loadSupport(true)">번호 다시 불러오기</Btn>
       </div>
     </div>
   </div>
 
-  <!-- Task 5 (History) -->
-  <div v-else-if="taskName === 'task-5'" className="flex flex-col h-full" style="background: #FAFAF8;">
+  <!-- MVP 제외 기능 -->
+  <div v-else class="flex flex-col h-full bg-[#FAFAF8]">
     <SafeArea />
-    <TopBar title="거래내역" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-3">
-      <div className="flex gap-2">
-        <button
-          v-for="f in ['전체', '입금', '출금']"
-          :key="f"
-          @click="historyFilter = f"
-          :class="['flex-1 rounded-xl font-bold border', historyFilter === f ? 'bg-[#FFBC00] border-[#FFBC00] text-[#111827]' : 'bg-white border-[#EBEBEA] text-[#374151]']"
-          style="height: 48px; font-size: 16px;"
-        >
-          {{ f }}
-        </button>
-      </div>
-      <Card className="overflow-hidden">
-        <div
-          v-for="(t, i) in filteredTransactions"
-          :key="i"
-          :class="['flex items-center justify-between px-5 py-4', i < filteredTransactions.length - 1 ? 'border-b border-[#F3F4F6]' : '']"
-        >
-          <div>
-            <p className="font-bold text-[#111827]" style="font-size: 17px;">{{ t.desc }}</p>
-            <p className="text-[#9CA3AF]" style="font-size: 13px;">2026.{{ t.date }}</p>
-          </div>
-          <span :class="['font-bold', t.income ? 'text-[#2563EB]' : 'text-[#374151]']" style="font-size: 17px;">{{ t.amount }}원</span>
-        </div>
-      </Card>
-    </div>
-  </div>
-
-  <!-- Task 6 (Support) -->
-  <div v-else-if="taskName === 'task-6'" className="flex flex-col h-full" style="background: #FAFAF8;">
-    <SafeArea />
-    <TopBar title="고객센터" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-3">
-      <p className="font-bold text-[#111827]" style="font-size: 24px;">어떤 도움이 필요하세요?</p>
-      <Card
-        v-for="item in supportItems"
-        :key="item.l"
-        className="px-5 py-4 flex items-center gap-4"
-      >
-        <div className="text-[#9CA3AF]"><Ic :name="item.I" /></div>
-        <span className="flex-1 font-bold text-[#111827]" style="font-size: 18px;">{{ item.l }}</span>
-        <Ic name="ChevR" />
-      </Card>
-      <div className="bg-white border border-[#E5E7EB] rounded-[20px] p-5 text-center space-y-3">
-        <p className="font-bold text-[#374151]" style="font-size: 18px;">KB 고객센터 1588-9999</p>
-        <Btn @click="supportModal = true">전화 연결하기</Btn>
-      </div>
-    </div>
-    <BottomSheet :open="supportModal" @close="supportModal = false" title="전화 연결할까요?">
-      <SheetRow label="전화 연결하기" color="#2563EB" @click="supportModal = false" />
-      <SheetRow label="취소" @click="supportModal = false" />
-    </BottomSheet>
-  </div>
-
-  <!-- Pension History -->
-  <div v-else-if="taskName === 'pension-history'" className="flex flex-col h-full" style="background: #FAFAF8;">
-    <SafeArea />
-    <TopBar title="연금 내역" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-3">
-      <Card v-for="m in ['2026년 8월', '2026년 7월', '2026년 6월']" :key="m" className="p-5 flex items-center justify-between">
-        <div>
-          <p className="font-bold text-[#111827]" style="font-size: 18px;">국민연금</p>
-          <p className="text-[#6B7280]" style="font-size: 14px;">{{ m }}</p>
-        </div>
-        <span className="font-bold text-[#2563EB]" style="font-size: 20px;">+650,000원</span>
-      </Card>
-    </div>
-  </div>
-
-  <!-- Simple Task -->
-  <div v-else className="flex flex-col h-full" style="background: #FAFAF8;">
-    <SafeArea />
-    <TopBar :title="simpleTaskConfig.title" :onBack="store.goBack" />
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
-      <div className="flex flex-col items-center gap-3 py-4">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center" style="background: #FFBC00;">
-          <Ic :name="simpleTaskConfig.icon" />
-        </div>
-        <p className="font-bold text-[#111827]" style="font-size: 25px;">{{ simpleTaskConfig.title }}</p>
-      </div>
-      <Card className="overflow-hidden">
-        <div
-          v-for="(r, i) in simpleTaskConfig.rows"
-          :key="i"
-          :class="['flex items-center justify-between px-5 py-4', i < simpleTaskConfig.rows.length - 1 ? 'border-b border-[#F3F4F6]' : '']"
-        >
-          <span className="text-[#6B7280]" style="font-size: 16px;">{{ r.l }}</span>
-          <span className="font-bold text-[#111827]" style="font-size: 17px;">{{ r.v }}</span>
-        </div>
-      </Card>
-      <Btn variant="secondary" @click="store.goBack">홈으로</Btn>
+    <TopBar title="준비 중인 기능" :onBack="leaveTask" />
+    <div class="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
+      <div class="w-20 h-20 rounded-full bg-[#E5E7EB] flex items-center justify-center"><Ic name="Gear" /></div>
+      <p class="font-bold text-[#111827] text-[24px]">이 기능은 아직 준비 중이에요.</p>
+      <p class="text-[#6B7280] text-[17px]">현재 시연에서는 잔액, 거래내역, 연금, 관리비, 공과금 조회를 이용할 수 있어요.</p>
+      <Btn variant="secondary" @click="store.goBack">돌아가기</Btn>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useAppStore } from '../stores/appStore';
-import { TRANSACTIONS } from '../constants/data';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 import Card from '../components/common/Card.vue';
 import Btn from '../components/common/Btn.vue';
 import Ic from '../components/common/Ic.vue';
-import BottomSheet from '../components/common/BottomSheet.vue';
-import SheetRow from '../components/common/SheetRow.vue';
 
 const props = defineProps({
-  taskName: { type: String, required: true }
+  taskName: { type: String, required: true },
 });
 
 const store = useAppStore();
-
-const showBalance = ref(false);
-const historyFilter = ref('전체');
-const supportModal = ref(false);
-
-const pid = computed(() => store.activePattern?.personId ?? 1);
-const person = computed(() => store.people.find((p) => p.id === pid.value) || store.people[0]);
-const accounts = computed(() => store.accountsByPerson[pid.value] || store.accountsByPerson[1] || []);
-const acc = computed(() => accounts.value.find((a) => a.masked === store.activePattern?.accountMasked) || accounts.value[0] || {});
-
-const pensionRows = [
-  { l: "기간", v: "2026년 8월" },
-  { l: "종류", v: "국민연금" },
-  { l: "입금 금액", v: "650,000원", a: true },
-  { l: "입금일", v: "2026.08.25" },
-  { l: "입금 계좌", v: "KB국민은행 생활비계좌" }
+const balanceVisible = ref(false);
+const historyFilter = ref('ALL');
+const historyFilters = [
+  { key: 'ALL', label: '전체' },
+  { key: 'DEPOSIT', label: '입금' },
+  { key: 'OUTGOING', label: '출금' },
 ];
 
-const buildingRows = [
-  { l: "전기요금", v: "42,300원" },
-  { l: "수도요금", v: "18,100원" },
-  { l: "공용관리비", v: "122,000원" }
-];
-
+const taskConfig = computed(() => ({
+  'task-2': { title: '연금 입금 내역', category: 'PENSION' },
+  'pension-history': { title: '연금 입금 내역', category: 'PENSION' },
+  'task-3': { title: '관리비 내역', category: 'MANAGEMENT_FEE' },
+  'task-4': { title: '내 계좌 잔액', category: null },
+  'task-5': { title: '거래내역', category: null },
+  'task-8': { title: '공과금 내역', category: 'UTILITY_BILL' },
+}[props.taskName] ?? null));
+const isInquiryTask = computed(() => Boolean(taskConfig.value));
+const inquiryTitle = computed(() => taskConfig.value?.title ?? '금융 조회');
+const showAccountBalance = computed(() => ['task-4', 'task-5'].includes(props.taskName));
+const selectedInquiryAccount = computed(() => (
+  store.ownedAccounts.find((owned) => owned.accountId === store.selectedInquiryAccountId) ?? null
+));
 const filteredTransactions = computed(() => {
-  if (historyFilter.value === '입금') return TRANSACTIONS.filter((t) => t.income);
-  if (historyFilter.value === '출금') return TRANSACTIONS.filter((t) => !t.income);
-  return TRANSACTIONS;
+  if (historyFilter.value === 'DEPOSIT') {
+    return store.inquiryTransactions.filter((transaction) => transaction.transactionType === 'DEPOSIT');
+  }
+  if (historyFilter.value === 'OUTGOING') {
+    return store.inquiryTransactions.filter((transaction) => transaction.transactionType !== 'DEPOSIT');
+  }
+  return store.inquiryTransactions;
+});
+const emptyTitle = computed(() => {
+  if (taskConfig.value?.category) return '이 분류의 거래가 없어요.';
+  if (historyFilter.value !== 'ALL') return '선택한 입출금 내역이 없어요.';
+  return '거래내역이 없어요.';
+});
+const emptyDescription = computed(() => (
+  taskConfig.value?.category
+    ? '선택한 계좌의 ' + inquiryTitle.value + '을 확인했어요.'
+    : '선택한 계좌의 전체 기간을 확인했어요.'
+));
+const person = computed(() => (
+  store.people.find((item) => item.id === (store.activePattern?.personId ?? store.selectedPersonId))
+    ?? null
+));
+const account = computed(() => store.accountsByPerson[person.value?.id]?.[0] ?? null);
+
+onMounted(async () => {
+  if (props.taskName === 'task-6') {
+    await store.loadSupport();
+    return;
+  }
+  if (props.taskName === 'task-transfer') {
+    await store.loadFinancialData();
+    return;
+  }
+  if (isInquiryTask.value) await prepareInquiry();
 });
 
-const supportItems = [
-  { I: "Transfer", l: "금융 상담" },
-  { I: "Warning", l: "보이스피싱 신고" },
-  { I: "Wallet", l: "카드 분실" },
-  { I: "Gear", l: "앱 사용 도움" }
-];
+watch(() => props.taskName, async () => {
+  historyFilter.value = 'ALL';
+  if (isInquiryTask.value) await prepareInquiry();
+});
 
-const simpleTaskConfigs = {
-  'task-8': {
-    title: "공과금 확인", icon: "Building",
-    rows: [{ l: "전기요금", v: "24,800원" }, { l: "수도요금", v: "9,200원" }, { l: "가스요금", v: "31,500원" }, { l: "납부 기한", v: "2026.08.31" }]
-  },
-  'task-9': {
-    title: "자동이체 확인", icon: "Repeat",
-    rows: [{ l: "KB국민→이정훈", v: "월 200,000원" }, { l: "보험료", v: "월 85,000원" }, { l: "다음 이체일", v: "2026.09.01" }]
-  },
-  'task-10': {
-    title: "카드 이용내역", icon: "CreditCard",
-    rows: [{ l: "이번 달 사용액", v: "342,000원" }, { l: "결제일", v: "2026.09.15" }, { l: "최근 결제", v: "OO마트 32,000원" }]
-  },
-  'task-11': {
-    title: "예금 만기 확인", icon: "Safe",
-    rows: [{ l: "상품명", v: "KB정기예금" }, { l: "만기일", v: "2026.12.01" }, { l: "금액", v: "5,000,000원" }, { l: "금리", v: "연 3.5%" }]
-  },
-  'task-12': {
-    title: "환율 확인", icon: "Globe",
-    rows: [{ l: "USD/KRW", v: "1,385원" }, { l: "EUR/KRW", v: "1,498원" }, { l: "JPY/KRW", v: "9.21원" }, { l: "기준 시각", v: "오늘 09:00" }]
+async function prepareInquiry(force = false) {
+  const loaded = await store.loadFinancialData(force);
+  if (!loaded) return;
+  const accountId = store.selectedInquiryAccountId ?? store.defaultOwnedAccount?.accountId;
+  if (accountId) {
+    await store.loadInquiry(accountId, taskConfig.value?.category ?? null);
+    if (!store.inquiryError && store.activePatternDetail) {
+      await store.finishPatternExecution('COMPLETED');
+    }
   }
-};
+}
 
-const simpleTaskConfig = computed(() => simpleTaskConfigs[props.taskName] || { title: "상세 확인", icon: "Building", rows: [] });
+async function changeAccount(event) {
+  const accountId = Number(event.target.value);
+  await store.loadInquiry(accountId, taskConfig.value?.category ?? null);
+}
+
+async function beginPatternTransfer() {
+  await store.loadFinancialData();
+  if (!person.value || !account.value) return;
+  store.startTransfer({ pattern: true, personId: person.value.id });
+  store.selectPerson(person.value.id);
+  store.navigate('transfer-source');
+}
+
+async function completeSupportTask() {
+  if (store.activePatternDetail) await store.finishPatternExecution('COMPLETED');
+}
+
+async function leaveTask() {
+  if (store.activePatternDetail) {
+    store.recordPatternAction('back');
+    await store.finishPatternExecution('CANCELLED');
+    await store.navigate('home', { replace: true });
+    return;
+  }
+  store.goBack();
+}
+
+function isDeposit(transaction) {
+  return transaction.transactionType === 'DEPOSIT';
+}
+
+function formatWon(value) {
+  return Number(value ?? 0).toLocaleString('ko-KR') + '원';
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '시각 확인 불가';
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function typeLabel(type) {
+  const labels = {
+    DEPOSIT: '입금',
+    WITHDRAWAL: '출금',
+    TRANSFER_OUT: '송금',
+    PAYMENT: '납부',
+  };
+  return labels[type] ?? type;
+}
 </script>

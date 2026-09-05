@@ -1,62 +1,67 @@
 <template>
   <div
-    className="bg-white rounded-[28px] mx-5 overflow-hidden w-full max-w-[340px]"
+    class="mx-5 w-full max-w-[340px] overflow-hidden rounded-[28px] bg-white"
     style="box-shadow: 0 8px 40px rgba(0,0,0,0.22);"
     @click.stop
   >
-    <!-- Header: KB Yellow, dark text -->
-    <div className="flex flex-col items-center justify-center gap-2 px-8 pt-10 pb-8" style="background: #FFBC00;">
-      <span className="font-black text-[#111827] leading-none" style="font-size: 76px;">{{ pat.num }}</span>
-      <span className="font-black text-[#111827] text-center" style="font-size: 22px; margin-top: 4px;">{{ pat.label }}</span>
-      <span v-if="person" className="text-[15px] font-bold" style="color: rgba(0,0,0,0.55);">
+    <div class="flex flex-col items-center justify-center gap-2 px-8 pb-8 pt-10" style="background: #FFBC00;">
+      <span class="font-black leading-none text-[#111827]" style="font-size: 76px;">{{ pat.num }}</span>
+      <span class="text-center font-black text-[#111827]" style="font-size: 22px; margin-top: 4px;">{{ pat.label }}</span>
+      <span v-if="person" class="text-[15px] font-bold" style="color: rgba(0,0,0,0.55);">
         {{ person.emoji }} {{ person.name }} · {{ person.relation }}
       </span>
     </div>
 
-    <div className="p-5 space-y-4">
+    <div class="space-y-4 p-5">
       <div>
-        <p className="text-[13px] font-bold text-[#9CA3AF] uppercase tracking-wide mb-2">업무 안내 · 자동 TTS</p>
-        <div className="flex items-center gap-3">
+        <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · 자동 TTS</p>
+        <div class="flex items-center gap-3">
           <button
-            @click="togglePlaying"
-            :disabled="loading"
-            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[14px] font-bold"
+            type="button"
+            class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-[14px] font-bold disabled:opacity-50"
             style="background: #FFF3CC; color: #92650A;"
+            :disabled="loading"
+            :aria-label="playing ? '업무 안내 일시 정지' : '업무 안내 재생'"
+            @click="toggle"
           >
-            {{ playing ? '⏸' : '▶' }}
+            {{ loading ? '…' : playing ? '⏸' : '▶' }}
           </button>
-          <div className="flex-1">
-            <p className="text-[14px] font-bold text-[#111827] mb-1.5">"{{ quote }}"</p>
-            <div className="flex items-end gap-px h-5">
+          <div class="flex-1">
+            <p class="mb-1.5 text-[14px] font-bold text-[#111827]">“{{ quote }}”</p>
+            <div class="flex h-5 items-end gap-px" aria-hidden="true">
               <div
-                v-for="(_, i) in 28"
-                :key="i"
-                :class="['flex-1 rounded-sm transition-colors']"
+                v-for="(_, index) in 28"
+                :key="index"
+                class="flex-1 rounded-sm"
                 :style="{
-                  height: `${Math.max(3, Math.abs(Math.sin(i * 0.9)) * 12 + 3)}px`,
-                  backgroundColor: (i / 28) < (prog / 100) ? '#FFBC00' : '#F3F4F6'
+                  height: `${Math.max(3, Math.abs(Math.sin(index * 0.9)) * 12 + 3)}px`,
+                  backgroundColor: playing ? '#FFBC00' : '#F3F4F6',
                 }"
               />
             </div>
           </div>
         </div>
+        <p v-if="familyFallback" class="mt-2 text-[13px] text-[#6B7280]" role="status">
+          시작 안내용 가족 음성이 없어 자동 음성으로 안내해요.
+        </p>
+        <p v-if="error" class="mt-2 text-[13px] text-[#B91C1C]" role="alert">
+          {{ error }} 화면의 업무 설명은 계속 확인할 수 있어요.
+        </p>
       </div>
 
-      <div className="flex gap-2 pt-1">
+      <div class="flex gap-2 pt-1">
         <button
+          type="button"
+          class="h-14 flex-1 rounded-[14px] border-2 border-[#E5E7EB] font-bold text-[#374151]"
+          style="font-size: 17px;"
           @click="$emit('cancel')"
-          className="flex-1 rounded-[14px] border-2 border-[#E5E7EB] font-bold text-[#374151]"
-          style="height: 56px; font-size: 17px;"
-        >
-          취소하기
-        </button>
+        >취소하기</button>
         <button
+          type="button"
+          class="h-14 flex-1 rounded-[14px] font-black text-[#111827]"
+          style="font-size: 17px; background: #FFBC00;"
           @click="$emit('start')"
-          className="flex-1 rounded-[14px] font-black text-[#111827]"
-          style="height: 56px; font-size: 17px; background: #FFBC00;"
-        >
-          시작하기
-        </button>
+        >시작하기</button>
       </div>
     </div>
   </div>
@@ -64,25 +69,26 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useAppStore } from '../../stores/appStore';
-import { generatePatternDesc } from '../../constants/data';
-import { useTtsAudio } from '../../composables/useTtsAudio';
+import { useTtsAudio } from '../../composables/useTtsAudio.js';
+import { generatePatternDesc } from '../../constants/data.js';
+import { useAppStore } from '../../stores/appStore.js';
 
-const props = defineProps({
-  pat: { type: Object, required: true }
-});
-
+const props = defineProps({ pat: { type: Object, required: true } });
 defineEmits(['cancel', 'start']);
-
 const store = useAppStore();
 
 const person = computed(() => {
-  return props.pat.personId ? store.people.find((p) => p.id === props.pat.personId) : null;
+  if (!props.pat.personId) return null;
+  return store.people.find((item) => item.id === props.pat.personId) ?? {
+    name: props.pat.linkedAccount?.registeredPersonName,
+    relation: props.pat.linkedAccount?.relationship,
+    emoji: props.pat.linkedAccount?.relationship === '아들' ? '👨' : '👩',
+  };
 });
-
-const quote = computed(() => {
-  return generatePatternDesc(props.pat, store.people, store.accountsByPerson);
-});
-
-const { playing, loading, progress: prog, toggle: togglePlaying } = useTtsAudio(quote);
+const quote = computed(() => (
+  props.pat.description || generatePatternDesc(props.pat, store.people, store.accountsByPerson)
+));
+const speed = computed(() => store.currentUser?.settings?.voiceSpeed ?? 'NORMAL');
+const familyFallback = computed(() => store.currentUser?.settings?.guideVoiceType === 'FAMILY');
+const { playing, loading, error, toggle } = useTtsAudio(quote, { speed, autoplay: true });
 </script>

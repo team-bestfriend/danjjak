@@ -17,9 +17,11 @@
         v-for="(k, i) in keys"
         :key="i"
         @click="k === 'DEL' ? del() : k ? add(k) : undefined"
+        :disabled="disabled || locked"
         :class="[
           'h-[62px] rounded-2xl text-[24px] font-bold transition-all active:scale-95 flex items-center justify-center',
-          k === '' ? 'bg-transparent pointer-events-none' : k === 'DEL' ? 'bg-[#F9FAFB] text-[#6B7280] border border-[#EBEBEA]' : 'bg-white border border-[#EBEBEA] text-[#111827]'
+          k === '' ? 'bg-transparent pointer-events-none' : k === 'DEL' ? 'bg-[#F9FAFB] text-[#6B7280] border border-[#EBEBEA]' : 'bg-white border border-[#EBEBEA] text-[#111827]',
+          disabled || locked ? 'opacity-50 cursor-not-allowed' : ''
         ]"
       >
         <Ic v-if="k === 'DEL'" name="Del" />
@@ -30,26 +32,39 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import Ic from './Ic.vue';
 
 const emit = defineEmits(['complete']);
+defineProps({
+  disabled: { type: Boolean, default: false },
+});
 const digits = ref([]);
+const locked = ref(false);
+let completionTimer = null;
 const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "DEL"];
 
 function add(d) {
-  if (digits.value.length < 4) {
+  if (!locked.value && digits.value.length < 4) {
     digits.value.push(d);
     if (digits.value.length === 4) {
-      setTimeout(() => {
+      const pin = digits.value.join('');
+      locked.value = true;
+      completionTimer = setTimeout(() => {
         digits.value = [];
-        emit('complete');
+        locked.value = false;
+        emit('complete', pin);
       }, 400);
     }
   }
 }
 
 function del() {
+  if (locked.value) return;
   digits.value.pop();
 }
+
+onBeforeUnmount(() => {
+  if (completionTimer) clearTimeout(completionTimer);
+});
 </script>

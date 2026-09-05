@@ -2,33 +2,71 @@
   <!-- TTS Mode -->
   <div v-if="mode === 'tts'" className="flex flex-col h-full" style="background: #FAFAF8;">
     <SafeArea />
-    <TopBar title="TTS 자동 음성" :onBack="() => mode = 'select'" />
+    <TopBar title="TTS 자동 음성" :onBack="() => { mode = 'select'; ttsEditing = false; }" />
     <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4">
+      <!-- 헤더 + 편집 버튼 -->
+      <div className="flex items-center justify-between">
+        <p className="font-bold text-[#111827]" style="font-size: 22px;">재생될 문구</p>
+        <button
+          @click="ttsEditing = !ttsEditing; if(ttsEditing && !customTtsText) customTtsText = descText"
+          className="font-semibold rounded-[10px] px-3 py-1.5"
+          :style="ttsEditing ? 'background:#FFBC00;color:#111827;font-size:17px;' : 'background:#F3F4F6;color:#374151;font-size:17px;'"
+        >{{ ttsEditing ? '완료' : '편집' }}</button>
+      </div>
+      <template v-if="ttsEditing">
+        <textarea
+          v-model="customTtsText"
+          :placeholder="descText"
+          rows="3"
+          className="w-full rounded-[14px] border-2 border-[#FFBC00] outline-none px-4 py-3 resize-none"
+          style="font-size: 15px; font-weight: 500; color: #111827; background: #FFFBEB; line-height: 1.5;"
+        />
+        <button @click="customTtsText = ''; ttsEditing = false" className="w-full py-2 font-medium text-[#9CA3AF]" style="font-size: 14px;">초기화 (기본 문구로 되돌리기)</button>
+      </template>
       <Card className="p-5 border-2 border-[#FFBC00]">
         <p className="font-black text-[#92650A] mb-2" style="font-size: 13px;">패턴 설명 문구</p>
-        <p className="font-bold text-[#111827] mb-4" style="font-size: 17px;">"{{ descText }}"</p>
-        <button
-          @click="playing = !playing"
-          className="flex items-center gap-2 font-bold text-[#2563EB]"
-          style="font-size: 15px;"
-        >
-          <div className="w-10 h-10 rounded-full bg-[#DBEAFE] flex items-center justify-center">
-            {{ playing ? '⏸' : '▶' }}
-          </div>
+        <p
+          className="mb-4 leading-snug"
+          :style="customTtsText ? 'font-size:16px;font-weight:700;color:#111827;' : 'font-size:15px;font-weight:400;color:#9CA3AF;'"
+        >"{{ customTtsText || descText }}"</p>
+        <button @click="playing = !playing" className="flex items-center gap-2 font-bold text-[#2563EB]" style="font-size: 15px;">
+          <div className="w-10 h-10 rounded-full bg-[#DBEAFE] flex items-center justify-center">{{ playing ? '⏸' : '▶' }}</div>
           미리 듣기
         </button>
       </Card>
-      <Btn @click="store.goBack">이 음성으로 저장</Btn>
-      <Btn variant="secondary" @click="mode = 'select'">취소</Btn>
+      <Btn @click="ttsEditing = false; store.goBack()">이 음성으로 저장</Btn>
+      <Btn variant="secondary" @click="mode = 'select'; ttsEditing = false;">취소</Btn>
     </div>
   </div>
 
   <!-- Family Mode -->
   <div v-else-if="mode === 'family'" className="flex flex-col h-full" style="background: #FAFAF8;">
     <SafeArea />
-    <TopBar title="가족 음성 녹음" :onBack="() => { mode = 'select'; recState = 'idle'; }" />
+    <TopBar title="가족 음성 녹음" :onBack="() => { mode = 'select'; recState = 'idle'; ttsEditing = false; }" />
     <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 space-y-4">
-      <p className="font-bold text-[#111827]" style="font-size: 26px;">가족 음성 녹음</p>
+      <!-- 헤더 + 편집 버튼 -->
+      <div className="flex items-center justify-between">
+        <p className="font-bold text-[#111827]" style="font-size: 22px;">가족 음성 녹음</p>
+        <button
+          @click="ttsEditing = !ttsEditing; if(ttsEditing && !customTtsText) customTtsText = descText"
+          className="font-semibold rounded-[10px] px-3 py-1.5"
+          :style="ttsEditing ? 'background:#FFBC00;color:#111827;font-size:17px;' : 'background:#F3F4F6;color:#374151;font-size:17px;'"
+        >{{ ttsEditing ? '완료' : '편집' }}</button>
+      </div>
+      <template v-if="ttsEditing">
+        <textarea
+          v-model="customTtsText"
+          :placeholder="descText"
+          rows="3"
+          className="w-full rounded-[14px] border-2 border-[#FFBC00] outline-none px-4 py-3 resize-none"
+          style="font-size: 15px; font-weight: 500; color: #111827; background: #FFFBEB; line-height: 1.5;"
+        />
+        <button @click="customTtsText = ''; ttsEditing = false" className="w-full py-2 font-medium text-[#9CA3AF]" style="font-size: 14px;">초기화 (기본 문구로 되돌리기)</button>
+      </template>
+      <div className="rounded-[18px] border border-[#FFBC00] px-4 py-4" style="background: #FFFBEB;">
+        <p className="font-bold text-[#92650A] mb-2" style="font-size: 13px;">📢 다음을 읽어주세요</p>
+        <p className="font-bold text-[#111827] leading-snug" style="font-size: 17px; word-break: keep-all;">"{{ customTtsText || descText }}"</p>
+      </div>
 
       <button
         v-if="recState === 'idle'"
@@ -121,6 +159,8 @@ const mode = ref("select");
 const recState = ref("idle");
 const recSec = ref(0);
 const playing = ref(false);
+const customTtsText = ref(store.activePattern?.customTtsText || "");
+const ttsEditing = ref(false);
 let timer = null;
 
 const descText = computed(() => {
