@@ -3,6 +3,7 @@ package com.bestfriend.danjjak.user.model;
 public class UserSettingsRecord {
 
     private long userId;
+    private Long kakaoUserId;
     private String name;
     private boolean usageLogAgreed;
     private boolean guardianShareAgreed;
@@ -17,6 +18,14 @@ public class UserSettingsRecord {
 
     public void setUserId(long userId) {
         this.userId = userId;
+    }
+
+    public Long getKakaoUserId() {
+        return kakaoUserId;
+    }
+
+    public void setKakaoUserId(Long kakaoUserId) {
+        this.kakaoUserId = kakaoUserId;
     }
 
     public String getName() {

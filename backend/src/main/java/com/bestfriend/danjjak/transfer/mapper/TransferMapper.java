@@ -24,6 +24,11 @@ public interface TransferMapper {
             @Param("patternExecutionId") long patternExecutionId,
             @Param("sourceAccountId") long sourceAccountId);
 
+    int assignPatternExecutionSource(
+            @Param("userId") long userId,
+            @Param("patternExecutionId") long patternExecutionId,
+            @Param("sourceAccountId") long sourceAccountId);
+
     int countRecentTransfers(
             @Param("userId") long userId,
             @Param("from") LocalDateTime from,
@@ -37,6 +42,8 @@ public interface TransferMapper {
     int insertTransaction(TransactionCommand command);
 
     int insertAnomaly(AnomalyCommand command);
+
+    AnomalyRecord findPendingMatchingAnomalyForUpdate(AnomalyCommand command);
 
     AnomalyRecord findAnomalyForUpdate(
             @Param("userId") long userId, @Param("anomalyEventId") long anomalyEventId);

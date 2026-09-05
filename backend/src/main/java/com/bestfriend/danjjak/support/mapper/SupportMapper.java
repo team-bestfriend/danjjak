@@ -9,6 +9,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface SupportMapper {
 
+    boolean hasGuardianShareConsent(long userId);
+
     GuardianContactRecord findGuardian(long userId);
 
     int upsertGuardian(

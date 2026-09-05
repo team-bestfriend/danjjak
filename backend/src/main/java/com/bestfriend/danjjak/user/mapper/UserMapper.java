@@ -9,6 +9,13 @@ public interface UserMapper {
 
     UserSettingsRecord findCurrentUser(long userId);
 
+    UserSettingsRecord findByKakaoUserId(long kakaoUserId);
+
+    UserSettingsRecord findFirstUnlinkedUser();
+
+    int bindKakaoUserId(
+            @Param("userId") long userId, @Param("kakaoUserId") long kakaoUserId);
+
     int updateConsents(
             @Param("userId") long userId,
             @Param("usageLogAgreed") boolean usageLogAgreed,

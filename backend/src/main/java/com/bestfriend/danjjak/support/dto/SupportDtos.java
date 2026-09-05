@@ -25,5 +25,6 @@ public final class SupportDtos {
             String result,
             boolean actualAttempted,
             boolean actualSucceeded,
-            String detail) {}
+            String detail,
+            String sentAt) {}
 }
