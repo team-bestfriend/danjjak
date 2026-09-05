@@ -65,6 +65,8 @@ class SupportDatabaseIntegrationTest {
 
     @Test
     void distinguishesNoTokenFailureAndActualSuccessWithoutPersistingFailures() {
+        jdbcTemplate.update(
+                "UPDATE users SET guardian_share_agreed = TRUE WHERE user_id = ?", 1L);
         long anomalyEventId = createHighAnomaly();
 
         var noToken = notificationService.notify(1L, anomalyEventId, null);
@@ -94,7 +96,8 @@ class SupportDatabaseIntegrationTest {
 
         assertEquals("SENT", sent.result());
         assertTrue(sentMessage.get().contains("10,000,000원"));
-        assertNotNull(guardianNotifiedAt(anomalyEventId));
+        assertNotNull(sent.sentAt());
+        assertEquals(LocalDateTime.parse(sent.sentAt()), guardianNotifiedAt(anomalyEventId));
     }
 
     private long createHighAnomaly() {

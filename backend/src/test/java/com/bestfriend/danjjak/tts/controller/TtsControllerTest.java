@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bestfriend.danjjak.common.error.GlobalExceptionHandler;
+import com.bestfriend.danjjak.common.session.DemoSessionUserResolver;
 import com.bestfriend.danjjak.tts.dto.TtsDtos.TtsRequest;
 import com.bestfriend.danjjak.tts.service.TtsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import javax.servlet.http.HttpSession;
 
 class TtsControllerTest {
 
@@ -24,9 +26,11 @@ class TtsControllerTest {
     @BeforeEach
     void setUp() {
         TtsService ttsService = mock(TtsService.class);
+        DemoSessionUserResolver userResolver = mock(DemoSessionUserResolver.class);
+        when(userResolver.resolveUserId(any(HttpSession.class))).thenReturn(1L);
         when(ttsService.createSpeech(any(TtsRequest.class))).thenReturn(new byte[] {1, 2, 3});
         mockMvc =
-                MockMvcBuilders.standaloneSetup(new TtsController(ttsService))
+                MockMvcBuilders.standaloneSetup(new TtsController(ttsService, userResolver))
                         .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
     }

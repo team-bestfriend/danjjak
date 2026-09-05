@@ -3,6 +3,7 @@ package com.bestfriend.danjjak.transfer.controller;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -80,5 +81,33 @@ class TransferControllerTest {
                                 .content("{\"action\":\"CANCEL\",\"rechecked\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("\"action\":\"CANCEL\"")));
+    }
+
+    @Test
+    void rejectsDirectRecipientWithInvalidAccountNumber() throws Exception {
+        mockMvc.perform(
+                        post("/api/transfers")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"sourceAccountId\":1,\"directRecipient\":{"
+                                                + "\"name\":\"박친구\",\"bankCode\":\"004\","
+                                                + "\"bankName\":\"국민은행\",\"accountNumber\":\"ABC\"},"
+                                                + "\"amount\":1000,\"pin\":\"1234\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("\"code\":\"INVALID_REQUEST\"")));
+
+        verifyNoInteractions(transferService);
+    }
+
+    @Test
+    void rejectsAnomalyDecisionWithoutRecheckedValue() throws Exception {
+        mockMvc.perform(
+                        post("/api/anomaly-events/40/resolve")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"action\":\"CANCEL\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("\"code\":\"INVALID_REQUEST\"")));
+
+        verifyNoInteractions(transferService);
     }
 }

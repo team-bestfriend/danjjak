@@ -28,7 +28,13 @@ class UserMapperBindingTest {
         }
 
         String namespace = UserMapper.class.getName() + ".";
-        List.of("findCurrentUser", "updateConsents", "updateSettings")
+        List.of(
+                        "findCurrentUser",
+                        "findByKakaoUserId",
+                        "findFirstUnlinkedUser",
+                        "bindKakaoUserId",
+                        "updateConsents",
+                        "updateSettings")
                 .forEach(name -> assertTrue(configuration.hasStatement(namespace + name)));
     }
 }
