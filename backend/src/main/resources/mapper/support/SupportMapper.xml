@@ -16,7 +16,14 @@
         <result property="amount" column="amount"/>
         <result property="riskLevel" column="risk_level"/>
         <result property="finalAction" column="final_action"/>
+        <result property="guardianNotifiedAt" column="guardian_notified_at"/>
     </resultMap>
+
+    <select id="hasGuardianShareConsent" resultType="boolean">
+        SELECT guardian_share_agreed
+        FROM users
+        WHERE user_id = #{userId}
+    </select>
 
     <select id="findGuardian" resultMap="guardianContactMap">
         SELECT guardian_contact_id,
@@ -37,7 +44,8 @@
                recipient_name,
                amount,
                risk_level,
-               final_action
+               final_action,
+               guardian_notified_at
         FROM anomaly_events
         WHERE user_id = #{userId}
           AND anomaly_event_id = #{anomalyEventId}
@@ -51,5 +59,6 @@
           AND anomaly_event_id = #{anomalyEventId}
           AND risk_level = 'HIGH'
           AND final_action IS NULL
+          AND guardian_notified_at IS NULL
     </update>
 </mapper>

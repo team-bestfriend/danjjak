@@ -36,6 +36,7 @@ class TransferMapperBindingTest {
                         "debitAccount",
                         "insertTransaction",
                         "insertAnomaly",
+                        "findPendingMatchingAnomalyForUpdate",
                         "findAnomalyForUpdate",
                         "resolveAnomalyAsCancelled",
                         "resolveAnomalyAsContinued",

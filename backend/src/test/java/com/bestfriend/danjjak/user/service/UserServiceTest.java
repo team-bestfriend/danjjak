@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.bestfriend.danjjak.common.error.ApiException;
@@ -77,6 +78,48 @@ class UserServiceTest {
                 assertThrows(ApiException.class, () -> userService.getCurrentUser(99L));
 
         assertEquals("USER_NOT_FOUND", exception.getCode());
+    }
+
+    @Test
+    void returnsAlreadyBoundKakaoUserWithoutMovingAssociation() {
+        UserSettingsRecord existing = userRecord();
+        existing.setKakaoUserId(987654321L);
+        when(userMapper.findByKakaoUserId(987654321L)).thenReturn(existing);
+
+        var result = userService.findOrBindKakaoUser(987654321L);
+
+        assertEquals(1L, result.userId());
+        verify(userMapper).findByKakaoUserId(987654321L);
+        verifyNoMoreInteractions(userMapper);
+    }
+
+    @Test
+    void bindsFirstUnlinkedSeedUserOnInitialKakaoLogin() {
+        UserSettingsRecord candidate = userRecord();
+        UserSettingsRecord bound = userRecord();
+        bound.setKakaoUserId(987654321L);
+        when(userMapper.findByKakaoUserId(987654321L)).thenReturn(null);
+        when(userMapper.findFirstUnlinkedUser()).thenReturn(candidate);
+        when(userMapper.bindKakaoUserId(1L, 987654321L)).thenReturn(1);
+        when(userMapper.findCurrentUser(1L)).thenReturn(bound);
+
+        var result = userService.findOrBindKakaoUser(987654321L);
+
+        assertEquals(1L, result.userId());
+        verify(userMapper).bindKakaoUserId(1L, 987654321L);
+    }
+
+    @Test
+    void rejectsInitialKakaoLoginWhenNoSeedUserIsAvailable() {
+        when(userMapper.findByKakaoUserId(987654321L)).thenReturn(null);
+        when(userMapper.findFirstUnlinkedUser()).thenReturn(null);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () -> userService.findOrBindKakaoUser(987654321L));
+
+        assertEquals("DEMO_USER_CAPACITY_EXCEEDED", exception.getCode());
     }
 
     private UserSettingsRecord userRecord() {

@@ -58,24 +58,32 @@ class TransferDatabaseIntegrationTest {
     void directTransferDoesNotRegisterRecipientAccount() {
         int recipientAccountCountBefore = recipientAccountCount();
 
-        transferService.transfer(
-                1L,
-                new TransferRequest(
+        var response =
+                transferService.transfer(
                         1L,
-                        null,
-                        new DirectRecipientRequest(
-                                "박친구", "003", "기업은행", "000-000-000003"),
-                        new BigDecimal("50000"),
-                        null,
-                        "1234"));
+                        new TransferRequest(
+                                1L,
+                                null,
+                                new DirectRecipientRequest(
+                                        "박친구", "003", "기업은행", "000-000-000003"),
+                                new BigDecimal("50000"),
+                                null,
+                                "1234"));
 
         assertEquals(recipientAccountCountBefore, recipientAccountCount());
+        assertEquals("박친구", transactionValue(response.transactionId(), "counterparty_name"));
+        assertEquals("003", transactionValue(response.transactionId(), "counterparty_bank_code"));
+        assertEquals("기업은행", transactionValue(response.transactionId(), "counterparty_bank_name"));
+        assertEquals(
+                "000-000-000003",
+                transactionValue(response.transactionId(), "counterparty_account_number"));
     }
 
     @Test
     void wrongPinLeavesBalanceAndTransactionsUnchanged() {
         BigDecimal balanceBefore = balance();
         int transactionCountBefore = transactionCount();
+        int anomalyCountBefore = anomalyCount();
 
         assertThrows(
                 ApiException.class,
@@ -92,6 +100,7 @@ class TransferDatabaseIntegrationTest {
 
         assertEquals(balanceBefore, balance());
         assertEquals(transactionCountBefore, transactionCount());
+        assertEquals(anomalyCountBefore, anomalyCount());
     }
 
     @Test
@@ -123,6 +132,7 @@ class TransferDatabaseIntegrationTest {
     @Test
     void mediumAnomalyCancellationCreatesNoTransaction() {
         int transactionCountBefore = transactionCount();
+        int anomalyCountBefore = anomalyCount();
         var attempt =
                 transferService.transfer(
                         1L,
@@ -137,6 +147,20 @@ class TransferDatabaseIntegrationTest {
         assertEquals("MEDIUM", attempt.riskLevel());
         assertEquals("REQUIRES_REVIEW", attempt.status());
         assertEquals(transactionCountBefore, transactionCount());
+        assertEquals(anomalyCountBefore + 1, anomalyCount());
+
+        var repeatedAttempt =
+                transferService.transfer(
+                        1L,
+                        new TransferRequest(
+                                1L,
+                                3L,
+                                null,
+                                new BigDecimal("10000000"),
+                                null,
+                                "1234"));
+        assertEquals(attempt.anomalyEventId(), repeatedAttempt.anomalyEventId());
+        assertEquals(anomalyCountBefore + 1, anomalyCount());
 
         var resolution =
                 transferService.resolve(
@@ -147,10 +171,20 @@ class TransferDatabaseIntegrationTest {
         assertEquals("CANCEL", resolution.action());
         assertEquals(transactionCountBefore, transactionCount());
         assertEquals("CANCEL", anomalyFinalAction(attempt.anomalyEventId()));
+
+        var repeatedResolution =
+                transferService.resolve(
+                        1L,
+                        attempt.anomalyEventId(),
+                        new ResolveAnomalyRequest("CONTINUE", false));
+        assertEquals("CANCEL", repeatedResolution.action());
+        assertEquals(transactionCountBefore, transactionCount());
+        assertEquals(anomalyCountBefore + 1, anomalyCount());
     }
 
     @Test
     void repeatedAndHighAmountAnomalyContinuesWithLinkedTransaction() {
+        int anomalyCountBefore = anomalyCount();
         transferService.transfer(
                 1L,
                 new TransferRequest(
@@ -173,6 +207,7 @@ class TransferDatabaseIntegrationTest {
 
         assertEquals("HIGH", attempt.riskLevel());
         assertEquals(2, attempt.recentTransferCount());
+        assertEquals(anomalyCountBefore + 1, anomalyCount());
         var resolution =
                 transferService.resolve(
                         1L,
@@ -181,11 +216,22 @@ class TransferDatabaseIntegrationTest {
 
         assertEquals("CONTINUE", resolution.action());
         assertEquals(resolution.transactionId(), anomalyTransactionId(attempt.anomalyEventId()));
+
+        var repeatedResolution =
+                transferService.resolve(
+                        1L,
+                        attempt.anomalyEventId(),
+                        new ResolveAnomalyRequest("CANCEL", false));
+        assertEquals("CONTINUE", repeatedResolution.action());
+        assertEquals(resolution.transactionId(), repeatedResolution.transactionId());
+        assertEquals(resolution.balanceAfter(), repeatedResolution.balanceAfter());
+        assertEquals(anomalyCountBefore + 1, anomalyCount());
     }
 
     @Test
     void repeatedTransferAloneCreatesMediumAnomalyWithoutThirdTransaction() {
         int transactionCountBefore = transactionCount();
+        int anomalyCountBefore = anomalyCount();
         transferService.transfer(
                 1L,
                 new TransferRequest(
@@ -205,6 +251,7 @@ class TransferDatabaseIntegrationTest {
         assertEquals(2, attempt.recentTransferCount());
         assertTrue(attempt.reasons().contains("REPEATED_TRANSFER"));
         assertEquals(transactionCountBefore + 2, transactionCount());
+        assertEquals(anomalyCountBefore + 1, anomalyCount());
     }
 
     private BigDecimal balance() {
@@ -242,5 +289,12 @@ class TransferDatabaseIntegrationTest {
                 "SELECT transaction_id FROM anomaly_events WHERE anomaly_event_id = ?",
                 Long.class,
                 anomalyEventId);
+    }
+
+    private String transactionValue(long transactionId, String column) {
+        return jdbcTemplate.queryForObject(
+                "SELECT " + column + " FROM transactions WHERE transaction_id = ?",
+                String.class,
+                transactionId);
     }
 }

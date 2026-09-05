@@ -1,7 +1,8 @@
 package com.bestfriend.danjjak.common.session;
 
+import com.bestfriend.danjjak.common.error.ApiException;
 import javax.servlet.http.HttpSession;
-import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -9,12 +10,7 @@ public class DemoSessionUserResolver {
 
     public static final String USER_ID_ATTRIBUTE = "userId";
     public static final String KAKAO_ACCESS_TOKEN_ATTRIBUTE = "kakaoAccessToken";
-
-    private final long demoUserId;
-
-    public DemoSessionUserResolver(Environment environment) {
-        this.demoUserId = environment.getRequiredProperty("demo.user-id", Long.class);
-    }
+    public static final String KAKAO_REFRESH_TOKEN_ATTRIBUTE = "kakaoRefreshToken";
 
     public long resolveUserId(HttpSession session) {
         Object value = session.getAttribute(USER_ID_ATTRIBUTE);
@@ -24,7 +20,10 @@ public class DemoSessionUserResolver {
         if (value instanceof String text && !text.isBlank()) {
             return Long.parseLong(text);
         }
-        return demoUserId;
+        throw new ApiException(
+                HttpStatus.UNAUTHORIZED,
+                "SESSION_REQUIRED",
+                "로그인이 필요합니다. 카카오 로그인 후 다시 시도해 주세요.");
     }
 
     public String resolveKakaoAccessToken(HttpSession session) {

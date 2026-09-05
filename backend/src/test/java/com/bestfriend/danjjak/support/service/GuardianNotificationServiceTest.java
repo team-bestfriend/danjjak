@@ -2,6 +2,7 @@ package com.bestfriend.danjjak.support.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 class GuardianNotificationServiceTest {
 
@@ -37,7 +39,21 @@ class GuardianNotificationServiceTest {
         supportMapper = mock(SupportMapper.class);
         kakaoMessageClient = mock(KakaoMessageClient.class);
         service = new GuardianNotificationService(supportMapper, kakaoMessageClient, CLOCK);
+        when(supportMapper.hasGuardianShareConsent(1L)).thenReturn(true);
         when(supportMapper.findHighAnomaly(1L, 40L)).thenReturn(highAnomaly());
+    }
+
+    @Test
+    void rejectsNotificationWithoutGuardianShareConsent() {
+        when(supportMapper.hasGuardianShareConsent(1L)).thenReturn(false);
+
+        ApiException exception =
+                assertThrows(ApiException.class, () -> service.notify(1L, 40L, "access-token"));
+
+        assertEquals("GUARDIAN_SHARE_CONSENT_REQUIRED", exception.getCode());
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        verify(supportMapper, never()).findHighAnomaly(anyLong(), anyLong());
+        verify(kakaoMessageClient, never()).sendToMe(any(), any());
     }
 
     @Test
@@ -47,6 +63,7 @@ class GuardianNotificationServiceTest {
         assertEquals("MOCK", response.deliveryMode());
         assertEquals("MOCKED_NO_TOKEN", response.result());
         assertFalse(response.actualAttempted());
+        assertNull(response.sentAt());
         verify(kakaoMessageClient, never()).sendToMe(any(), any());
         verify(supportMapper, never()).markGuardianNotified(anyLong(), anyLong(), any());
     }
@@ -55,6 +72,7 @@ class GuardianNotificationServiceTest {
     void storesNotificationTimeOnlyAfterActualSuccess() {
         when(kakaoMessageClient.sendToMe("access-token", expectedMessage()))
                 .thenReturn(new KakaoSendResult(true, 200, "KAKAO_SENT"));
+        when(supportMapper.markGuardianNotified(anyLong(), anyLong(), any())).thenReturn(1);
 
         var response = service.notify(1L, 40L, "access-token");
 
@@ -62,9 +80,24 @@ class GuardianNotificationServiceTest {
         assertEquals("SENT", response.result());
         assertTrue(response.actualAttempted());
         assertTrue(response.actualSucceeded());
+        assertEquals("2026-08-31T10:02:03", response.sentAt());
         verify(supportMapper)
                 .markGuardianNotified(
                         1L, 40L, LocalDateTime.of(2026, 8, 31, 10, 2, 3));
+    }
+
+    @Test
+    void returnsStoredActualSuccessWithoutSendingAgain() {
+        NotificationAnomalyRecord anomaly = highAnomaly();
+        anomaly.setGuardianNotifiedAt(LocalDateTime.of(2026, 8, 31, 10, 2, 3));
+        when(supportMapper.findHighAnomaly(1L, 40L)).thenReturn(anomaly);
+
+        var response = service.notify(1L, 40L, "access-token");
+
+        assertEquals("SENT", response.result());
+        assertEquals("2026-08-31T10:02:03", response.sentAt());
+        verify(kakaoMessageClient, never()).sendToMe(any(), any());
+        verify(supportMapper, never()).markGuardianNotified(anyLong(), anyLong(), any());
     }
 
     @Test
@@ -78,6 +111,10 @@ class GuardianNotificationServiceTest {
         assertEquals("MOCKED_AFTER_ACTUAL_FAILURE", response.result());
         assertTrue(response.actualAttempted());
         assertFalse(response.actualSucceeded());
+        assertEquals(
+                "카카오 실제 발송에 실패해 Mock 알림으로 대체했습니다.",
+                response.detail());
+        assertNull(response.sentAt());
         verify(supportMapper, never()).markGuardianNotified(anyLong(), anyLong(), any());
     }
 

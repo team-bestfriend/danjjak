@@ -20,7 +20,7 @@
     >
       <!-- 직접 송금하기 — Primary CTA -->
       <button
-        @click="store.navigate('direct-transfer')"
+        @click="beginDirectTransfer"
         className="w-full flex items-center justify-center gap-2.5 active:scale-[0.985] transition-transform flex-shrink-0"
         style="height: 64px; border-radius: 18px; background: #FFBC00;"
       >
@@ -71,10 +71,19 @@
         </div>
 
         <div className="flex-1" style="min-height: 0;">
+          <div v-if="store.patternLoading && store.patterns.length === 0" className="flex h-full items-center justify-center rounded-[18px] bg-white text-[#6B7280]">
+            단축번호를 불러오고 있어요…
+          </div>
+          <div v-else-if="store.patternError && store.patterns.length === 0" className="flex h-full flex-col items-center justify-center gap-3 rounded-[18px] bg-white px-5 text-center">
+            <p className="text-[#B91C1C]" role="alert">{{ store.patternError }}</p>
+            <Btn variant="secondary" @click="store.loadPatterns(true)">다시 시도</Btn>
+          </div>
           <PatternGrid
+            v-else
             :pageNums="pageNums"
             :patterns="store.patterns"
             :dragState="drag"
+            :disabled="store.patternOrderSaving"
             @pointer-down="handlePointerDown"
             @pointer-move="handlePointerMove"
             @pointer-up="handlePointerUp"
@@ -84,16 +93,22 @@
         </div>
 
         <!-- 페이지 도트 -->
-        <div className="flex items-center justify-center gap-2.5 flex-shrink-0" style="height: 20px;">
+        <div className="flex flex-shrink-0 items-center justify-center gap-1">
           <button
             v-for="p in [1, 2, 3]"
             :key="p"
             @click="store.homePage = p"
-            className="transition-all"
-            :style="store.homePage === p
-              ? 'width:28px;height:10px;border-radius:5px;background:#FFBC00;border:none;'
-              : 'width:10px;height:10px;border-radius:50%;background:#D1D5DB;border:none;'"
-          />
+            class="flex h-12 w-12 items-center justify-center"
+            :aria-label="`단축번호 ${p}페이지`"
+            :aria-current="store.homePage === p ? 'page' : undefined"
+          >
+            <span
+              class="block transition-all"
+              :style="store.homePage === p
+                ? 'width:28px;height:10px;border-radius:5px;background:#FFBC00;'
+                : 'width:10px;height:10px;border-radius:50%;background:#D1D5DB;'"
+            />
+          </button>
         </div>
       </div>
     </div>
@@ -103,9 +118,16 @@
     <!-- Focus mode overlay -->
     <div
       v-if="focusedPat"
+      ref="focusDialog"
       className="absolute inset-0 z-40 flex items-center justify-center"
       style="background: rgba(0, 0, 0, 0.60)"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="`${focusedPat.label} 실행 전 확인`"
+      tabindex="-1"
       @click="focusedPat = null"
+      @keydown.esc.stop.prevent="focusedPat = null"
+      @keydown.tab="trapDialogFocus"
     >
       <FocusModeCard
         :pat="focusedPat"
@@ -136,9 +158,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useAppStore } from '../stores/appStore';
-import { TASKTYPE_SCREEN } from '../constants/data';
 import SafeArea from '../components/common/SafeArea.vue';
 import DanjjakMark from '../components/common/DanjjakMark.vue';
 import Card from '../components/common/Card.vue';
@@ -152,6 +173,8 @@ const store = useAppStore();
 
 const sttState = ref('idle');
 const focusedPat = ref(null);
+const focusDialog = ref(null);
+let previouslyFocused = null;
 
 const drag = ref(null);
 const justDropped = ref(false);
@@ -185,6 +208,35 @@ watch(sttState, (newVal) => {
     }, 1200);
   }
 });
+
+watch(focusedPat, async (pattern) => {
+  if (pattern) {
+    previouslyFocused = document.activeElement;
+    await nextTick();
+    focusDialog.value?.querySelector('button')?.focus();
+    return;
+  }
+  previouslyFocused?.focus?.();
+  previouslyFocused = null;
+});
+
+function trapDialogFocus(event) {
+  const buttons = [...(focusDialog.value?.querySelectorAll('button:not([disabled])') ?? [])];
+  if (buttons.length === 0) {
+    event.preventDefault();
+    focusDialog.value?.focus();
+    return;
+  }
+  const first = buttons[0];
+  const last = buttons[buttons.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 function toggleStt() {
   if (sttState.value === 'idle') sttState.value = 'listening';
@@ -248,6 +300,7 @@ function removeDocListeners() {
 }
 
 function handlePointerDown(num, e) {
+  if (store.patternOrderSaving) return;
   if (!store.patterns.find((p) => p.num === num)) return;
   e.preventDefault();
   const x = e.clientX, y = e.clientY;
@@ -284,33 +337,38 @@ function handlePointerCancel() {
   // Drag cleanup handled by document-level listener
 }
 
-function handleCardClick(num, pat) {
+async function handleCardClick(num, pat) {
   if (justDropped.value) { justDropped.value = false; return; }
   if (drag.value) return;
   if (pat) {
-    focusedPat.value = pat;
+    try {
+      await store.loadPatternDetail(pat.patternId);
+      focusedPat.value = store.activePattern;
+    } catch {
+      // 저장소의 오류 문구와 새 목록을 유지해 다시 시도할 수 있게 한다.
+    }
   } else {
     store.navigate("pattern-register");
   }
 }
 
-function startFocusedPattern() {
+function beginDirectTransfer() {
+  store.startTransfer();
+  store.navigate('transfer-source');
+}
+
+async function startFocusedPattern() {
   if (!focusedPat.value) return;
   const pat = focusedPat.value;
-  store.activePattern = pat;
   focusedPat.value = null;
-
-  if (pat.taskType === "transfer") {
-    if (pat.personId) {
-      const accs = store.accountsByPerson[pat.personId] || [];
-      store.navigate(accs.length > 1 ? "guide-account" : "amount-input");
-    } else {
-      store.navigate("direct-transfer");
-    }
-  } else {
-    store.navigate(TASKTYPE_SCREEN[pat.taskType] || "home");
+  try {
+    await store.startPatternExecution(pat);
+  } catch {
+    focusedPat.value = pat;
   }
 }
+
+onMounted(() => { void store.loadPatterns(); });
 
 // Swipe page navigation
 const swipeStartX = ref(null);
@@ -332,5 +390,6 @@ onUnmounted(() => {
   if (longPressTimer) clearTimeout(longPressTimer);
   if (edgeTimer) clearTimeout(edgeTimer);
   removeDocListeners();
+  previouslyFocused?.focus?.();
 });
 </script>

@@ -12,6 +12,7 @@ import com.bestfriend.danjjak.user.mapper.UserMapper;
 import com.bestfriend.danjjak.user.model.UserSettingsRecord;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -24,6 +25,35 @@ public class UserService {
 
     public CurrentUserResponse getCurrentUser(long userId) {
         return toResponse(requireUser(userId));
+    }
+
+    @Transactional
+    public CurrentUserResponse findOrBindKakaoUser(long kakaoUserId) {
+        UserSettingsRecord existing = userMapper.findByKakaoUserId(kakaoUserId);
+        if (existing != null) {
+            return toResponse(existing);
+        }
+
+        UserSettingsRecord candidate = userMapper.findFirstUnlinkedUser();
+        if (candidate == null) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "DEMO_USER_CAPACITY_EXCEEDED",
+                    "연결할 수 있는 시연 사용자가 없습니다.");
+        }
+
+        int updated = userMapper.bindKakaoUserId(candidate.getUserId(), kakaoUserId);
+        if (updated == 0) {
+            UserSettingsRecord concurrentlyBound = userMapper.findByKakaoUserId(kakaoUserId);
+            if (concurrentlyBound != null) {
+                return toResponse(concurrentlyBound);
+            }
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "DEMO_USER_CAPACITY_EXCEEDED",
+                    "연결할 수 있는 시연 사용자가 없습니다.");
+        }
+        return toResponse(requireUser(candidate.getUserId()));
     }
 
     public ConsentSettings updateConsents(long userId, ConsentUpdateRequest request) {

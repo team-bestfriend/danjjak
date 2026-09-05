@@ -64,6 +64,17 @@ public class TransferService {
         if (fdsResult.anomalous()) {
             AnomalyCommand anomaly =
                     createAnomalyCommand(userId, request, recipient, fdsResult, now);
+            AnomalyRecord existing = transferMapper.findPendingMatchingAnomalyForUpdate(anomaly);
+            if (existing != null) {
+                return new TransferResponse(
+                        "REQUIRES_REVIEW",
+                        existing.getRiskLevel(),
+                        reasonsFor(existing),
+                        existing.getRecentTransferCount(),
+                        existing.getAnomalyEventId(),
+                        null,
+                        source.getBalance());
+            }
             transferMapper.insertAnomaly(anomaly);
             return new TransferResponse(
                     "REQUIRES_REVIEW",
@@ -102,8 +113,11 @@ public class TransferService {
                     HttpStatus.NOT_FOUND, "ANOMALY_NOT_FOUND", "이상거래 기록을 찾을 수 없습니다.");
         }
         if (anomaly.getFinalAction() != null) {
-            throw new ApiException(
-                    HttpStatus.CONFLICT, "ANOMALY_ALREADY_RESOLVED", "이미 처리된 이상거래입니다.");
+            return new ResolveAnomalyResponse(
+                    anomalyEventId,
+                    anomaly.getFinalAction(),
+                    anomaly.getTransactionId(),
+                    anomaly.getBalanceAfter());
         }
 
         String action = request.action().trim().toUpperCase();
@@ -196,6 +210,8 @@ public class TransferService {
         if (patternExecutionId == null) {
             return;
         }
+        // 실행 시작 시 계좌가 아직 정해지지 않았다면 실제 선택 계좌를 최초 한 번 연결한다.
+        transferMapper.assignPatternExecutionSource(userId, patternExecutionId, sourceAccountId);
         int count =
                 transferMapper.countAvailablePatternExecution(
                         userId, patternExecutionId, sourceAccountId);
@@ -274,6 +290,17 @@ public class TransferService {
         if (patternExecutionId != null) {
             transferMapper.finishPatternExecution(patternExecutionId, status, endedAt);
         }
+    }
+
+    private java.util.List<String> reasonsFor(AnomalyRecord anomaly) {
+        java.util.List<String> reasons = new java.util.ArrayList<>();
+        if (anomaly.isHighAmountDetected()) {
+            reasons.add("HIGH_AMOUNT");
+        }
+        if (anomaly.isRepeatedTransferDetected()) {
+            reasons.add("REPEATED_TRANSFER");
+        }
+        return reasons;
     }
 
     private LocalDateTime currentTime() {

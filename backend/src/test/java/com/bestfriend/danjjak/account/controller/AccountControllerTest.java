@@ -3,6 +3,7 @@ package com.bestfriend.danjjak.account.controller;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -91,5 +92,20 @@ class AccountControllerTest {
                                                 + "\"accountNumber\":\"1002-000-000001\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(content().string(containsString("김민수")));
+    }
+
+    @Test
+    void rejectsRegisteredPersonWithInvalidAccountNumber() throws Exception {
+        mockMvc.perform(
+                        post("/api/registered-persons")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"name\":\"김민수\",\"relationship\":\"아들\","
+                                                + "\"bankCode\":\"020\",\"bankName\":\"우리은행\","
+                                                + "\"accountNumber\":\"ABC\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("\"code\":\"INVALID_REQUEST\"")));
+
+        verifyNoInteractions(accountService);
     }
 }

@@ -5,7 +5,7 @@
       :key="o.key"
       @click="$emit('update:value', o.key)"
       :class="[
-        'flex-1 h-[44px] rounded-[11px] text-[15px] font-bold transition-all',
+        'flex-1 min-h-12 rounded-[11px] text-[15px] font-bold transition-all',
         value === o.key ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280]'
       ]"
     >

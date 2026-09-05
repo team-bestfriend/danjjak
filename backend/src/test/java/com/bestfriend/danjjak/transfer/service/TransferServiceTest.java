@@ -11,8 +11,11 @@ import static org.mockito.Mockito.when;
 
 import com.bestfriend.danjjak.common.error.ApiException;
 import com.bestfriend.danjjak.transfer.dto.TransferDtos.DirectRecipientRequest;
+import com.bestfriend.danjjak.transfer.dto.TransferDtos.ResolveAnomalyRequest;
 import com.bestfriend.danjjak.transfer.dto.TransferDtos.TransferRequest;
 import com.bestfriend.danjjak.transfer.mapper.TransferMapper;
+import com.bestfriend.danjjak.transfer.model.AnomalyRecord;
+import com.bestfriend.danjjak.transfer.model.AnomalyCommand;
 import com.bestfriend.danjjak.transfer.model.RecipientRecord;
 import com.bestfriend.danjjak.transfer.model.TransactionCommand;
 import com.bestfriend.danjjak.transfer.model.TransferAccountRecord;
@@ -161,6 +164,59 @@ class TransferServiceTest {
 
         assertEquals("INSUFFICIENT_BALANCE", exception.getCode());
         verify(transferMapper, never()).insertTransaction(any());
+    }
+
+    @Test
+    void reusesPendingMatchingAnomalyInsteadOfCreatingAnotherRecord() {
+        when(transferMapper.findRegisteredRecipient(1L, 20L))
+                .thenReturn(registeredRecipient());
+        when(transferMapper.findSourceAccountForUpdate(1L, 1L))
+                .thenReturn(sourceAccount("50000000"));
+        when(pinVerifier.matches("1234", "hash")).thenReturn(true);
+        AnomalyRecord existing = new AnomalyRecord();
+        existing.setAnomalyEventId(40L);
+        existing.setRiskLevel("HIGH");
+        existing.setHighAmountDetected(true);
+        existing.setRepeatedTransferDetected(true);
+        existing.setRecentTransferCount(2);
+        when(transferMapper.findPendingMatchingAnomalyForUpdate(any(AnomalyCommand.class)))
+                .thenReturn(existing);
+        when(transferMapper.countRecentTransfers(any(Long.class), any(), any())).thenReturn(2);
+
+        var response =
+                transferService.transfer(
+                        1L,
+                        new TransferRequest(
+                                1L,
+                                20L,
+                                null,
+                                new BigDecimal("10000000"),
+                                null,
+                                "1234"));
+
+        assertEquals(40L, response.anomalyEventId());
+        assertEquals(2, response.reasons().size());
+        verify(transferMapper, never()).insertAnomaly(any());
+    }
+
+    @Test
+    void returnsStoredOutcomeWhenAnomalyWasAlreadyResolved() {
+        AnomalyRecord anomaly = new AnomalyRecord();
+        anomaly.setAnomalyEventId(40L);
+        anomaly.setFinalAction("CONTINUE");
+        anomaly.setTransactionId(31L);
+        anomaly.setBalanceAfter(new BigDecimal("49950000"));
+        when(transferMapper.findAnomalyForUpdate(1L, 40L)).thenReturn(anomaly);
+
+        var response =
+                transferService.resolve(
+                        1L, 40L, new ResolveAnomalyRequest("CANCEL", true));
+
+        assertEquals("CONTINUE", response.action());
+        assertEquals(31L, response.transactionId());
+        assertEquals(new BigDecimal("49950000"), response.balanceAfter());
+        verify(transferMapper, never()).resolveAnomalyAsCancelled(any(Long.class), any(Long.class), any(Boolean.class), any());
+        verify(transferMapper, never()).resolveAnomalyAsContinued(any(Long.class), any(Long.class), any(Long.class), any(Boolean.class), any());
     }
 
     private TransferAccountRecord sourceAccount(String balance) {

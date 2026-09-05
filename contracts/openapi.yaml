@@ -6,7 +6,8 @@ info:
 servers:
   - url: http://localhost:8080/danjjak
     description: 로컬 Tomcat
-security: []
+security:
+  - sessionCookie: []
 tags:
   - name: Health
     description: 애플리케이션 상태 확인
@@ -22,9 +23,82 @@ tags:
     description: 화면 음성 안내 생성
   - name: Users
     description: 현재 사용자, 동의 및 접근성 설정
+  - name: Authentication
+    description: 카카오 OAuth와 서버 세션
   - name: Patterns
     description: 금융 패턴과 단축번호 관리
 paths:
+  /api/auth/kakao/start:
+    get:
+      tags: [Authentication]
+      operationId: startKakaoLogin
+      summary: 카카오 OAuth 인가 시작
+      description: CSRF 방지 state를 서버 세션에 저장하고 카카오 동의 화면으로 이동한다.
+      security: []
+      responses:
+        '302':
+          description: 카카오 인가 화면으로 이동
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/auth/kakao/callback:
+    get:
+      tags: [Authentication]
+      operationId: handleKakaoCallback
+      summary: 카카오 OAuth 콜백 처리
+      description: 인가 코드를 토큰으로 교환하고 카카오 사용자와 시드 사용자를 연결한 뒤 서버 세션을 만든다.
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: 성공, 취소 또는 오류 상태를 담아 프론트엔드 콜백 화면으로 이동
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+  /api/auth/session:
+    get:
+      tags: [Authentication]
+      operationId: getSession
+      summary: 현재 로그인 세션 조회
+      security: []
+      responses:
+        '200':
+          description: 인증 여부와 인증된 경우의 현재 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      operationId: logout
+      summary: 현재 서버 세션 로그아웃
+      description: OAuth 토큰을 포함한 현재 HttpSession을 제거한다.
+      security: []
+      responses:
+        '204':
+          description: 세션 제거 완료 또는 이미 로그아웃 상태
   /api/health:
     get:
       tags: [Health]
@@ -197,6 +271,7 @@ paths:
       tags: [Transfers]
       operationId: resolveAnomaly
       summary: 이상거래 재확인 후 계속 송금 또는 취소
+      description: 이미 최종 처리된 이상거래는 추가 변경 없이 저장된 최종 결과를 반환한다.
       parameters:
         - $ref: '#/components/parameters/AnomalyEventId'
       requestBody:
@@ -216,8 +291,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
   /api/support:
@@ -280,7 +353,7 @@ paths:
       tags: [Support]
       operationId: sendGuardianNotification
       summary: 사용자가 선택한 HIGH 이상거래 카카오 알림 전송
-      description: 보호자 전화번호가 아니라 로그인한 시연 계정의 카카오 나에게 보내기를 사용한다.
+      description: 보호자 공유 동의가 있을 때만, 보호자 전화번호가 아니라 로그인한 시연 계정의 카카오 나에게 보내기를 사용한다. 이미 실제 발송에 성공했다면 저장된 SENT 결과를 반환하며 다시 발송하지 않는다.
       parameters:
         - $ref: '#/components/parameters/AnomalyEventId'
       responses:
@@ -292,6 +365,8 @@ paths:
                 $ref: '#/components/schemas/NotificationResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
   /api/users/me:
@@ -480,7 +555,110 @@ paths:
           description: 비활성화 완료
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/patterns/{patternId}/executions:
+    parameters:
+      - $ref: '#/components/parameters/PatternId'
+    post:
+      tags: [Patterns]
+      operationId: startPatternExecution
+      summary: 확인된 금융 패턴 실행 시작
+      description: 이용 기록 동의가 없으면 패턴 상세만 반환하고 실행 행은 만들지 않는다.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionStartRequest'
+      responses:
+        '201':
+          description: 실행 시작 결과와 실행에 사용할 최신 패턴 상세
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/pattern-executions/{executionId}/visits:
+    parameters:
+      - $ref: '#/components/parameters/ExecutionId'
+    post:
+      tags: [Patterns]
+      operationId: startPatternStepVisit
+      summary: 패턴 실행의 단계 방문 시작
+      description: 같은 단계에 재진입하면 다음 visitNumber의 새 방문을 만든다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitStartRequest'
+      responses:
+        '201':
+          description: 생성된 단계 방문
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepVisit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/pattern-executions/{executionId}/visits/{visitId}:
+    parameters:
+      - $ref: '#/components/parameters/ExecutionId'
+      - $ref: '#/components/parameters/VisitId'
+    patch:
+      tags: [Patterns]
+      operationId: updatePatternStepVisit
+      summary: 단계 방문 행동 집계와 종료 저장
+      description: 원시 클릭 대신 현재 방문의 누적 행동 수와 경로 이탈 여부만 저장한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitUpdateRequest'
+      responses:
+        '200':
+          description: 갱신된 단계 방문과 시각에서 계산한 소요시간
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepVisit'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/pattern-executions/{executionId}:
+    parameters:
+      - $ref: '#/components/parameters/ExecutionId'
+    patch:
+      tags: [Patterns]
+      operationId: finishPatternExecution
+      summary: 패턴 실행 최종 상태 저장
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionFinishRequest'
+      responses:
+        '200':
+          description: 종료된 패턴 실행
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionFinishResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: DANJJAKSESSION
   parameters:
     AccountId:
       name: accountId
@@ -514,6 +692,22 @@ components:
         type: integer
         format: int64
         minimum: 1
+    ExecutionId:
+      name: executionId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    VisitId:
+      name: visitId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
   responses:
     BadRequest:
       description: 잘못된 요청
@@ -529,6 +723,24 @@ components:
             $ref: '#/components/schemas/ApiError'
     Conflict:
       description: 현재 데이터 상태와 충돌
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthorized:
+      description: 로그인 세션이 없거나 만료됨
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: 필요한 선택 동의가 없어 요청이 허용되지 않음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ServiceUnavailable:
+      description: 외부 연동을 위한 로컬 설정이 준비되지 않음
       content:
         application/json:
           schema:
@@ -656,19 +868,25 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
           maxLength: 50
         relationship:
           type: string
+          minLength: 1
           maxLength: 30
         bankCode:
           type: string
+          minLength: 1
           maxLength: 20
         bankName:
           type: string
+          minLength: 1
           maxLength: 50
         accountNumber:
           type: string
+          minLength: 8
           maxLength: 50
+          pattern: '^[0-9-]+$'
         accountAlias:
           type: string
           maxLength: 50
@@ -712,16 +930,21 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
           maxLength: 100
         bankCode:
           type: string
+          minLength: 1
           maxLength: 20
         bankName:
           type: string
+          minLength: 1
           maxLength: 50
         accountNumber:
           type: string
+          minLength: 8
           maxLength: 50
+          pattern: '^[0-9-]+$'
     TransferRequest:
       type: object
       required: [sourceAccountId, amount, pin]
@@ -743,6 +966,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 999999999999999
         patternExecutionId:
           type: integer
           format: int64
@@ -751,6 +975,7 @@ components:
         pin:
           type: string
           writeOnly: true
+          minLength: 1
           maxLength: 30
     TransferResponse:
       type: object
@@ -858,6 +1083,11 @@ components:
           type: boolean
         detail:
           type: string
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 실제 카카오 발송 성공 시 서버가 기록한 발송 시각
     CurrentUserResponse:
       type: object
       required: [userId, name, consents, settings]
@@ -873,6 +1103,17 @@ components:
           $ref: '#/components/schemas/ConsentSettings'
         settings:
           $ref: '#/components/schemas/AccessibilitySettings'
+    SessionResponse:
+      type: object
+      required: [authenticated, user]
+      properties:
+        authenticated:
+          type: boolean
+        user:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/CurrentUserResponse'
+          nullable: true
     ConsentSettings:
       type: object
       required: [completed, usageLogAgreed, guardianShareAgreed]
@@ -922,7 +1163,7 @@ components:
         - DEPOSIT_MATURITY_CHECK
     PatternTemplate:
       type: object
-      required: [patternType, defaultTitle, defaultDescription, requiresLinkedAccount, available]
+      required: [patternType, defaultTitle, defaultDescription, requiresLinkedAccount, available, steps]
       properties:
         patternType:
           $ref: '#/components/schemas/PatternType'
@@ -934,6 +1175,33 @@ components:
           type: boolean
         available:
           type: boolean
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatternTemplateStep'
+    PatternTemplateStep:
+      type: object
+      required: [stepOrder, stepCode, stepName, instructionText, screenCode]
+      properties:
+        stepOrder:
+          type: integer
+          minimum: 1
+        stepCode:
+          type: string
+          maxLength: 50
+        stepName:
+          type: string
+          maxLength: 100
+        instructionText:
+          type: string
+          maxLength: 500
+        screenCode:
+          type: string
+          maxLength: 100
+        targetElementId:
+          type: string
+          maxLength: 100
+          nullable: true
     PatternLinkedAccount:
       type: object
       required: [accountId, bankCode, bankName, accountNumber]
@@ -1056,6 +1324,10 @@ components:
           format: int64
           minimum: 1
           nullable: true
+        stepInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepInstructionRequest'
     PatternUpdateRequest:
       type: object
       minProperties: 1
@@ -1074,6 +1346,23 @@ components:
           format: int64
           minimum: 1
           nullable: true
+        stepInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepInstructionRequest'
+    StepInstructionRequest:
+      type: object
+      required: [stepCode, instructionText]
+      additionalProperties: false
+      properties:
+        stepCode:
+          type: string
+          minLength: 1
+          maxLength: 50
+        instructionText:
+          type: string
+          minLength: 1
+          maxLength: 500
     PatternOrderRequest:
       type: object
       required: [items]
@@ -1098,3 +1387,119 @@ components:
           type: integer
           minimum: 1
           maximum: 12
+    ExecutionStartRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sourceBankAccountId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+    ExecutionStartResponse:
+      type: object
+      required: [loggingEnabled, executionId, startedAt, pattern]
+      properties:
+        loggingEnabled:
+          type: boolean
+        executionId:
+          type: integer
+          format: int64
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        pattern:
+          $ref: '#/components/schemas/PatternDetail'
+    VisitStartRequest:
+      type: object
+      required: [stepId]
+      additionalProperties: false
+      properties:
+        stepId:
+          type: integer
+          format: int64
+          minimum: 1
+    VisitUpdateRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        retryCount:
+          type: integer
+          minimum: 0
+        backCount:
+          type: integer
+          minimum: 0
+        wrongTouchCount:
+          type: integer
+          minimum: 0
+        routeDeviation:
+          type: boolean
+        completed:
+          type: boolean
+    StepVisit:
+      type: object
+      required:
+        [visitId, executionId, stepId, visitNumber, retryCount, backCount,
+         wrongTouchCount, routeDeviation, completed, startedAt, endedAt, durationSeconds]
+      properties:
+        visitId:
+          type: integer
+          format: int64
+        executionId:
+          type: integer
+          format: int64
+        stepId:
+          type: integer
+          format: int64
+        visitNumber:
+          type: integer
+          minimum: 1
+        retryCount:
+          type: integer
+          minimum: 0
+        backCount:
+          type: integer
+          minimum: 0
+        wrongTouchCount:
+          type: integer
+          minimum: 0
+        routeDeviation:
+          type: boolean
+        completed:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+    ExecutionFinishRequest:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [COMPLETED, CANCELLED, FAILED]
+    ExecutionFinishResponse:
+      type: object
+      required: [executionId, status, endedAt]
+      properties:
+        executionId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [COMPLETED, CANCELLED, FAILED]
+        endedAt:
+          type: string
+          format: date-time

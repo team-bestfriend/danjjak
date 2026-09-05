@@ -29,6 +29,12 @@ public class GuardianNotificationService {
 
     @Transactional
     public NotificationResponse notify(long userId, long anomalyEventId, String accessToken) {
+        if (!supportMapper.hasGuardianShareConsent(userId)) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "GUARDIAN_SHARE_CONSENT_REQUIRED",
+                    "보호자 공유 동의 후 카카오 알림을 요청할 수 있습니다.");
+        }
         NotificationAnomalyRecord anomaly =
                 supportMapper.findHighAnomaly(userId, anomalyEventId);
         if (anomaly == null) {
@@ -41,6 +47,16 @@ public class GuardianNotificationService {
             throw new ApiException(
                     HttpStatus.CONFLICT, "ANOMALY_ALREADY_RESOLVED", "이미 처리된 이상거래입니다.");
         }
+        if (anomaly.getGuardianNotifiedAt() != null) {
+            return new NotificationResponse(
+                    anomalyEventId,
+                    "ACTUAL",
+                    "SENT",
+                    true,
+                    true,
+                    "이미 전송한 카카오 알림 결과를 확인했습니다.",
+                    anomaly.getGuardianNotifiedAt().toString());
+        }
 
         if (accessToken == null || accessToken.isBlank()) {
             return new NotificationResponse(
@@ -49,21 +65,29 @@ public class GuardianNotificationService {
                     "MOCKED_NO_TOKEN",
                     false,
                     false,
-                    "카카오 토큰이 없어 Mock 알림으로 대체했습니다.");
+                    "카카오 토큰이 없어 Mock 알림으로 대체했습니다.",
+                    null);
         }
 
         KakaoSendResult result =
                 kakaoMessageClient.sendToMe(accessToken, createMessage(anomaly));
         if (result.success()) {
-            supportMapper.markGuardianNotified(
-                    userId, anomalyEventId, LocalDateTime.now(clock).withNano(0));
+            LocalDateTime sentAt = LocalDateTime.now(clock).withNano(0);
+            int updated = supportMapper.markGuardianNotified(userId, anomalyEventId, sentAt);
+            if (updated != 1) {
+                throw new ApiException(
+                        HttpStatus.CONFLICT,
+                        "GUARDIAN_NOTIFICATION_STATE_CHANGED",
+                        "알림 상태가 변경되었습니다. 결과를 다시 확인해 주세요.");
+            }
             return new NotificationResponse(
                     anomalyEventId,
                     "ACTUAL",
                     "SENT",
                     true,
                     true,
-                    "카카오 나에게 보내기 알림을 전송했습니다.");
+                    "카카오 나에게 보내기 알림을 전송했습니다.",
+                    sentAt.toString());
         }
         return new NotificationResponse(
                 anomalyEventId,
@@ -71,7 +95,8 @@ public class GuardianNotificationService {
                 "MOCKED_AFTER_ACTUAL_FAILURE",
                 true,
                 false,
-                result.detail());
+                "카카오 실제 발송에 실패해 Mock 알림으로 대체했습니다.",
+                null);
     }
 
     private String createMessage(NotificationAnomalyRecord anomaly) {

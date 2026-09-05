@@ -1,7 +1,10 @@
 import { onMounted, onUnmounted, ref, toValue, watch } from 'vue';
 import { createSpeech } from '../api/ttsApi';
 
-export function useTtsAudio(text, { speed = 'NORMAL', autoplay = true } = {}) {
+export function useTtsAudio(
+  text,
+  { speed = 'NORMAL', autoplay = true, enabled = true } = {},
+) {
   const playing = ref(false);
   const loading = ref(false);
   const error = ref('');
@@ -61,15 +64,16 @@ export function useTtsAudio(text, { speed = 'NORMAL', autoplay = true } = {}) {
     releaseAudio();
   }
 
-  async function load(shouldAutoplay = autoplay) {
+  async function load(shouldAutoplay = toValue(autoplay)) {
     cleanup();
+    if (!toValue(enabled)) return;
     loading.value = true;
     error.value = '';
     const controller = new AbortController();
     requestController = controller;
 
     try {
-      const blob = await createSpeech(toValue(text), speed, controller.signal);
+      const blob = await createSpeech(toValue(text), toValue(speed), controller.signal);
       if (controller.signal.aborted) return;
 
       audioUrl = URL.createObjectURL(blob);
@@ -132,8 +136,16 @@ export function useTtsAudio(text, { speed = 'NORMAL', autoplay = true } = {}) {
     }
   }
 
-  watch(() => toValue(text), () => load());
-  onMounted(() => load());
+  watch(
+    [() => toValue(text), () => toValue(speed), () => toValue(enabled)],
+    () => {
+      if (toValue(enabled)) void load();
+      else cleanup();
+    },
+  );
+  onMounted(() => {
+    if (toValue(enabled)) void load();
+  });
   onUnmounted(cleanup);
 
   return { playing, loading, error, progress, toggle, replay, cleanup };

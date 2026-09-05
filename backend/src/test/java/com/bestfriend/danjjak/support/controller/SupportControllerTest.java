@@ -83,11 +83,18 @@ class SupportControllerTest {
         when(notificationService.notify(1L, 40L, "access-token"))
                 .thenReturn(
                         new NotificationResponse(
-                                40L, "ACTUAL", "SENT", true, true, "카카오 알림 전송 완료"));
+                                40L,
+                                "ACTUAL",
+                                "SENT",
+                                true,
+                                true,
+                                "카카오 알림 전송 완료",
+                                "2026-08-31T10:02:03"));
 
         mockMvc.perform(post("/api/anomaly-events/40/guardian-notification"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("\"deliveryMode\":\"ACTUAL\"")))
-                .andExpect(content().string(containsString("\"result\":\"SENT\"")));
+                .andExpect(content().string(containsString("\"result\":\"SENT\"")))
+                .andExpect(content().string(containsString("\"sentAt\":\"2026-08-31T10:02:03\"")));
     }
 }

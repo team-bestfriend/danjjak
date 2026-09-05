@@ -1,84 +1,42 @@
 <template>
-  <div class="flex flex-col h-full" style="background: #FAFAF8;">
+  <div class="flex h-full flex-col bg-[#FAFAF8]">
     <SafeArea />
-    <div class="flex-1 flex flex-col px-6 pt-10 pb-6">
-      <!-- 로고 -->
-      <div class="flex flex-col items-center gap-3 mb-12">
-        <DanjjakMark :size="64" />
-        <div class="text-center">
-          <p class="font-bold text-[#111827]" style="font-size: 32px;">단짝</p>
-          <p class="text-[#6B7280] mt-1" style="font-size: 16px;">어르신을 위한 쉬운 금융 도우미</p>
-        </div>
+    <main class="flex flex-1 flex-col items-center justify-center px-6">
+      <DanjjakMark :size="72" />
+      <h1 class="mt-5 text-center text-[30px] font-bold text-[#111827]">단짝에 로그인해요</h1>
+      <p class="mt-3 text-center text-[17px] leading-relaxed text-[#6B7280]">
+        카카오 계정으로 본인을 확인하면<br />준비된 시연 계정과 안전하게 연결됩니다.
+      </p>
+
+      <div v-if="store.sessionNotice" class="mt-7 w-full rounded-[16px] bg-[#FFF7ED] p-4 text-[15px] text-[#92400E]" role="status">
+        {{ store.sessionNotice }}
       </div>
-
-      <!-- 환영 -->
-      <p class="font-bold text-[#111827] mb-7" style="font-size: 28px;">다시 만나서 반가워요 👋</p>
-
-      <!-- 입력 폼 -->
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <p class="font-bold text-[#374151] px-1" style="font-size: 17px;">전화번호</p>
-          <input
-            type="tel"
-            v-model="phone"
-            @input="phone = formatPhone($event.target.value)"
-            placeholder="010-0000-0000"
-            inputMode="tel"
-            class="w-full rounded-[18px] border-2 border-[#E5E7EB] focus:border-[#FFBC00] outline-none px-5 text-[#111827] placeholder:text-[#D1D5DB] placeholder:font-normal"
-            style="min-height: 62px; font-size: 20px; font-weight: 700;"
-          />
-        </div>
-        <div class="space-y-2">
-          <p class="font-bold text-[#374151] px-1" style="font-size: 17px;">비밀번호</p>
-          <div class="relative">
-            <input
-              :type="pwVisible ? 'text' : 'password'"
-              v-model="pw"
-              placeholder="비밀번호 입력"
-              class="w-full rounded-[18px] border-2 border-[#E5E7EB] focus:border-[#FFBC00] outline-none px-5 pr-16 text-[#111827] placeholder:text-[#D1D5DB] placeholder:font-normal"
-              style="min-height: 62px; font-size: 20px; font-weight: 700;"
-            />
-            <button
-              @click="pwVisible = !pwVisible"
-              class="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-[#9CA3AF] px-2 py-1"
-              style="font-size: 14px;"
-            >
-              {{ pwVisible ? '숨기기' : '보기' }}
-            </button>
-          </div>
-        </div>
+      <div v-if="store.authError" class="mt-4 w-full rounded-[16px] bg-[#FEF2F2] p-4 text-[15px] text-[#B91C1C]" role="alert">
+        {{ store.authError }}
       </div>
+    </main>
 
-      <div class="mt-7">
-        <Btn @click="store.navigate('home')" :disabled="phone.length < 12 || pw.length < 4">
-          로그인
-        </Btn>
-      </div>
-
-      <p class="text-center mt-6 text-[#6B7280]" style="font-size: 16px;">
-        처음 이용하시나요?
-        <button @click="store.navigate('signup')" class="font-bold" style="color: #92650A;">회원가입</button>
+    <div class="px-6 pb-12">
+      <button
+        type="button"
+        class="flex h-[66px] w-full items-center justify-center gap-3 rounded-[18px] bg-[#FEE500] text-[19px] font-semibold text-[#111827] disabled:opacity-50"
+        :disabled="store.loginStarting || store.authLoading"
+        @click="store.startKakaoLogin"
+      >
+        <span class="text-[25px]" aria-hidden="true">💬</span>
+        {{ store.loginStarting ? '카카오로 이동 중…' : '카카오로 시작하기' }}
+      </button>
+      <p class="mt-4 text-center text-[14px] leading-relaxed text-[#6B7280]">
+        비밀번호는 단짝에 저장하지 않으며,<br />카카오 인증 결과만 사용합니다.
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useAppStore } from '../stores/appStore';
-import SafeArea from '../components/common/SafeArea.vue';
 import DanjjakMark from '../components/common/DanjjakMark.vue';
-import Btn from '../components/common/Btn.vue';
+import SafeArea from '../components/common/SafeArea.vue';
+import { useAppStore } from '../stores/appStore';
 
 const store = useAppStore();
-const phone = ref('');
-const pw = ref('');
-const pwVisible = ref(false);
-
-function formatPhone(v) {
-  const d = v.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-}
 </script>

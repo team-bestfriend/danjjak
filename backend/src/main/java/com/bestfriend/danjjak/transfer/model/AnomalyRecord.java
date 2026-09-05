@@ -17,6 +17,11 @@ public class AnomalyRecord {
     private String recipientBankName;
     private String recipientAccountNumber;
     private BigDecimal amount;
+    private boolean highAmountDetected;
+    private boolean repeatedTransferDetected;
+    private int recentTransferCount;
     private String riskLevel;
     private String finalAction;
+    private Long transactionId;
+    private BigDecimal balanceAfter;
 }

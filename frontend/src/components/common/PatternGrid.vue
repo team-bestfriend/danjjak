@@ -1,9 +1,12 @@
 <template>
   <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; height: 100%;">
-    <div
+    <button
       v-for="(num, idx) in pageNums"
       :key="num"
+      type="button"
       :data-slot-num="num"
+      :aria-label="getPattern(num) ? `${num}번 ${getPattern(num).label}` : `${num}번 패턴 등록`"
+      :disabled="disabled"
       @pointerdown="handlePointerDown(num, $event)"
       @pointermove="handlePointerMove"
       @pointerup="handlePointerUp"
@@ -22,7 +25,7 @@
         touchAction: 'none',
         backgroundColor: getPattern(num) ? getPattern(num).color : '#F5F5F3',
         border: getPattern(num) ? 'none' : '1.5px dashed #D1D5DB',
-        opacity: isDragSrc(num) ? 0.25 : 1,
+        opacity: disabled ? 0.55 : isDragSrc(num) ? 0.25 : 1,
         transform: isDragSrc(num) ? 'scale(0.95)' : isDropTgt(num) ? 'scale(1.04)' : 'scale(1)',
         boxShadow: isDropTgt(num) ? '0 0 0 3px rgba(0,0,0,0.20)' : 'none',
       }"
@@ -35,7 +38,7 @@
         style="font-size: 19px; font-weight: 600; word-break: keep-all; line-height: 1.3; text-align: center;"
         :style="{ color: getPattern(num) ? '#ffffff' : '#AEAEAE' }"
       >{{ getPattern(num) ? getPattern(num).label : '패턴 등록' }}</span>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -43,7 +46,8 @@
 const props = defineProps({
   pageNums: { type: Array, required: true },
   patterns: { type: Array, required: true },
-  dragState: { type: Object, default: null }
+  dragState: { type: Object, default: null },
+  disabled: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['pointer-down', 'pointer-move', 'pointer-up', 'pointer-cancel', 'card-click']);

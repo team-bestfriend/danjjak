@@ -7,6 +7,7 @@ import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 
@@ -18,7 +19,10 @@ public final class TransferDtos {
             @NotBlank @Size(max = 100) String name,
             @NotBlank @Size(max = 20) String bankCode,
             @NotBlank @Size(max = 50) String bankName,
-            @NotBlank @Size(max = 50) String accountNumber) {}
+            @NotBlank
+                    @Size(min = 8, max = 50)
+                    @Pattern(regexp = "^[0-9-]+$")
+                    String accountNumber) {}
 
     public record TransferRequest(
             @NotNull @Positive Long sourceAccountId,
@@ -37,7 +41,7 @@ public final class TransferDtos {
             Long transactionId,
             BigDecimal balanceAfter) {}
 
-    public record ResolveAnomalyRequest(@NotBlank String action, boolean rechecked) {}
+    public record ResolveAnomalyRequest(@NotBlank String action, @NotNull Boolean rechecked) {}
 
     public record ResolveAnomalyResponse(
             long anomalyEventId,

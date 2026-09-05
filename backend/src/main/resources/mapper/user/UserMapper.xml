@@ -6,6 +6,7 @@
     <select id="findCurrentUser"
             resultType="com.bestfriend.danjjak.user.model.UserSettingsRecord">
         SELECT user_id,
+               kakao_user_id,
                name,
                usage_log_agreed,
                guardian_share_agreed,
@@ -16,6 +17,45 @@
         FROM users
         WHERE user_id = #{userId}
     </select>
+
+    <select id="findByKakaoUserId"
+            resultType="com.bestfriend.danjjak.user.model.UserSettingsRecord">
+        SELECT user_id,
+               kakao_user_id,
+               name,
+               usage_log_agreed,
+               guardian_share_agreed,
+               consent_completed,
+               font_size,
+               voice_speed,
+               guide_voice_type
+        FROM users
+        WHERE kakao_user_id = #{kakaoUserId}
+    </select>
+
+    <select id="findFirstUnlinkedUser"
+            resultType="com.bestfriend.danjjak.user.model.UserSettingsRecord">
+        SELECT user_id,
+               kakao_user_id,
+               name,
+               usage_log_agreed,
+               guardian_share_agreed,
+               consent_completed,
+               font_size,
+               voice_speed,
+               guide_voice_type
+        FROM users
+        WHERE kakao_user_id IS NULL
+        ORDER BY user_id
+        LIMIT 1
+    </select>
+
+    <update id="bindKakaoUserId">
+        UPDATE users
+        SET kakao_user_id = #{kakaoUserId}
+        WHERE user_id = #{userId}
+          AND kakao_user_id IS NULL
+    </update>
 
     <update id="updateConsents">
         UPDATE users

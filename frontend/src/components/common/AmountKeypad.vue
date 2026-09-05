@@ -9,7 +9,7 @@
         v-for="q in quickBtns"
         :key="q.l"
         @click="addN(q.n)"
-        className="flex-1 h-[44px] rounded-xl bg-[#FFFBEB] border border-[#FDE68A] text-[14px] font-bold text-[#D97706]"
+        className="flex-1 min-h-12 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] text-[14px] font-bold text-[#D97706]"
       >
         {{ q.l }}
       </button>
@@ -40,7 +40,14 @@ import Ic from './Ic.vue';
 
 defineEmits(['complete']);
 
-const val = ref("0");
+const props = defineProps({
+  initialValue: { type: [String, Number], default: '0' },
+});
+
+const initialAmount = Number(props.initialValue);
+const val = ref(Number.isInteger(initialAmount) && initialAmount > 0
+  ? String(Math.min(initialAmount, 999999999))
+  : '0');
 const quickBtns = [
   { l: "+1만원", n: 10000 },
   { l: "+5만원", n: 50000 },
