@@ -4,7 +4,7 @@
 
 | ID | Requirement | Required behavior |
 | --- | --- | --- |
-| FR-018 | Step highlight | Visually highlight the control the user should operate in the current step. |
+| FR-018 | Step highlight | Visually highlight the control the user should operate in the current step. Amount and account-PIN entry omit visual highlighting while retaining captions and voice guidance. |
 | FR-019 | Instruction editing | Allow the pre-start description and current instruction text for each pattern step to be changed. |
 | FR-020 | Default wording | Use the template's default instruction when no custom instruction is supplied. |
 | FR-021 | Caption guidance | Display the current instruction as large, readable on-screen text. |
@@ -121,7 +121,7 @@ The table applies to both pre-start and step guidance. Missing family audio is a
 
 ## Completion Criteria
 
-- FR-018 through FR-021: Every representative step shows the correct target and persisted text; a successful edit is reflected in later execution.
+- FR-018 through FR-021: Every representative step shows its persisted text and highlights the correct target, except amount and account-PIN entry, which retain caption and voice guidance without highlighting; a successful edit is reflected in later execution.
 - FR-022: Actual generated audio plays at the selected speed, while caption and retry remain available on failure.
 - FR-023 through FR-026: Recording, upload, playback, replacement, and TTS fallback are reproducible with a real browser audio file.
 - FR-027: Each supported demo phrase highlights only the matching shortcut and never starts a financial task automatically.

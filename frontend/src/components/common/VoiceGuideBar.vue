@@ -1,13 +1,14 @@
 <template>
   <div
-    class="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-6"
-    style="background: linear-gradient(to bottom, transparent 0%, rgba(250,250,248,0.92) 28%, #FAFAF8 52%);"
+    class="z-20 max-h-[40%] flex-shrink-0 overflow-y-auto bg-[#FAFAF8] px-4 py-3"
+    aria-label="현재 단계 안내"
   >
     <div
       class="overflow-hidden rounded-[22px] bg-white"
       style="box-shadow: 0 -2px 24px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.07); border: 1px solid #EEEEED;"
     >
-      <div class="flex items-center gap-3 px-4 pb-2 pt-4">
+      <p v-if="guided" class="px-4 pt-3 text-[14px] font-bold text-[#92650A]">지금 할 일</p>
+      <div class="flex items-start gap-3 px-4 pb-2 pt-3">
         <button
           type="button"
           class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full transition-transform active:scale-95 disabled:opacity-50"
@@ -19,8 +20,12 @@
           <span style="font-size: 17px; line-height: 1; color: #111827;">{{ loading ? '…' : playing ? '⏸' : '▶' }}</span>
         </button>
         <p
+          id="step-guidance-caption"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           class="flex-1 font-bold leading-snug text-[#111827]"
-          style="font-size: 15px; word-break: keep-all;"
+          style="font-size: 19px; word-break: keep-all; overflow-wrap: anywhere;"
         >“{{ text }}”</p>
       </div>
 
@@ -56,6 +61,7 @@
       <p v-if="errorText" class="px-4 pb-3 text-[13px] text-[#B91C1C]" role="alert">
         {{ errorText }} 화면 안내와 금융 기능은 계속 사용할 수 있어요.
       </p>
+      <p v-if="notice" class="px-4 pb-3 text-[15px] text-[#92650A]" role="status">{{ notice }}</p>
     </div>
   </div>
 </template>
@@ -69,6 +75,8 @@ const props = defineProps({
   speed: { type: String, default: 'NORMAL' },
   voiceMode: { type: String, default: 'TTS' },
   familyAudioUrl: { type: String, default: '' },
+  notice: { type: String, default: '' },
+  guided: { type: Boolean, default: false },
 });
 
 const WAVE = [6, 12, 22, 8, 18, 26, 10, 5, 23, 26, 14, 19, 26, 5, 16, 24, 9, 21, 12, 26, 7, 18, 26, 10, 22, 14, 25, 15, 8, 20];
