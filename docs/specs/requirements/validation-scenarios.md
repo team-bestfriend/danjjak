@@ -38,7 +38,7 @@ Expected result: creation, editing, swap, and deactivation persist without delet
 1. Select a transfer shortcut on home.
 2. Verify recipient and description on pre-execution confirmation.
 3. Select `Start` and verify execution plus first step visit creation when recording consent is active.
-4. Verify that caption and TTS use the same current instruction.
+4. Verify that caption and TTS use the same current instruction. Amount and account-PIN entry show no visual highlight and retain both guidance methods.
 5. Activate a valid non-target control and verify wrong-touch aggregation while remaining on the step.
 6. Go back and re-enter a step, then verify a new visit number.
 

@@ -21,6 +21,8 @@
         <button
           v-for="account in store.ownedAccounts"
           :key="account.accountId"
+          :data-guide-target="store.selectedSourceAccountId === account.accountId ? 'source-account-list' : null"
+          data-guide-exempt
           @click="store.selectedSourceAccountId = account.accountId"
           :class="[
             'w-full rounded-[20px] border-2 bg-white p-5 text-left min-h-[112px]',
@@ -40,9 +42,10 @@
       <div v-if="patternTargetMissing" class="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 space-y-3">
         <p class="font-bold text-[#991B1B]">단축번호에 연결된 받는 사람이나 계좌를 찾을 수 없어요.</p>
         <p class="text-[#991B1B]">사람 및 계좌 관리에서 연결 정보를 먼저 확인해 주세요.</p>
-        <Btn variant="secondary" @click="store.navigate('contact-manage')">사람 및 계좌 관리</Btn>
+        <Btn data-guide-exempt variant="secondary" @click="store.navigate('contact-manage')">사람 및 계좌 관리</Btn>
       </div>
       <Btn
+        data-guide-exempt
         :disabled="!store.selectedSourceAccountId || store.financeLoading || Boolean(store.financeError) || patternTargetMissing"
         @click="proceedFromSource"
       >다음</Btn>
@@ -54,9 +57,9 @@
     <SafeArea />
     <TopBar title="받는 방법 선택" :onBack="store.goBack" rightLabel="취소" :onRight="store.cancelTransfer" />
     <StepBar :current="2" :total="6" />
-    <div class="flex-1 flex flex-col px-5 pt-8 pb-6 gap-5">
+    <div class="flex-1 flex flex-col overflow-y-auto px-5 pt-8 pb-6 gap-5">
       <p class="font-bold text-[#111827] text-[28px]">누구에게 보내시겠어요?</p>
-      <div class="guide-glow rounded-[28px] p-2 flex flex-col gap-3 bg-white">
+      <div class="rounded-[28px] p-2 flex flex-col gap-3 bg-white">
         <button
           @click="selectFamily"
           class="w-full rounded-[20px] bg-white border border-[#FFBC00] p-6 flex flex-col items-center gap-3 active:scale-[0.97] transition-all"
@@ -176,10 +179,11 @@
         <p class="font-bold text-[#111827]">등록된 사람이 없어요.</p>
         <Btn variant="secondary" @click="store.navigate('direct-newaccount')">새 계좌 직접 입력</Btn>
       </div>
-      <div v-else class="guide-glow space-y-3 rounded-[24px] p-2 bg-white">
+      <div v-else class="space-y-3 rounded-[24px] p-2 bg-white">
         <button
           v-for="person in store.people"
           :key="person.id"
+          :data-guide-target="person.id === store.activePattern?.personId ? 'registered-person-list' : null"
           @click="handleSelectFamilyPerson(person.id)"
           class="w-full text-left"
         >
@@ -206,8 +210,8 @@
     <StepBar :current="3" :total="6" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">보낼 계좌를 선택해 주세요.</p>
-      <div v-if="personAccs.length" class="guide-glow space-y-3 rounded-[24px] p-2 bg-white">
-        <button v-for="account in personAccs" :key="account.accountId" @click="handleSelectAccount(account)" class="w-full text-left">
+      <div v-if="personAccs.length" class="space-y-3 rounded-[24px] p-2 bg-white">
+        <button v-for="account in personAccs" :key="account.accountId" :data-guide-target="account.accountId === store.activePattern?.recipientAccountId ? 'recipient-account-list' : null" @click="handleSelectAccount(account)" class="w-full text-left">
           <Card class="p-5">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 rounded-[14px] flex items-center justify-center font-black bg-[#FFBC00] text-[#111827] text-[12px]">
@@ -234,11 +238,10 @@
     <SafeArea />
     <TopBar title="얼마를 보낼까요?" :onBack="store.goBack" rightLabel="취소" :onRight="store.cancelTransfer" />
     <StepBar :current="4" :total="6" />
-    <div class="flex-1 overflow-y-auto px-4 pt-4 pb-40 space-y-3">
+    <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-3">
       <p v-if="store.transferError" class="rounded-xl bg-[#FEF2F2] p-3 text-[#991B1B]" role="alert">{{ store.transferError }}</p>
-      <AmountKeypad :initialValue="store.transferAmount" @complete="handleAmountComplete" />
+      <AmountKeypad data-guide-target="amount-keypad" role="group" aria-label="송금 금액 입력" :initialValue="store.transferAmount" @complete="handleAmountComplete" />
     </div>
-    <VoiceGuideBar text="보내실 금액을 입력해 주세요." />
   </div>
 
   <!-- 송금 내용 확인 -->
@@ -258,8 +261,8 @@
         </div>
       </Card>
       <Btn v-if="store.anomaly" @click="returnToWarning">경고 화면으로 돌아가기</Btn>
-      <Btn v-else @click="store.navigate('pin-entry')">확인했어요</Btn>
-      <Btn variant="secondary" @click="store.goBack">내용 수정하기</Btn>
+      <Btn v-else data-guide-target="transfer-summary" @click="store.navigate('pin-entry')">확인했어요</Btn>
+      <Btn data-guide-exempt variant="secondary" @click="store.goBack">내용 수정하기</Btn>
     </div>
   </div>
 
@@ -275,7 +278,7 @@
       :rightDisabled="store.transferSubmitting"
     />
     <StepBar :current="6" :total="6" />
-    <div class="flex-1 overflow-y-auto px-4 pt-5 pb-40 space-y-5">
+    <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <p class="text-[#374151] text-center text-[17px]">선택한 출금 계좌의 비밀번호 4자리를<br />직접 입력해 주세요.</p>
       <div class="bg-[#FFFBEB] border border-[#FFBC00] rounded-2xl px-4 py-3 flex items-center gap-2 text-[#92650A]">
         <Ic name="Shield" />
@@ -283,9 +286,8 @@
       </div>
       <p v-if="store.transferError" class="rounded-xl bg-[#FEF2F2] p-3 text-[#991B1B]" role="alert">{{ store.transferError }}</p>
       <p v-if="store.transferSubmitting" class="text-center font-bold text-[#6B7280]">안전하게 확인하고 있어요…</p>
-      <PinEntry :disabled="store.transferSubmitting" @complete="handlePinComplete" />
+      <PinEntry data-guide-target="pin-keypad" role="group" aria-label="계좌 비밀번호 입력" :disabled="store.transferSubmitting" @complete="handlePinComplete" />
     </div>
-    <VoiceGuideBar text="비밀번호를 입력해 주세요." />
   </div>
 
   <!-- 서버 FDS 경고 -->
@@ -438,7 +440,6 @@ import Btn from '../components/common/Btn.vue';
 import Ic from '../components/common/Ic.vue';
 import AmountKeypad from '../components/common/AmountKeypad.vue';
 import PinEntry from '../components/common/PinEntry.vue';
-import VoiceGuideBar from '../components/common/VoiceGuideBar.vue';
 
 const props = defineProps({
   flowStep: { type: String, required: true },
@@ -585,7 +586,9 @@ function handleSelectFamilyPerson(personId) {
   store.isNewAccountFlow = false;
   store.selectPerson(personId);
   const accounts = store.accountsByPerson[personId] ?? [];
-  if (accounts.length === 1) store.navigate('amount-input');
+  // 저장된 계좌 선택 단계는 수취 계좌가 하나여도 건너뛰지 않는다.
+  const hasAccountStep = store.isPatternTransfer && store.activePatternDetail?.steps?.some((step) => step.screenCode === 'guide-account');
+  if (accounts.length === 1 && !hasAccountStep) store.navigate('amount-input');
   else store.navigate('guide-account');
 }
 

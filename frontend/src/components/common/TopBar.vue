@@ -1,5 +1,5 @@
 <template>
-  <div className="flex items-center justify-between px-4 bg-white border-b border-[#EEEEED] flex-shrink-0" style="min-height: 56px; padding-top: 10px; padding-bottom: 10px;">
+  <div data-guide-exempt className="flex items-center justify-between px-4 bg-white border-b border-[#EEEEED] flex-shrink-0" style="min-height: 56px; padding-top: 10px; padding-bottom: 10px;">
     <button
       v-if="onBack"
       :disabled="backDisabled"

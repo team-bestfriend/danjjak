@@ -1,5 +1,5 @@
 import { onMounted, onUnmounted, ref, toValue, watch } from 'vue';
-import { createSpeech } from '../api/ttsApi';
+import { createSpeech } from '../api/ttsApi.js';
 
 export function useTtsAudio(
   text,
@@ -90,11 +90,11 @@ export function useTtsAudio(
           await audio.play();
         } catch (playError) {
           // 자동재생 차단은 사용자가 재생 버튼으로 이어갈 수 있는 정상 fallback이다.
-          if (playError?.name !== 'NotAllowedError') handleAudioError();
+          if (!controller.signal.aborted && playError?.name !== 'NotAllowedError') handleAudioError();
         }
       }
     } catch (requestError) {
-      if (requestError?.name !== 'AbortError') {
+      if (!controller.signal.aborted && requestError?.name !== 'AbortError') {
         error.value = '음성 안내를 불러오지 못했습니다.';
       }
     } finally {
