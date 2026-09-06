@@ -75,7 +75,7 @@ const routes = [
   { path: '/patterns/:patternId/voice', name: 'voice-edit', component: VoiceEditView, meta: protectedMeta },
   { path: '/patterns/:patternId/steps/voice', name: 'step-voice-list', component: StepVoiceEditView, meta: protectedMeta },
   { path: '/patterns/:patternId/steps/:stepOrder/voice', name: 'step-voice-edit', component: StepVoiceEditView, meta: protectedMeta },
-  { path: '/analysis', name: 'analysis', component: AnalysisView, meta: protectedMeta },
+  { path: '/analysis', name: 'analysis', component: AnalysisView, meta: { requiresAuth: true } },
   { path: '/settings', name: 'settings', component: SettingsView, meta: protectedMeta },
   { path: '/settings/people', name: 'contact-manage', component: ContactManageView, meta: protectedMeta },
   { path: '/settings/people/edit', name: 'add-person', component: AddPersonView, meta: protectedMeta },

@@ -101,8 +101,16 @@ public class OpenAiTtsClient implements TtsClient {
     private String createRequestBody(String text, double speed) throws JsonProcessingException {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("model", "gpt-4o-mini-tts");
-        body.put("voice", "alloy");
+        body.put("voice", "marin");
         body.put("input", text);
+        body.put(
+            "instructions",
+            "Speak in Korean with a warm, friendly, and calm tone. "
+                + "Speak clearly and slightly slowly. "
+                + "Use natural pauses between sentences. "
+                + "Sound like a kind family member giving simple guidance. "
+                + "Do not sound robotic or overly cheerful."
+        );
         body.put("response_format", "mp3");
         body.put("speed", speed);
         return objectMapper.writeValueAsString(body);
