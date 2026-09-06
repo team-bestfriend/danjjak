@@ -55,7 +55,8 @@ error action score
 + route-deviation count
 ```
 
-- Count completed executions by financial task within the selected analysis period.
+- Count completed executions by financial task within the selected analysis period, using execution `ended_at`, not `started_at`, to determine period membership.
+- Use the same period-filtered set of ended executions (`COMPLETED`, `CANCELLED`, or `FAILED`) for step analysis. Include all their visits even when a visit started outside the period. Exclude executions with no `ended_at`; exclude visits with no `ended_at` only from duration averages, not from action scores.
 - Sum the error-action score across visits for each pattern step.
 - Select the step with the highest summed score as the difficult step.
 - If scores tie, select the step with the longer average visit duration.
