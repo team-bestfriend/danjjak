@@ -32,8 +32,8 @@ The current OpenAPI contract covers:
 Define or extend the OpenAPI contract before implementing:
 
 - Kakao OAuth start, callback, logout, and session-state behavior;
-- persisted step-instruction updates if the existing pattern update contract cannot represent them;
-- family-voice upload, lookup, playback metadata, and replacement;
+- persisted pre-start and per-step voice choices, shared script updates, and default-text lookup for reset (FR-054 through FR-056);
+- family-voice upload, lookup, playback metadata, and replacement for both pre-start and step targets, including explicit-save and partial-failure behavior;
 - pattern-execution start/end and step-visit/action logging;
 - task-count and difficult-step analytics;
 - instruction suggestion and application.
@@ -130,8 +130,8 @@ Record these as prerequisites until they are resolved:
 2. The current user response does not contain a phone number; profile UI must not invent one.
 3. Optional-consent API semantics differ from the current frontend's required-terms onboarding UI.
 4. The registered-person API returns one recipient account, while the current frontend presents multiple-account UI.
-5. Pattern-step instruction and family-voice updates do not have a complete API contract.
-6. Family-voice upload, playback metadata, and replacement do not have an API contract.
+5. Pattern description and step-instruction updates exist, but independent pre-start/step voice choices and server-provided reset defaults need contract verification or extension for FR-054 through FR-056 (#49). Product requirements do not establish new HTTP field names.
+6. Pre-start and step family-voice upload, playback metadata, replacement, and save-failure semantics need API/BE work (#58) before frontend integration (#59). Reuse existing step audio metadata; add a new Flyway migration only for missing persisted target choices or pre-start audio data. Do not edit applied migrations or model pre-start guidance as an executable step.
 7. Execution logging, step logging, analytics, and instruction suggestion do not have API contracts.
 8. Some OpenAPI pattern types are outside the MVP; template `available` values and frontend disabled states must agree.
 9. Current frontend FDS behavior based on new accounts or route deviation conflicts with the approved rules and must be replaced by server results.

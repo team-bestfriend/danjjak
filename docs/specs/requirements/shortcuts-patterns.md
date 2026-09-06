@@ -40,9 +40,9 @@
 2. Select an unused shortcut number from 1 through 12.
 3. For a transfer template, select a registered person's recipient account.
 4. Review and optionally edit the default title and pre-start description.
-5. Review and optionally edit each copied step instruction.
-6. Review a final summary containing the number, title, description, linked recipient when applicable, and step count.
-7. Submit once, then update home and pattern list only after a successful response.
+5. Configure pre-start voice and review the ordered step-voice list, optionally editing each script, selecting TTS/family voice, and recording family audio as defined in [Guidance and Voice](guidance-voice.md#guidance-targets-and-editing-flow).
+6. Review a final summary containing the number, title, description, linked recipient when applicable, step count, and voice-configuration drafts.
+7. Submit once, then update home and pattern list only after a successful response. Text, mode, recording, skip, and partial-save behavior follow [Script Editing and Save Behavior](guidance-voice.md#script-editing-and-save-behavior).
 
 ## Validation and Limits
 
@@ -56,6 +56,7 @@
 ## Edit, Reorder, and Deactivate
 
 - Fetch persisted pattern detail before filling the edit form.
+- The edit flow includes pre-start and individual step voice editors (FR-054 through FR-056), preserving stored text, choices, and recordings unless explicitly changed. Pattern detail provides access to the same editors.
 - Moving to an unused number changes only the current pattern's number.
 - Moving to an occupied number requires an explicit confirmation to swap the two pattern numbers.
 - Submit the complete active shortcut order in one reorder request.
@@ -76,7 +77,7 @@
 ## Execution Start
 
 - Confirmation shows shortcut number, title, description, and recipient/account summary for a transfer pattern.
-- Audio may read the description, but playback completion is not required to start.
+- Play the saved description using the pre-start target's effective TTS/family mode and fallback rules in [Guidance and Voice](guidance-voice.md#playback-selection); playback completion is not required to start.
 - Create a pattern execution only when the user selects `Start`.
 - Closing or cancelling confirmation leaves the user on home and creates no execution record.
 - The first executable step comes from the retrieved ordered pattern detail, not a hardcoded screen list.

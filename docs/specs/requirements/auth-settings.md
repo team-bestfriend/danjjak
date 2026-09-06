@@ -52,12 +52,12 @@
 
 - Text size is one of `SMALL`, `NORMAL`, or `LARGE`.
 - Guidance speed is one of `SLOW`, `NORMAL`, or `FAST`.
-- Voice-guidance mode is one of `TTS` or `FAMILY`.
+- Voice-guidance mode is one of `TTS` or `FAMILY` and is the default for guidance targets without an explicit choice.
 - Apply retrieved settings before or during initial home rendering so the UI does not remain in a conflicting default mode.
 - After a successful update, apply the returned values to the current screen immediately.
 - On save failure, restore the previous saved values or visibly mark the new values as unsaved.
 - A text-size change must not clip or overlap primary information and actions in the approved demo viewport.
-- Guidance speed controls the TTS request mapping. Voice mode controls the family-recording-versus-TTS playback priority defined in the guidance requirements.
+- Guidance speed controls the TTS request mapping, including draft previews. Resolve explicit pre-start or step choices before the global voice default, as defined in [Guidance and Voice](guidance-voice.md#playback-selection). Changing the global default does not overwrite saved target choices or recordings.
 
 ## Completion Criteria
 
