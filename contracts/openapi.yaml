@@ -27,6 +27,8 @@ tags:
     description: 카카오 OAuth와 서버 세션
   - name: Patterns
     description: 금융 패턴과 단축번호 관리
+  - name: Usage Analysis
+    description: 이용 기록 기반 수행 횟수와 단계별 행동 분석
 paths:
   /api/auth/kakao/start:
     get:
@@ -689,6 +691,60 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /api/usage-analysis:
+    get:
+      tags: [Usage Analysis]
+      operationId: getUsageAnalysis
+      summary: 현재 사용자의 기간별 금융 패턴 이용 분석
+      description: >-
+        FR-048, FR-049. 세션 사용자만 조회하며 userId 입력은 받지 않는다.
+        from과 to는 DB에 기록한 서버 로컬 날짜 기준이며 양 끝 날짜를 포함한다.
+        기간 중 ended_at이 속하는 실행을 대상으로 상태가 COMPLETED인 횟수를 패턴별 계산한다.
+        대상 실행(COMPLETED·CANCELLED·FAILED)의 모든 방문을 방문 완료 여부와 관계없이 집계하며,
+        실행 시작이나 방문 시각이 기간 밖이어도 해당 실행의 방문은 포함한다.
+        ended_at이 없는 STARTED 실행은 완료 횟수와 단계 분석 모두에서 제외한다.
+        비활성화 패턴의 기록도 포함하고 실행이 없는 패턴은 배열에 포함하지 않는다.
+        단계별 errorScore는 모든 방문의 retryCount + backCount + wrongTouchCount +
+        (routeDeviation이면 1) 합계다. 평균 소요시간은 ended_at이 있는 방문만 사용하며
+        종료 방문이 없으면 null이다. 현재 시간으로 미종료 방문의 시간을 추정하지 않는다.
+        difficultStep은 errorScore 내림차순, 평균 소요시간 내림차순(null은 마지막),
+        stepOrder 오름차순, 모두 같으면 stepId 오름차순으로 결정한다.
+        방문이 없으면 difficultStep은 null이며 점수 0인 실제 방문은 선택 대상이다.
+        동의 미완료·거부 및 기록 없음은 오류가 아닌 200 응답이다. 결과를 영구 저장하지 않는다.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: 시작일 (1000-01-01 이상, to 이하)
+          schema:
+            type: string
+            format: date
+          example: '2026-09-01'
+        - name: to
+          in: query
+          required: true
+          description: 종료일 (9999-12-31 이하, 해당 날짜 전체 포함)
+          schema:
+            type: string
+            format: date
+          example: '2026-09-30'
+      responses:
+        '200':
+          description: 동의·빈 상태 또는 계산된 이용 분석
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageAnalysisResponse'
+        '400':
+          description: 날짜 누락·형식 오류(INVALID_REQUEST) 또는 역전·범위 오류(INVALID_ANALYSIS_PERIOD)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     sessionCookie:
@@ -1543,3 +1599,81 @@ components:
         endedAt:
           type: string
           format: date-time
+    UsageAnalysisResponse:
+      type: object
+      required: [status, from, to, patterns, steps, difficultStep]
+      properties:
+        status:
+          type: string
+          enum: [CONSENT_REQUIRED, CONSENT_DECLINED, NO_DATA, AVAILABLE]
+          description: >-
+            CONSENT_REQUIRED는 동의 선택 미완료, CONSENT_DECLINED는 이용 기록 거부,
+            NO_DATA는 동의했으나 기간 내 종료된 실행 없음, AVAILABLE은 기간 내 종료된 실행 존재.
+            AVAILABLE 외 상태에서는 patterns와 steps는 빈 배열, difficultStep은 null이다.
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        patterns:
+          type: array
+          description: 기간 내 종료된 실행이 있는 패턴. patternId 오름차순, 완료 횟수 0도 포함.
+          items:
+            $ref: '#/components/schemas/PatternUsage'
+        steps:
+          type: array
+          description: 방문이 있는 단계. patternId, stepOrder, stepId 오름차순.
+          items:
+            $ref: '#/components/schemas/StepAnalysis'
+        difficultStep:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/StepAnalysis'
+          nullable: true
+          description: 전체 대상 단계 중 가장 어려운 단계. 방문 기록이 없으면 null.
+    PatternUsage:
+      type: object
+      required: [patternId, patternType, title, completedCount]
+      properties:
+        patternId:
+          type: integer
+          format: int64
+        patternType:
+          $ref: '#/components/schemas/PatternType'
+        title:
+          type: string
+        completedCount:
+          type: integer
+          format: int64
+          minimum: 0
+    StepAnalysis:
+      type: object
+      required: [patternId, stepId, stepCode, stepName, stepOrder, visitCount, errorScore, averageDurationSeconds]
+      properties:
+        patternId:
+          type: integer
+          format: int64
+        stepId:
+          type: integer
+          format: int64
+        stepCode:
+          type: string
+        stepName:
+          type: string
+        stepOrder:
+          type: integer
+          minimum: 1
+        visitCount:
+          type: integer
+          format: int64
+          minimum: 1
+        errorScore:
+          type: integer
+          format: int64
+          minimum: 0
+        averageDurationSeconds:
+          type: number
+          minimum: 0
+          nullable: true
+          description: 종료 방문만의 평균 초. 종료 방문이 없으면 null.
