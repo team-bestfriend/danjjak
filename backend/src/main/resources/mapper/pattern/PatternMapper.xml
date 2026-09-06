@@ -214,11 +214,12 @@
           AND registered_person_id IS NULL
     </select>
 
-    <select id="findExecutionStatus" resultType="string">
+    <select id="findExecutionStatusForUpdate" resultType="string">
         SELECT pe.status
         FROM pattern_executions pe
         JOIN financial_patterns fp ON fp.financial_pattern_id = pe.financial_pattern_id
         WHERE fp.user_id = #{userId} AND pe.pattern_execution_id = #{executionId}
+        FOR UPDATE
     </select>
 
     <select id="countExecutionStep" resultType="int">
@@ -234,9 +235,12 @@
     </select>
 
     <select id="nextVisitNumber" resultType="int">
-        SELECT COALESCE(MAX(visit_number), 0) + 1
+        SELECT visit_number + 1
         FROM step_execution_logs
         WHERE pattern_execution_id = #{executionId} AND pattern_step_id = #{stepId}
+        ORDER BY visit_number DESC
+        LIMIT 1
+        FOR UPDATE
     </select>
 
     <insert id="insertStepVisit" useGeneratedKeys="true" keyProperty="visitId" keyColumn="step_execution_log_id">
@@ -274,9 +278,9 @@
             back_count = GREATEST(back_count, #{backCount}),
             wrong_touch_count = GREATEST(wrong_touch_count, #{wrongTouchCount}),
             route_deviation = route_deviation OR #{routeDeviation},
-            completed = completed OR #{completed},
-            ended_at = CASE WHEN #{completed} THEN COALESCE(ended_at, #{endedAt}) ELSE ended_at END
-        WHERE step_execution_log_id = #{visitId}
+            completed = #{completed},
+            ended_at = #{endedAt}
+        WHERE step_execution_log_id = #{visitId} AND ended_at IS NULL
     </update>
 
     <select id="findExecutionEndedAt" resultType="java.time.LocalDateTime">
@@ -288,8 +292,8 @@
 
     <update id="closeOpenVisits">
         UPDATE step_execution_logs
-        SET completed = TRUE, ended_at = #{endedAt}
-        WHERE pattern_execution_id = #{executionId} AND completed = FALSE
+        SET ended_at = #{endedAt}
+        WHERE pattern_execution_id = #{executionId} AND ended_at IS NULL
     </update>
 
     <update id="finishExecution">

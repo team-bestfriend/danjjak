@@ -205,14 +205,23 @@ public class PatternService {
     @Transactional
     public StepVisitResponse startVisit(
             long userId, long executionId, VisitStartRequest request) {
+        if (!patternMapper.isUsageLogAgreed(userId)) return null;
+        requireStartedExecution(userId, executionId);
         if (patternMapper.countExecutionStep(userId, executionId, request.stepId()) != 1) {
             throw badRequest("INVALID_EXECUTION_STEP", "진입할 수 있는 실행 단계가 아닙니다.");
         }
         StepVisitRecord visit = new StepVisitRecord();
         visit.setExecutionId(executionId);
         visit.setStepId(request.stepId());
-        visit.setVisitNumber(patternMapper.nextVisitNumber(executionId, request.stepId()));
+        // 잠금 대기 전에 만들어진 MySQL 스냅샷 대신 최신 방문번호를 잠금 조회한다.
+        Integer nextVisitNumber = patternMapper.nextVisitNumber(executionId, request.stepId());
+        int visitNumber = nextVisitNumber == null ? 1 : nextVisitNumber;
+        if (visitNumber > 65535) {
+            throw conflict("VISIT_LIMIT_REACHED", "이 단계의 방문 기록 한도에 도달했습니다.");
+        }
+        visit.setVisitNumber(visitNumber);
         visit.setStartedAt(now());
+        patternMapper.closeOpenVisits(executionId, visit.getStartedAt());
         patternMapper.insertStepVisit(visit);
         return toVisitResponse(requireVisit(userId, executionId, visit.getVisitId()));
     }
@@ -223,27 +232,24 @@ public class PatternService {
             long executionId,
             long visitId,
             VisitUpdateRequest request) {
+        validateVisitUpdate(request);
+        if (!patternMapper.isUsageLogAgreed(userId)) return null;
+        requireStartedExecution(userId, executionId);
         StepVisitRecord existing =
                 patternMapper.findStepVisitForUpdate(userId, executionId, visitId);
         if (existing == null) {
             throw notFound("STEP_VISIT_NOT_FOUND", "단계 방문 기록을 찾을 수 없습니다.");
         }
-        if (existing.isCompleted()) return toVisitResponse(existing);
-        String executionStatus = patternMapper.findExecutionStatus(userId, executionId);
-        boolean completed = Boolean.TRUE.equals(request.completed());
-        if (!"STARTED".equals(executionStatus) && !completed) {
-            throw conflict("EXECUTION_ALREADY_FINISHED", "이미 종료된 패턴 실행입니다.");
+        if (existing.getEndedAt() != null) {
+            throw conflict("STEP_VISIT_ALREADY_FINISHED", "이미 종료된 단계 방문입니다.");
         }
-
+        boolean completed = Boolean.TRUE.equals(request.completed());
         int retryCount = valueOrCurrent(request.retryCount(), existing.getRetryCount());
         int backCount = valueOrCurrent(request.backCount(), existing.getBackCount());
         int wrongTouchCount = valueOrCurrent(request.wrongTouchCount(), existing.getWrongTouchCount());
         boolean routeDeviation = Boolean.TRUE.equals(request.routeDeviation()) || existing.isRouteDeviation();
-        LocalDateTime visitEndedAt = completed
-                ? ("STARTED".equals(executionStatus)
-                        ? now()
-                        : patternMapper.findExecutionEndedAt(userId, executionId))
-                : null;
+        // 완료 여부를 명시하면 정상 완료 또는 미완료 이탈로 방문을 종료한다.
+        LocalDateTime visitEndedAt = request.completed() == null ? null : now();
         patternMapper.updateStepVisit(
                 visitId,
                 retryCount,
@@ -258,23 +264,41 @@ public class PatternService {
     @Transactional
     public ExecutionFinishResponse finishExecution(
             long userId, long executionId, ExecutionFinishRequest request) {
-        String currentStatus = patternMapper.findExecutionStatus(userId, executionId);
-        if (currentStatus == null) {
-            throw notFound("PATTERN_EXECUTION_NOT_FOUND", "패턴 실행 기록을 찾을 수 없습니다.");
+        if (request == null || request.status() == null) {
+            throw badRequest("INVALID_REQUEST", "종료 상태가 필요합니다.");
         }
+        requireStartedExecution(userId, executionId);
         String requestedStatus = request.status().name();
-        if (!"STARTED".equals(currentStatus)) {
-            if (!currentStatus.equals(requestedStatus)) {
-                throw conflict("EXECUTION_ALREADY_FINISHED", "이미 다른 상태로 종료된 패턴 실행입니다.");
-            }
-            return new ExecutionFinishResponse(
-                    executionId, request.status(), patternMapper.findExecutionEndedAt(userId, executionId));
-        }
-
         LocalDateTime endedAt = now();
         patternMapper.closeOpenVisits(executionId, endedAt);
-        patternMapper.finishExecution(userId, executionId, requestedStatus, endedAt);
+        if (patternMapper.finishExecution(userId, executionId, requestedStatus, endedAt) != 1) {
+            throw conflict("EXECUTION_ALREADY_FINISHED", "이미 종료된 패턴 실행입니다.");
+        }
         return new ExecutionFinishResponse(executionId, request.status(), endedAt);
+    }
+
+    private void requireStartedExecution(long userId, long executionId) {
+        // 실행 행 잠금을 먼저 획득해 방문번호 계산과 종료·행동 요청을 직렬화한다.
+        String status = patternMapper.findExecutionStatusForUpdate(userId, executionId);
+        if (status == null) {
+            throw notFound("PATTERN_EXECUTION_NOT_FOUND", "패턴 실행 기록을 찾을 수 없습니다.");
+        }
+        if (!"STARTED".equals(status)) {
+            throw conflict("EXECUTION_ALREADY_FINISHED", "이미 종료된 패턴 실행입니다.");
+        }
+    }
+
+    private void validateVisitUpdate(VisitUpdateRequest request) {
+        if (request == null || (request.retryCount() == null && request.backCount() == null
+                && request.wrongTouchCount() == null && request.routeDeviation() == null
+                && request.completed() == null)) {
+            throw badRequest("INVALID_REQUEST", "저장할 행동 또는 종료 여부가 필요합니다.");
+        }
+        if ((request.retryCount() != null && request.retryCount() < 0)
+                || (request.backCount() != null && request.backCount() < 0)
+                || (request.wrongTouchCount() != null && request.wrongTouchCount() < 0)) {
+            throw badRequest("INVALID_REQUEST", "행동 횟수는 음수일 수 없습니다.");
+        }
     }
 
     private PatternTemplateResponse requireAvailableTemplate(PatternType type) {
