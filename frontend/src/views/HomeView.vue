@@ -13,7 +13,7 @@
     </div>
 
     <div
-      className="flex-1 flex flex-col px-4 overflow-hidden"
+      className="flex-1 flex flex-col px-4 overflow-y-auto"
       style="padding-top: 12px; padding-bottom: 10px; gap: 10px;"
       @touchstart="onTouchStart"
       @touchend="onTouchEnd"
@@ -32,6 +32,9 @@
       <div className="flex-shrink-0">
         <button
           @click="toggleStt"
+          type="button"
+          :disabled="!speechSupported || store.patternLoading || store.patternOrderSaving"
+          aria-describedby="voice-command-status"
           :class="['w-full flex items-center justify-center gap-2.5 font-bold transition-all']"
           :style="
             sttState === 'listening'
@@ -42,30 +45,37 @@
         >
           <template v-if="sttState === 'listening'">
             <div className="w-3 h-3 rounded-full bg-[#EF4444] animate-pulse" />
-            <span>듣고 있어요...</span>
+            <span>말하기 완료</span>
           </template>
           <template v-else-if="sttState === 'processing'">
-            <span className="animate-spin inline-block">⟳</span>
-            <span>확인하고 있어요...</span>
+            <span className="animate-spin inline-block" aria-hidden="true">⟳</span>
+            <span>확인 중 · 취소하기</span>
+          </template>
+          <template v-else-if="sttState === 'starting'">
+            <Ic name="Mic" />
+            <span>마이크 준비 중 · 취소하기</span>
           </template>
           <template v-else>
             <Ic name="Mic" />
-            <span>음성으로 말하기</span>
+            <span>{{ speechSupported ? '음성으로 말하기' : '음성 인식 지원 안 됨' }}</span>
           </template>
         </button>
 
-        <div v-if="sttState === 'listening'" className="flex items-end gap-px h-7 px-3 mt-2">
-          <div
-            v-for="(_, i) in 32"
-            :key="i"
-            className="wave-bar flex-1 bg-[#EF4444] rounded-sm opacity-70"
-            :style="{ animationDelay: `${i * 0.06}s` }"
-          />
-        </div>
+        <p id="voice-command-status" class="mt-2 text-[15px] leading-relaxed text-[#374151]" role="status" aria-live="polite" aria-atomic="true">{{ sttMessage }}</p>
+        <button v-if="highlightedPattern" type="button" class="mt-2 min-h-12 w-full rounded-[14px] border-2 border-[#B8860B] bg-[#FFFBEB] px-3 py-2 font-bold text-[#111827]" :disabled="store.patternLoading" @click="handleCardClick(highlightedPattern.num, highlightedPattern)">
+          {{ highlightedPattern.num }}번 업무 확인하기
+        </button>
+        <details class="mt-1 text-[14px] leading-relaxed text-[#6B7280]">
+          <summary class="min-h-12 cursor-pointer py-3">지원 문장과 마이크 사용 안내</summary>
+          <p>원하는 단축번호를 찾을 때만 마이크를 사용해요. 단짝은 인식한 문장과 음성을 저장하지 않아요. 브라우저의 음성 인식 서비스로 음성이 전송될 수 있어요.</p>
+          <ul class="mt-2 list-inside list-disc">
+            <li v-for="example in voiceCommandExamples" :key="example">{{ example }}</li>
+          </ul>
+        </details>
       </div>
 
       <!-- 내 단축번호 + 그리드 + 페이지 도트 -->
-      <div className="flex-1 flex flex-col" style="min-height: 0; gap: 8px;">
+      <div className="flex-1 flex flex-col" style="min-height: 360px; gap: 8px;">
         <div className="flex items-center flex-shrink-0">
           <p className="font-semibold text-[#111827]" style="font-size: 16px;">내 단축번호</p>
         </div>
@@ -84,6 +94,7 @@
             :patterns="store.patterns"
             :dragState="drag"
             :disabled="store.patternOrderSaving"
+            :highlightedPatternId="highlightedPattern?.patternId"
             @pointer-down="handlePointerDown"
             @pointer-move="handlePointerMove"
             @pointer-up="handlePointerUp"
@@ -168,10 +179,24 @@ import Ic from '../components/common/Ic.vue';
 import NavBar from '../components/common/NavBar.vue';
 import PatternGrid from '../components/common/PatternGrid.vue';
 import FocusModeCard from '../components/common/FocusModeCard.vue';
+import { useShortcutSpeech } from '../composables/useShortcutSpeech.js';
+import { voiceCommandExamples } from '../features/voice/shortcutCommands.js';
 
 const store = useAppStore();
 
-const sttState = ref('idle');
+const highlightedPatternId = ref(null);
+const highlightedPattern = computed(() => store.patterns.find((pattern) => pattern.patternId === highlightedPatternId.value));
+const { supported: speechSupported, state: sttState, message: sttMessage, start: startSpeech, stop: stopSpeech, cancel: cancelSpeech } = useShortcutSpeech(
+  () => store.patterns,
+  async (pattern) => {
+    highlightedPatternId.value = pattern.patternId;
+    store.homePage = Math.ceil(pattern.num / 4);
+    await nextTick();
+    if (highlightedPatternId.value === pattern.patternId) {
+      containerRef.value?.querySelector(`[data-slot-num="${pattern.num}"]`)?.scrollIntoView({ block: 'nearest' });
+    }
+  },
+);
 const focusedPat = ref(null);
 const focusDialog = ref(null);
 let previouslyFocused = null;
@@ -194,19 +219,8 @@ const pageNums = computed(() => {
 });
 const ghostPat = computed(() => (drag.value ? store.patterns.find((p) => p.num === drag.value.sourceNum) : null));
 
-// STT simulation
-let sttTimer = null;
-watch(sttState, (newVal) => {
-  if (sttTimer) clearTimeout(sttTimer);
-  if (newVal === 'listening') {
-    sttTimer = setTimeout(() => { sttState.value = 'processing'; }, 2000);
-  } else if (newVal === 'processing') {
-    sttTimer = setTimeout(() => {
-      const p1 = store.patterns.find((x) => x.num === 1) || store.patterns[0];
-      if (p1) focusedPat.value = p1;
-      sttState.value = 'idle';
-    }, 1200);
-  }
+watch(() => store.patterns, () => {
+  if (sttState.value !== 'idle' || highlightedPatternId.value !== null) resetSpeech();
 });
 
 watch(focusedPat, async (pattern) => {
@@ -239,7 +253,17 @@ function trapDialogFocus(event) {
 }
 
 function toggleStt() {
-  if (sttState.value === 'idle') sttState.value = 'listening';
+  if (sttState.value === 'listening') stopSpeech();
+  else if (sttState.value !== 'idle') resetSpeech();
+  else {
+    highlightedPatternId.value = null;
+    startSpeech();
+  }
+}
+
+function resetSpeech() {
+  highlightedPatternId.value = null;
+  cancelSpeech();
 }
 
 function findSlotAtPoint(x, y) {
@@ -308,6 +332,7 @@ function handlePointerDown(num, e) {
 
   longPressTimer = setTimeout(() => {
     longPressTimer = null;
+    resetSpeech();
     drag.value = { sourceNum: num, ghostX: x, ghostY: y, targetNum: null };
     // Track drag at document level so events fire regardless of pointer position
     document.addEventListener('pointermove', onDocPointerMove, { passive: true });
@@ -340,12 +365,15 @@ function handlePointerCancel() {
 async function handleCardClick(num, pat) {
   if (justDropped.value) { justDropped.value = false; return; }
   if (drag.value) return;
+  if (store.patternLoading) return;
+  resetSpeech();
   if (pat) {
     try {
       await store.loadPatternDetail(pat.patternId);
       focusedPat.value = store.activePattern;
     } catch {
       // 저장소의 오류 문구와 새 목록을 유지해 다시 시도할 수 있게 한다.
+      sttMessage.value = store.patternError;
     }
   } else {
     store.navigate("pattern-register");
@@ -353,6 +381,7 @@ async function handleCardClick(num, pat) {
 }
 
 function beginDirectTransfer() {
+  resetSpeech();
   store.startTransfer();
   store.navigate('transfer-source');
 }
@@ -386,7 +415,6 @@ function onTouchEnd(e) {
 }
 
 onUnmounted(() => {
-  if (sttTimer) clearTimeout(sttTimer);
   if (longPressTimer) clearTimeout(longPressTimer);
   if (edgeTimer) clearTimeout(edgeTimer);
   removeDocListeners();
