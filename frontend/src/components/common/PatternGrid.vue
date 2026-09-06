@@ -5,7 +5,7 @@
       :key="num"
       type="button"
       :data-slot-num="num"
-      :aria-label="getPattern(num) ? `${num}번 ${getPattern(num).label}` : `${num}번 패턴 등록`"
+      :aria-label="getPattern(num) ? `${num}번 ${getPattern(num).label}${isVoiceMatch(num) ? ', 음성으로 찾은 단축번호' : ''}` : `${num}번 패턴 등록`"
       :disabled="disabled"
       @pointerdown="handlePointerDown(num, $event)"
       @pointermove="handlePointerMove"
@@ -27,7 +27,7 @@
         border: getPattern(num) ? 'none' : '1.5px dashed #D1D5DB',
         opacity: disabled ? 0.55 : isDragSrc(num) ? 0.25 : 1,
         transform: isDragSrc(num) ? 'scale(0.95)' : isDropTgt(num) ? 'scale(1.04)' : 'scale(1)',
-        boxShadow: isDropTgt(num) ? '0 0 0 3px rgba(0,0,0,0.20)' : 'none',
+        boxShadow: isVoiceMatch(num) ? '0 0 0 4px #111827, 0 0 0 7px #FFBC00' : isDropTgt(num) ? '0 0 0 3px rgba(0,0,0,0.20)' : 'none',
       }"
     >
       <span
@@ -38,6 +38,7 @@
         style="font-size: 19px; font-weight: 600; word-break: keep-all; line-height: 1.3; text-align: center;"
         :style="{ color: getPattern(num) ? '#ffffff' : '#AEAEAE' }"
       >{{ getPattern(num) ? getPattern(num).label : '패턴 등록' }}</span>
+      <span v-if="isVoiceMatch(num)" class="rounded-full bg-white px-2 py-1 text-[13px] font-bold text-[#111827]">✓ 음성으로 찾았어요</span>
     </button>
   </div>
 </template>
@@ -48,6 +49,7 @@ const props = defineProps({
   patterns: { type: Array, required: true },
   dragState: { type: Object, default: null },
   disabled: { type: Boolean, default: false },
+  highlightedPatternId: { type: Number, default: null },
 });
 
 const emit = defineEmits(['pointer-down', 'pointer-move', 'pointer-up', 'pointer-cancel', 'card-click']);
@@ -56,6 +58,7 @@ function getPattern(num) {
   return props.patterns.find((x) => x.num === num);
 }
 function isDragSrc(num) { return props.dragState?.sourceNum === num; }
+function isVoiceMatch(num) { return props.highlightedPatternId != null && getPattern(num)?.patternId === props.highlightedPatternId; }
 function isDropTgt(num) { return props.dragState?.targetNum === num && props.dragState.sourceNum !== num; }
 function handlePointerDown(num, e) { emit('pointer-down', num, e); }
 function handlePointerMove(e) { emit('pointer-move', e); }
