@@ -118,6 +118,8 @@ class PatternServiceTest {
 
     @Test
     void reenteringSameStepUsesNextVisitNumber() {
+        when(patternMapper.isUsageLogAgreed(1L)).thenReturn(true);
+        when(patternMapper.findExecutionStatusForUpdate(1L, 70L)).thenReturn("STARTED");
         when(patternMapper.countExecutionStep(1L, 70L, 41L)).thenReturn(1);
         when(patternMapper.nextVisitNumber(70L, 41L)).thenReturn(2);
         doAnswer(

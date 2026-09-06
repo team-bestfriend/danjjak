@@ -23,9 +23,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ContextConfiguration(classes = RootConfig.class)
 @EnabledIfEnvironmentVariable(named = "DANJJAK_DB_INTEGRATION_TEST", matches = "true")
 @Transactional
+@Rollback
 class PatternDatabaseIntegrationTest {
 
     @Autowired private PatternService patternService;
@@ -127,5 +131,101 @@ class PatternDatabaseIntegrationTest {
                         "SELECT status FROM pattern_executions WHERE pattern_execution_id = ?",
                         String.class,
                         started.executionId()));
+    }
+
+    @Test
+    void persistsActionTotalsWithoutDecreasingAndClosesIncompleteVisits() {
+        userService.updateConsents(1L, new ConsentUpdateRequest(true, false));
+        long patternId = patternService.getPatterns(1L).get(3).patternId();
+        var started = patternService.startExecution(1L, patternId, null);
+        long executionId = started.executionId();
+        assertEquals("STARTED", jdbcTemplate.queryForObject(
+                "SELECT status FROM pattern_executions WHERE pattern_execution_id = ?",
+                String.class, executionId));
+        assertNull(jdbcTemplate.queryForObject(
+                "SELECT ended_at FROM pattern_executions WHERE pattern_execution_id = ?",
+                java.sql.Timestamp.class, executionId));
+
+        long stepId = started.pattern().steps().get(0).stepId();
+        var first = patternService.startVisit(1L, executionId, new VisitStartRequest(stepId));
+        assertEquals(1, first.visitNumber());
+        var actions = patternService.updateVisit(1L, executionId, first.visitId(),
+                new VisitUpdateRequest(2, 3, 4, true, null));
+        assertEquals(2, actions.retryCount());
+        assertEquals(3, actions.backCount());
+        assertEquals(4, actions.wrongTouchCount());
+        assertTrue(actions.routeDeviation());
+        assertNull(actions.endedAt());
+
+        var retained = patternService.updateVisit(1L, executionId, first.visitId(),
+                new VisitUpdateRequest(1, 1, 1, false, false));
+        assertEquals(2, retained.retryCount());
+        assertEquals(3, retained.backCount());
+        assertEquals(4, retained.wrongTouchCount());
+        assertTrue(retained.routeDeviation());
+        assertFalse(retained.completed());
+        assertNotNull(retained.endedAt());
+
+        var second = patternService.startVisit(1L, executionId, new VisitStartRequest(stepId));
+        var third = patternService.startVisit(1L, executionId, new VisitStartRequest(stepId));
+        assertEquals(2, second.visitNumber());
+        assertEquals(3, third.visitNumber());
+        assertNotNull(jdbcTemplate.queryForObject(
+                "SELECT ended_at FROM step_execution_logs WHERE step_execution_log_id = ?",
+                java.sql.Timestamp.class, second.visitId()));
+        var completed = patternService.updateVisit(1L, executionId, third.visitId(),
+                new VisitUpdateRequest(null, null, null, null, true));
+        assertTrue(completed.completed());
+        assertNotNull(completed.endedAt());
+        assertNotNull(completed.durationSeconds());
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionStatus.class)
+    void persistsEachTerminalStateWithoutFabricatingStepCompletion(ExecutionStatus status) {
+        userService.updateConsents(1L, new ConsentUpdateRequest(true, false));
+        long patternId = patternService.getPatterns(1L).get(3).patternId();
+        var started = patternService.startExecution(1L, patternId, null);
+        var visit = patternService.startVisit(1L, started.executionId(),
+                new VisitStartRequest(started.pattern().steps().get(0).stepId()));
+
+        patternService.finishExecution(1L, started.executionId(), new ExecutionFinishRequest(status));
+
+        assertEquals(status.name(), jdbcTemplate.queryForObject(
+                "SELECT status FROM pattern_executions WHERE pattern_execution_id = ?",
+                String.class, started.executionId()));
+        assertNotNull(jdbcTemplate.queryForObject(
+                "SELECT ended_at FROM pattern_executions WHERE pattern_execution_id = ?",
+                java.sql.Timestamp.class, started.executionId()));
+        assertFalse(jdbcTemplate.queryForObject(
+                "SELECT completed FROM step_execution_logs WHERE step_execution_log_id = ?",
+                Boolean.class, visit.visitId()));
+        assertNotNull(jdbcTemplate.queryForObject(
+                "SELECT ended_at FROM step_execution_logs WHERE step_execution_log_id = ?",
+                java.sql.Timestamp.class, visit.visitId()));
+    }
+
+    @Test
+    void revokingConsentStopsNewRowsAndActionsButAllowsExecutionClosure() {
+        userService.updateConsents(1L, new ConsentUpdateRequest(true, false));
+        long patternId = patternService.getPatterns(1L).get(3).patternId();
+        var started = patternService.startExecution(1L, patternId, null);
+        long stepId = started.pattern().steps().get(0).stepId();
+        var visit = patternService.startVisit(1L, started.executionId(), new VisitStartRequest(stepId));
+        int executions = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM pattern_executions", Integer.class);
+        int visits = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM step_execution_logs", Integer.class);
+
+        userService.updateConsents(1L, new ConsentUpdateRequest(false, false));
+
+        assertFalse(patternService.startExecution(1L, patternId, null).loggingEnabled());
+        assertNull(patternService.startVisit(1L, started.executionId(), new VisitStartRequest(stepId)));
+        assertNull(patternService.updateVisit(1L, started.executionId(), visit.visitId(),
+                new VisitUpdateRequest(5, 5, 5, true, null)));
+        assertEquals(executions, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM pattern_executions", Integer.class));
+        assertEquals(visits, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM step_execution_logs", Integer.class));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT retry_count FROM step_execution_logs WHERE step_execution_log_id = ?",
+                Integer.class, visit.visitId()));
+        patternService.finishExecution(1L, started.executionId(), new ExecutionFinishRequest(ExecutionStatus.CANCELLED));
     }
 }

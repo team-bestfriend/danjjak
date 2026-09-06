@@ -108,17 +108,19 @@ public class PatternController {
         StepVisitResponse response =
                 patternService.startVisit(
                         userResolver.resolveUserId(session), executionId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return response == null ? ResponseEntity.noContent().build()
+                : ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PatchMapping("/pattern-executions/{executionId}/visits/{visitId}")
-    public StepVisitResponse updateVisit(
+    public ResponseEntity<StepVisitResponse> updateVisit(
             @PathVariable long executionId,
             @PathVariable long visitId,
             @Valid @RequestBody VisitUpdateRequest request,
             HttpSession session) {
-        return patternService.updateVisit(
+        StepVisitResponse response = patternService.updateVisit(
                 userResolver.resolveUserId(session), executionId, visitId, request);
+        return response == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(response);
     }
 
     @PatchMapping("/pattern-executions/{executionId}")

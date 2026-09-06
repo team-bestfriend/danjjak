@@ -63,7 +63,7 @@ public interface PatternMapper {
     int countOwnedSourceAccount(
             @Param("userId") long userId, @Param("accountId") long accountId);
 
-    String findExecutionStatus(
+    String findExecutionStatusForUpdate(
             @Param("userId") long userId, @Param("executionId") long executionId);
 
     int countExecutionStep(
@@ -71,7 +71,7 @@ public interface PatternMapper {
             @Param("executionId") long executionId,
             @Param("stepId") long stepId);
 
-    int nextVisitNumber(
+    Integer nextVisitNumber(
             @Param("executionId") long executionId, @Param("stepId") long stepId);
 
     int insertStepVisit(StepVisitRecord visit);
