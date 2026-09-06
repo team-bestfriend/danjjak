@@ -106,14 +106,20 @@ Expected result: each action uses its server-returned number, and both numbers r
 
 ## SC-011 TTS and Family-voice Fallback
 
-1. Save TTS mode and a selected speed.
-2. Enter a step and verify current text playback at that speed.
-3. Switch to family mode and record, preview, and upload one step recording.
-4. Verify family playback for that step while the caption remains visible.
-5. Enter a step without a recording or force playback failure.
-6. Verify TTS fallback and continued task operability.
+Requirement coverage: FR-019 through FR-026 and FR-054 through FR-056.
 
-Expected result: actual recording lifecycle and fallback work without using audio as authentication.
+1. Save a global voice mode and guidance speed. Open an existing pattern's edit flow and verify pre-start voice configuration and the actual ordered step-voice list from the server.
+2. Select pre-start TTS, edit the description, and finish text editing. Verify the displayed draft and actual TTS preview use the same edited text and selected speed without changing persisted values yet.
+3. Reset to the template default, verify the draft preview, then edit again. Accept the voice draft, finish pattern save, refresh, and verify confirmation uses the saved description and voice choice without creating an execution before `Start`.
+4. Reopen pre-start editing, select family voice, edit the script, record with the microphone, stop, preview, and rerecord. Save and verify the pre-start recording plays with the same visible script after refresh.
+5. Open an individual step editor from the step list, then also by direct URL/refresh. Change only that step's text and mode, preview TTS, record/replace family audio, and save. Verify its caption, TTS input, and recording script agree while other steps and pre-start guidance remain unchanged.
+6. Set pre-start to FAMILY, one step explicitly to TTS, and leave another step without an explicit mode. Change the global default and verify only the unconfigured target follows it; changing mode alone preserves existing audio.
+7. Change the script of a target with saved family audio. Verify the mismatch notice and rerecord/TTS options; text editing alone must not fabricate new audio. Check the same behavior after SC-012 suggestion application.
+8. Cancel an unsaved edit or recording, skip configuration during pattern editing, and return from a step to its parent draft. Verify saved values and unrelated drafts remain intact. New-pattern skip uses template text and the global voice default.
+9. Verify blank/overlong text, invalid targets, microphone denial, unsupported recording, failed TTS preview, upload/replacement failure, and partial-save failure. Keep recoverable drafts, disclose actual persisted state, preserve old recording references on upload failure, and prevent duplicate saves.
+10. Select FAMILY without a recording or force family playback failure for both pre-start and a step. Verify disclosed TTS fallback uses the current script and financial actions remain usable.
+
+Expected result: pre-start and per-step text, voice choices, and actual recordings survive refetch and drive later guidance. Editing and preview create no task logs, and audio is never used as authentication. Verify the primary controls and edited text remain usable in the approved demo viewport.
 
 ## SC-012 Usage Analysis and Wording Improvement
 

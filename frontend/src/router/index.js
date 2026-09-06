@@ -73,6 +73,7 @@ const routes = [
   { path: '/patterns/:patternId', name: 'pattern-detail', component: PatternListView, props: { viewMode: 'pattern-detail' }, meta: protectedMeta },
   { path: '/patterns/new', name: 'pattern-register', component: PatternRegisterView, meta: protectedMeta },
   { path: '/patterns/:patternId/voice', name: 'voice-edit', component: VoiceEditView, meta: protectedMeta },
+  { path: '/patterns/:patternId/steps/voice', name: 'step-voice-list', component: StepVoiceEditView, meta: protectedMeta },
   { path: '/patterns/:patternId/steps/:stepOrder/voice', name: 'step-voice-edit', component: StepVoiceEditView, meta: protectedMeta },
   { path: '/analysis', name: 'analysis', component: AnalysisView, meta: protectedMeta },
   { path: '/settings', name: 'settings', component: SettingsView, meta: protectedMeta },

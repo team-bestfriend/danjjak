@@ -81,6 +81,7 @@ error action score
 - On application failure, keep the old persisted text and leave the suggestion available for retry.
 - If the step has family audio, explain that recording and text may no longer match and provide a rerecord action.
 - Keeping the old recording does not mean it has been approved as the spoken version of the new wording.
+- Use the same current instruction and target-specific editor as manual pattern editing (FR-055 and FR-056); suggestion application must not create a separate TTS/family script. Follow [Script Editing and Save Behavior](guidance-voice.md#script-editing-and-save-behavior) for recording mismatch and explicit save behavior.
 - Define analytics, suggestion, and application endpoints in OpenAPI before implementation.
 
 ## Completion Criteria

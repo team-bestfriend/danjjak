@@ -6,6 +6,7 @@
 | --- | --- |
 | Status | Draft for review |
 | Baseline date | 2026-09-04 |
+| Voice-editing clarification | 2026-09-06: FR-054 through FR-056 and expanded SC-011; pre-start and per-step voice choice, recording, and shared-script editing |
 | Audience | Product, frontend, backend, API, database, test, and coding agents |
 | Purpose | Define product behavior and acceptance criteria for Epic and implementation Issue planning |
 | Product boundary | Runnable hackathon MVP using deterministic mock financial data, not a production banking system |
@@ -30,7 +31,7 @@ Read this index first, then read only the files required by the current task.
 | Login, consent, current user, or accessibility settings | [Authentication and Settings](requirements/auth-settings.md) | FR-001 through FR-004, FR-053 |
 | People, owned accounts, recipient accounts, or guardian contact | [People and Accounts](requirements/people-accounts.md) | FR-005 through FR-009 |
 | Shortcut home, templates, pattern creation, editing, ordering, or execution start | [Shortcuts and Patterns](requirements/shortcuts-patterns.md) | FR-010 through FR-017 |
-| Step highlight, captions, TTS, family voice, recording, or voice command | [Guidance and Voice](requirements/guidance-voice.md) | FR-018 through FR-027 |
+| Step highlight, captions, TTS, family voice, recording, voice editors, shared scripts, or voice command | [Guidance and Voice](requirements/guidance-voice.md) | FR-018 through FR-027, FR-054 through FR-056 |
 | Balance, transactions, pension, fees, utilities, or customer-center calls | [Financial Inquiries](requirements/financial-inquiries.md) | FR-032 through FR-034 |
 | Registered-recipient or direct mock transfer | [Mock Transfer](requirements/mock-transfer.md) | FR-028 through FR-031 |
 | FDS, anomaly review, guardian notification, or guardian call | [FDS and Guardian Response](requirements/fds-guardian.md) | FR-035 through FR-043 |
