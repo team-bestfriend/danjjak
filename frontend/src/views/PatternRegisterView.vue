@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full flex-col bg-[#FAFAF8]">
     <SafeArea />
-    <TopBar :title="editing ? '금융 패턴 수정' : '금융 패턴 만들기'" :on-back="store.goBack" />
+    <TopBar :title="editing ? '금융 패턴 수정' : '금융 패턴 만들기'" :on-back="back" :back-disabled="submitting" />
 
     <div v-if="loading" class="flex flex-1 items-center justify-center text-[#6B7280]" role="status">
       패턴 정보를 불러오고 있어요…
@@ -94,15 +94,45 @@
           </div>
         </section>
 
+        <PatternVoiceEditor
+          v-else-if="stage === 'voice'"
+          key="description"
+          title="패턴 시작 안내 음성 설정"
+          :text="description"
+          :default-text="selectedTemplate?.defaultDescription"
+          :speed="store.currentUser?.settings?.voiceSpeed"
+          action-label="이 문구로 다음"
+          @dirty="voiceDirty = $event"
+          @confirm="acceptDescription"
+          @cancel="voiceDirty = false; stageIndex--"
+        />
+
         <section v-else-if="stage === 'steps'" class="space-y-5">
+          <PatternVoiceEditor
+            v-if="selectedStep"
+            :key="selectedStep.stepCode"
+            :title="selectedStep.stepName"
+            :text="selectedStep.instructionText"
+            :default-text="selectedTemplate?.steps.find((item) => item.stepCode === selectedStep.stepCode)?.instructionText"
+            :speed="store.currentUser?.settings?.voiceSpeed"
+            :has-recording="Boolean(selectedStep.voiceFilePath)"
+            action-label="이 문구 사용"
+            @dirty="voiceDirty = $event"
+            @confirm="acceptStep"
+            @cancel="voiceDirty = false; selectedStep = null"
+          />
+          <template v-else>
           <div>
-            <h1 class="text-[26px] font-bold text-[#111827]">단계별 안내 문구를 확인해요</h1>
-            <p class="mt-2 text-[15px] text-[#6B7280]">저장한 순서와 문구가 다음 실행부터 그대로 사용됩니다.</p>
+            <h1 class="text-[26px] font-bold text-[#111827]">단계별 음성 안내 설정</h1>
+            <p class="mt-2 text-[15px] text-[#6B7280]">각 단계를 눌러 문구를 편집하고 미리 들어보세요.</p>
           </div>
-          <label v-for="step in stepInstructions" :key="step.stepCode" class="block rounded-[18px] border border-[#E5E7EB] bg-white p-4">
-            <span class="text-[14px] font-bold text-[#92650A]">{{ step.stepOrder }}단계 · {{ step.stepName }}</span>
-            <textarea v-model.trim="step.instructionText" maxlength="500" rows="3" class="mt-3 w-full resize-none rounded-[14px] border-2 border-[#E5E7EB] p-3 text-[16px] leading-relaxed outline-none focus:border-[#FFBC00]" />
-          </label>
+          <button v-for="step in stepInstructions" :key="step.stepCode" type="button" class="flex min-h-[100px] w-full items-center gap-4 rounded-[20px] border border-[#E5E7EB] bg-white p-4 text-left" @click="selectedStep = step">
+            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFBC00] text-[20px] font-bold">{{ step.stepOrder }}</span>
+            <span class="min-w-0 flex-1"><strong class="block text-[18px]">{{ step.stepName }}</strong><span class="mt-1 block break-words text-[15px] text-[#6B7280]">“{{ step.instructionText }}”</span></span>
+            <span aria-hidden="true">›</span>
+          </button>
+          <p class="text-[14px] text-[#6B7280]">변경한 문구는 마지막 저장하기를 눌러야 반영돼요. 수정하지 않고 다음으로 진행해도 괜찮아요.</p>
+          </template>
         </section>
 
         <section v-else class="space-y-5">
@@ -117,8 +147,8 @@
         </section>
       </main>
 
-      <div class="flex gap-3 border-t border-[#EEEEED] bg-white px-5 pb-8 pt-4">
-        <Btn v-if="stageIndex > 0" variant="secondary" class="flex-1" :disabled="submitting" @click="stageIndex--">이전</Btn>
+      <div v-if="stage !== 'voice' && !selectedStep" class="flex gap-3 border-t border-[#EEEEED] bg-white px-5 pb-8 pt-4">
+        <Btn v-if="stageIndex > 0" variant="secondary" class="flex-1" :disabled="submitting" @click="back">이전</Btn>
         <Btn class="flex-1" :disabled="!canContinue || submitting" @click="continueOrSubmit">
           {{ stage === 'confirm' ? (submitting ? '저장 중…' : '저장하기') : '다음' }}
         </Btn>
@@ -129,7 +159,8 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { onBeforeRouteLeave, useRoute } from 'vue-router';
+import PatternVoiceEditor from '../components/common/PatternVoiceEditor.vue';
 import Btn from '../components/common/Btn.vue';
 import Card from '../components/common/Card.vue';
 import SafeArea from '../components/common/SafeArea.vue';
@@ -140,13 +171,14 @@ const route = useRoute();
 const store = useAppStore();
 const editing = computed(() => Number.isInteger(Number(route.query.edit)) && Number(route.query.edit) > 0);
 const stages = computed(() => editing.value
-  ? ['template', 'details', 'steps', 'confirm']
-  : ['template', 'shortcut', 'details', 'steps', 'confirm']);
+  ? ['template', 'details', 'voice', 'steps', 'confirm']
+  : ['template', 'shortcut', 'details', 'voice', 'steps', 'confirm']);
 const stageIndex = ref(0);
 const stage = computed(() => stages.value[stageIndex.value]);
 const loading = ref(true);
 const loadError = ref('');
 const submitting = ref(false);
+const saved = ref(false);
 const submitError = ref('');
 const selectedType = ref('');
 const shortcutNumber = ref(null);
@@ -154,6 +186,9 @@ const title = ref('');
 const description = ref('');
 const linkedBankAccountId = ref(null);
 const stepInstructions = ref([]);
+const selectedStep = ref(null);
+const voiceDirty = ref(false);
+const voiceDraftChanged = ref(false);
 
 const selectedTemplate = computed(() => store.patternTemplates.find((item) => item.patternType === selectedType.value));
 const selectedPerson = computed(() => store.people.find((person) => (
@@ -178,6 +213,7 @@ const summaryRows = computed(() => [
   { label: '시작 전 설명', value: description.value },
   ...(selectedPerson.value ? [{ label: '받는 사람', value: `${selectedPerson.value.name} · ${selectedPerson.value.relation}` }] : []),
   { label: '안내 단계', value: `${stepInstructions.value.length}단계` },
+  ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: step.instructionText })),
 ]);
 
 const TYPE_LABELS = {
@@ -207,7 +243,7 @@ function selectTemplate(template) {
   title.value = template.defaultTitle;
   description.value = template.defaultDescription;
   linkedBankAccountId.value = null;
-  stepInstructions.value = template.steps.map((step) => ({ ...step }));
+  stepInstructions.value = [...template.steps].sort((a, b) => a.stepOrder - b.stepOrder).map((step) => ({ ...step }));
 }
 
 async function initialize() {
@@ -226,7 +262,7 @@ async function initialize() {
       title.value = detail.title;
       description.value = detail.description;
       linkedBankAccountId.value = detail.linkedAccount?.accountId ?? null;
-      stepInstructions.value = detail.steps.map((step) => ({ ...step }));
+      stepInstructions.value = [...detail.steps].sort((a, b) => a.stepOrder - b.stepOrder).map((step) => ({ ...step }));
     }
   } catch (error) {
     loadError.value = error?.message ?? '패턴 정보를 불러오지 못했습니다.';
@@ -265,6 +301,7 @@ async function continueOrSubmit() {
         stepInstructions: instructions,
       });
     store.showToast(editing.value ? '패턴을 수정했어요.' : '새 패턴을 등록했어요.');
+    saved.value = true;
     await store.navigate('pattern-detail', { params: { patternId: detail.patternId }, replace: true });
   } catch (error) {
     submitError.value = error?.message ?? '패턴을 저장하지 못했습니다.';
@@ -274,4 +311,29 @@ async function continueOrSubmit() {
 }
 
 onMounted(initialize);
+
+function acceptDescription(text) {
+  if (description.value !== text) voiceDraftChanged.value = true;
+  description.value = text;
+  voiceDirty.value = false;
+  stageIndex.value++;
+}
+
+function acceptStep(text) {
+  if (selectedStep.value.instructionText !== text) voiceDraftChanged.value = true;
+  selectedStep.value.instructionText = text;
+  selectedStep.value = null;
+  voiceDirty.value = false;
+}
+
+function back() {
+  if (submitting.value) return;
+  if (voiceDirty.value && !window.confirm('편집 중인 문구를 버리고 돌아갈까요?')) return;
+  voiceDirty.value = false;
+  if (selectedStep.value) selectedStep.value = null;
+  else if (stageIndex.value > 0) stageIndex.value--;
+  else store.goBack();
+}
+
+onBeforeRouteLeave(() => saved.value || (!submitting.value && (!(voiceDirty.value || voiceDraftChanged.value) || window.confirm('저장하지 않은 문구를 버리고 이동할까요?'))));
 </script>

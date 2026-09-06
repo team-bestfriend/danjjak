@@ -62,6 +62,7 @@ export function useTtsAudio(
   function cleanup() {
     cancelRequest();
     releaseAudio();
+    loading.value = false;
   }
 
   async function load(shouldAutoplay = toValue(autoplay)) {
