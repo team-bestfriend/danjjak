@@ -896,6 +896,7 @@ test('패턴은 명시적 시작 요청 뒤에만 실행 식별자를 사용한�
   };
   globalThis.fetch = async (url, options = {}) => {
     requests.push({ url, body: options.body ? JSON.parse(options.body) : null });
+    if (url === '/api/patterns/2/guidance') return jsonResponse([]);
     if (url === '/api/patterns/2/executions') {
       return jsonResponse({ loggingEnabled: true, executionId: 90, startedAt: '2026-09-06T10:00:00', pattern: detail }, 201);
     }
@@ -925,6 +926,7 @@ test('패턴은 명시적 시작 요청 뒤에만 실행 식별자를 사용한�
   assert.equal(store.patternExecutionId, 90);
   assert.equal(store.currentStepVisit.visitNumber, 1);
   assert.deepEqual(requests.map((item) => item.url), [
+    '/api/patterns/2/guidance',
     '/api/patterns/2/executions',
     '/api/pattern-executions/90/visits',
   ]);
@@ -951,6 +953,7 @@ test('이용 기록 거부 응답에서는 단계 로그 요청을 보내지 않
   };
   globalThis.fetch = async (url) => {
     requests.push(url);
+    if (url === '/api/patterns/4/guidance') return jsonResponse([]);
     if (url === '/api/patterns/4/executions') {
       return jsonResponse({ loggingEnabled: false, executionId: null, startedAt: null, pattern: detail }, 201);
     }
@@ -962,7 +965,7 @@ test('이용 기록 거부 응답에서는 단계 로그 요청을 보내지 않
 
   assert.equal(store.executionLoggingEnabled, false);
   assert.equal(store.patternExecutionId, null);
-  assert.deepEqual(requests, ['/api/patterns/4/executions']);
+  assert.deepEqual(requests, ['/api/patterns/4/guidance', '/api/patterns/4/executions']);
 });
 
 test('패턴 단계 밖으로 이동하면 현재 방문에 경로 이탈을 저장한다', async () => {
@@ -985,6 +988,7 @@ test('패턴 단계 밖으로 이동하면 현재 방문에 경로 이탈을 저
     }],
   };
   globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/patterns/2/guidance') return jsonResponse([]);
     if (url === '/api/patterns/2/executions') {
       return jsonResponse({ loggingEnabled: true, executionId: 90, startedAt: '2026-09-06T10:00:00', pattern: detail }, 201);
     }

@@ -62,119 +62,27 @@
         {{ errorText }} 화면 안내와 금융 기능은 계속 사용할 수 있어요.
       </p>
       <p v-if="notice" class="px-4 pb-3 text-[15px] text-[#92650A]" role="status">{{ notice }}</p>
+      <p v-if="scriptOutdated && voiceMode === 'FAMILY'" class="px-4 pb-3 text-[14px] text-[#92650A]">문구 수정 전 녹음이에요. 현재 안내는 화면에서 확인해 주세요.</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useTtsAudio } from '../../composables/useTtsAudio.js';
+import { useGuidanceAudio } from '../../composables/useGuidanceAudio.js';
 
 const props = defineProps({
   text: { type: String, required: true },
   speed: { type: String, default: 'NORMAL' },
   voiceMode: { type: String, default: 'TTS' },
   familyAudioUrl: { type: String, default: '' },
+  scriptOutdated: Boolean,
   notice: { type: String, default: '' },
   guided: { type: Boolean, default: false },
 });
 
 const WAVE = [6, 12, 22, 8, 18, 26, 10, 5, 23, 26, 14, 19, 26, 5, 16, 24, 9, 21, 12, 26, 7, 18, 26, 10, 22, 14, 25, 15, 8, 20];
-const familyFailed = ref(false);
-const familyPlaying = ref(false);
-const familyLoading = ref(false);
-let familyAudio = null;
-
-const shouldUseTts = computed(() => (
-  props.voiceMode !== 'FAMILY' || !props.familyAudioUrl || familyFailed.value
-));
-const tts = useTtsAudio(
+const { playing, loading, error: errorText, notice: fallbackNotice, toggle: togglePlay, replay } = useGuidanceAudio(
   () => props.text,
-  {
-    speed: () => props.speed,
-    autoplay: true,
-    enabled: shouldUseTts,
-  },
+  { speed: () => props.speed, voiceMode: () => props.voiceMode, familyAudioUrl: () => props.familyAudioUrl },
 );
-const playing = computed(() => shouldUseTts.value ? tts.playing.value : familyPlaying.value);
-const loading = computed(() => shouldUseTts.value ? tts.loading.value : familyLoading.value);
-const errorText = computed(() => shouldUseTts.value ? tts.error.value : '');
-const fallbackNotice = computed(() => {
-  if (props.voiceMode !== 'FAMILY') return '';
-  if (!props.familyAudioUrl) return '저장된 가족 음성이 없어 자동 음성으로 안내해요.';
-  if (familyFailed.value) return '가족 음성을 재생하지 못해 자동 음성으로 안내해요.';
-  return '저장된 가족 음성으로 안내해요.';
-});
-
-function releaseFamilyAudio() {
-  if (!familyAudio) return;
-  familyAudio.pause();
-  familyAudio.src = '';
-  familyAudio = null;
-  familyPlaying.value = false;
-  familyLoading.value = false;
-}
-
-async function loadFamilyAudio(shouldAutoplay = true) {
-  releaseFamilyAudio();
-  familyFailed.value = false;
-  if (props.voiceMode !== 'FAMILY' || !props.familyAudioUrl) return;
-
-  familyLoading.value = true;
-  const audio = new Audio(props.familyAudioUrl);
-  familyAudio = audio;
-  audio.addEventListener('playing', () => {
-    familyLoading.value = false;
-    familyPlaying.value = true;
-  });
-  audio.addEventListener('pause', () => { familyPlaying.value = false; });
-  audio.addEventListener('ended', () => { familyPlaying.value = false; });
-  audio.addEventListener('canplay', () => { familyLoading.value = false; });
-  audio.addEventListener('error', () => {
-    releaseFamilyAudio();
-    familyFailed.value = true;
-  });
-
-  if (!shouldAutoplay) return;
-  try {
-    await audio.play();
-  } catch (error) {
-    familyLoading.value = false;
-    // 브라우저 자동재생 차단은 사용자가 재생 버튼으로 이어갈 수 있다.
-    if (error?.name !== 'NotAllowedError') familyFailed.value = true;
-  }
-}
-
-async function togglePlay() {
-  if (shouldUseTts.value) {
-    await tts.toggle();
-    return;
-  }
-  if (!familyAudio) {
-    await loadFamilyAudio(true);
-    return;
-  }
-  if (familyAudio.paused) await familyAudio.play();
-  else familyAudio.pause();
-}
-
-async function replay() {
-  if (shouldUseTts.value) {
-    await tts.replay();
-    return;
-  }
-  if (!familyAudio) {
-    await loadFamilyAudio(true);
-    return;
-  }
-  familyAudio.currentTime = 0;
-  await familyAudio.play();
-}
-
-watch(
-  () => [props.text, props.voiceMode, props.familyAudioUrl],
-  () => { void loadFamilyAudio(true); },
-);
-onMounted(() => { void loadFamilyAudio(true); });
-onUnmounted(releaseFamilyAudio);
 </script>

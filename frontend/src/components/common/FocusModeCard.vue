@@ -14,7 +14,7 @@
 
     <div class="space-y-4 p-5">
       <div>
-        <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · 자동 TTS</p>
+        <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · {{ voiceMode === 'FAMILY' ? '가족 음성' : '자동 TTS' }}</p>
         <div class="flex items-center gap-3">
           <button
             type="button"
@@ -41,9 +41,10 @@
             </div>
           </div>
         </div>
-        <p v-if="familyFallback" class="mt-2 text-[13px] text-[#6B7280]" role="status">
-          시작 안내용 가족 음성이 없어 자동 음성으로 안내해요.
+        <p v-if="notice" class="mt-2 text-[13px] text-[#6B7280]" role="status">
+          {{ notice }}
         </p>
+        <p v-if="pat.guidance?.voiceScriptOutdated && voiceMode === 'FAMILY'" class="mt-2 text-[14px] text-[#92650A]">문구 수정 전 녹음이에요. 현재 안내는 화면에서 확인해 주세요.</p>
         <p v-if="error" class="mt-2 text-[13px] text-[#B91C1C]" role="alert">
           {{ error }} 화면의 업무 설명은 계속 확인할 수 있어요.
         </p>
@@ -69,7 +70,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useTtsAudio } from '../../composables/useTtsAudio.js';
+import { useGuidanceAudio } from '../../composables/useGuidanceAudio.js';
 import { generatePatternDesc } from '../../constants/data.js';
 import { useAppStore } from '../../stores/appStore.js';
 
@@ -89,6 +90,8 @@ const quote = computed(() => (
   props.pat.description || generatePatternDesc(props.pat, store.people, store.accountsByPerson)
 ));
 const speed = computed(() => store.currentUser?.settings?.voiceSpeed ?? 'NORMAL');
-const familyFallback = computed(() => store.currentUser?.settings?.guideVoiceType === 'FAMILY');
-const { playing, loading, error, toggle } = useTtsAudio(quote, { speed, autoplay: true });
+const voiceMode = computed(() => props.pat.guidance?.voiceMode ?? store.currentUser?.settings?.guideVoiceType ?? 'TTS');
+const { playing, loading, error, notice, toggle } = useGuidanceAudio(quote, {
+  speed, voiceMode, familyAudioUrl: () => props.pat.guidance?.audioUrl,
+});
 </script>

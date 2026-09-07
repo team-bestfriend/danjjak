@@ -53,6 +53,7 @@ function toUiPattern(pattern) {
     num: pattern.shortcutNumber,
     label: pattern.title,
     description: pattern.description,
+    guidance: pattern.guidance ?? null,
     color: TASK_COLORS[taskType] ?? '#6B7280',
     sub: accountSummary || pattern.description,
     taskType,

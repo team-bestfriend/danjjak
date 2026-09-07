@@ -15,7 +15,7 @@
           <p class="text-[16px] text-[#6B7280]">각 단계의 문구와 음성을 확인해 주세요.</p>
           <button v-for="step in orderedSteps" :key="step.stepId" type="button" class="flex min-h-[100px] w-full items-center gap-4 rounded-[20px] border border-[#E5E7EB] bg-white p-4 text-left" @click="openStep(step)">
             <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFBC00] text-[20px] font-bold">{{ step.stepOrder }}</span>
-            <span class="min-w-0 flex-1"><strong class="block text-[18px]">{{ step.stepName }}</strong><span class="mt-1 block break-words text-[15px] text-[#6B7280]">“{{ step.instructionText }}”</span><span v-if="step.voiceFilePath" class="mt-1 block text-[13px] text-[#92650A]">저장된 가족 음성 있음</span></span>
+            <span class="min-w-0 flex-1"><strong class="block text-[18px]">{{ step.stepName }}</strong><span class="mt-1 block break-words text-[15px] text-[#6B7280]">“{{ step.instructionText }}”</span><span class="mt-1 block text-[14px] text-[#92650A]">{{ voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType) }}</span><span v-if="step.guidance?.voiceScriptOutdated" class="block text-[14px] text-[#B91C1C]">문구 변경됨 · 재녹음 확인</span></span>
             <span aria-hidden="true">›</span>
           </button>
           <p v-if="orderedSteps.length === 0" class="text-[#6B7280]">설정할 단계가 없어요. 패턴 목록에서 내용을 확인해 주세요.</p>
@@ -28,7 +28,10 @@
           :text="selectedStep?.instructionText ?? detail.description"
           :default-text="defaultText"
           :speed="store.currentUser?.settings?.voiceSpeed"
-          :has-recording="Boolean(selectedStep?.voiceFilePath)"
+          :voice-mode="currentGuidance?.voiceMode"
+          :default-mode="store.currentUser?.settings?.guideVoiceType"
+          :audio-url="currentGuidance?.audioUrl"
+          :voice-script-outdated="currentGuidance?.voiceScriptOutdated"
           :saving="saving"
           @dirty="dirty = $event"
           @confirm="save"
@@ -44,6 +47,7 @@
 import { computed, ref, watch } from 'vue';
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router';
 import { patternApi } from '../api/patternApi.js';
+import { saveGuidanceDraft, voiceLabel } from '../api/guidanceApi.js';
 import { useAppStore } from '../stores/appStore.js';
 import PatternVoiceEditor from '../components/common/PatternVoiceEditor.vue';
 import Btn from '../components/common/Btn.vue';
@@ -66,6 +70,7 @@ const orderedSteps = computed(() => [...(detail.value?.steps ?? [])].sort((a, b)
 const selectedStep = computed(() => props.perStep && route.params.stepOrder
   ? orderedSteps.value.find((step) => step.stepOrder === Number(route.params.stepOrder))
   : null);
+const currentGuidance = computed(() => selectedStep.value?.guidance ?? detail.value?.guidance);
 const defaultText = computed(() => selectedStep.value
   ? template.value?.steps.find((step) => step.stepCode === selectedStep.value.stepCode)?.instructionText ?? ''
   : template.value?.defaultDescription ?? '');
@@ -96,7 +101,7 @@ async function initialize() {
 }
 
 function canLeave() {
-  return !saving.value && (!dirty.value || window.confirm('저장하지 않은 문구를 버리고 이동할까요?'));
+  return !saving.value && (!dirty.value || window.confirm('저장하지 않은 문구와 녹음을 버리고 이동할까요?'));
 }
 
 function openStep(step) {
@@ -111,23 +116,28 @@ function back() {
   });
 }
 
-async function save(text) {
+async function save(draft) {
   if (saving.value || !detail.value) return;
   saving.value = true;
   saveError.value = '';
+  let textSaved = false;
   try {
     // 변경한 대상만 보내 다른 단계나 시작 설명을 덮어쓰지 않는다.
-    const payload = selectedStep.value
-      ? { stepInstructions: [{ stepCode: selectedStep.value.stepCode, instructionText: text }] }
-      : { description: text };
-    detail.value = await store.updatePattern(detail.value.patternId, payload);
+    await saveGuidanceDraft(detail.value.patternId, selectedStep.value?.stepCode ?? 'start', draft,
+      () => { textSaved = true; });
+    detail.value = await store.loadPatternDetail(detail.value.patternId);
+    await store.loadPatterns(true);
     dirty.value = false;
     revision.value++;
-    store.showToast('안내 문구를 저장했어요.');
+    store.showToast('안내 문구와 음성을 저장했어요.');
     saving.value = false;
     back();
   } catch (error) {
-    saveError.value = error?.message ?? '문구를 저장하지 못했습니다. 다시 시도해 주세요.';
+    saveError.value = `${textSaved ? '문구와 음성 방식은 저장됐어요. 나머지 저장 또는 확인에 실패했어요. ' : ''}${error?.message ?? '음성을 저장하지 못했습니다.'} 변경 내용을 유지했으니 다시 저장해 주세요.`;
+    if (textSaved) {
+      try { detail.value = await store.loadPatternDetail(detail.value.patternId); }
+      catch { saveError.value += ' 저장 상태도 다시 불러오지 못했어요.'; }
+    }
   } finally {
     saving.value = false;
   }

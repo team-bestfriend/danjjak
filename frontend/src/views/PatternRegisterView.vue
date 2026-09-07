@@ -29,7 +29,7 @@
             v-for="template in store.patternTemplates"
             :key="template.patternType"
             type="button"
-            :disabled="editing || !template.available"
+            :disabled="Boolean(persistedId) || !template.available"
             :class="[
               'w-full rounded-[18px] border-2 bg-white p-4 text-left disabled:cursor-not-allowed',
               selectedType === template.patternType ? 'border-[#FFBC00]' : 'border-[#E5E7EB]',
@@ -53,7 +53,7 @@
               v-for="number in 12"
               :key="number"
               type="button"
-              :disabled="editing || isUsed(number)"
+              :disabled="Boolean(persistedId) || isUsed(number)"
               :class="[
                 'h-[76px] rounded-[16px] border-2 text-[26px] font-black disabled:opacity-35',
                 shortcutNumber === number ? 'border-[#FFBC00] bg-[#FFF3CC]' : 'border-[#E5E7EB] bg-white',
@@ -101,7 +101,12 @@
           :text="description"
           :default-text="selectedTemplate?.defaultDescription"
           :speed="store.currentUser?.settings?.voiceSpeed"
-          action-label="이 문구로 다음"
+          :voice-mode="descriptionVoice.voiceMode"
+          :default-mode="store.currentUser?.settings?.guideVoiceType"
+          :audio-url="descriptionVoice.audioUrl"
+          :voice-script-outdated="descriptionVoice.voiceScriptOutdated || Boolean(descriptionVoice.audioUrl && descriptionVoice.text !== description)"
+          :recording-draft="descriptionVoice.recording"
+          action-label="이 음성으로 다음 · 마지막에 저장"
           @dirty="voiceDirty = $event"
           @confirm="acceptDescription"
           @cancel="voiceDirty = false; stageIndex--"
@@ -115,8 +120,12 @@
             :text="selectedStep.instructionText"
             :default-text="selectedTemplate?.steps.find((item) => item.stepCode === selectedStep.stepCode)?.instructionText"
             :speed="store.currentUser?.settings?.voiceSpeed"
-            :has-recording="Boolean(selectedStep.voiceFilePath)"
-            action-label="이 문구 사용"
+            :voice-mode="selectedStep.guidance?.voiceMode"
+            :default-mode="store.currentUser?.settings?.guideVoiceType"
+            :audio-url="selectedStep.guidance?.audioUrl"
+            :voice-script-outdated="selectedStep.guidance?.voiceScriptOutdated"
+            :recording-draft="selectedStep.guidance?.recording"
+            action-label="이 음성 사용 · 마지막에 저장"
             @dirty="voiceDirty = $event"
             @confirm="acceptStep"
             @cancel="voiceDirty = false; selectedStep = null"
@@ -128,7 +137,7 @@
           </div>
           <button v-for="step in stepInstructions" :key="step.stepCode" type="button" class="flex min-h-[100px] w-full items-center gap-4 rounded-[20px] border border-[#E5E7EB] bg-white p-4 text-left" @click="selectedStep = step">
             <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFBC00] text-[20px] font-bold">{{ step.stepOrder }}</span>
-            <span class="min-w-0 flex-1"><strong class="block text-[18px]">{{ step.stepName }}</strong><span class="mt-1 block break-words text-[15px] text-[#6B7280]">“{{ step.instructionText }}”</span></span>
+            <span class="min-w-0 flex-1"><strong class="block text-[18px]">{{ step.stepName }}</strong><span class="mt-1 block break-words text-[15px] text-[#6B7280]">“{{ step.instructionText }}”</span><span class="block text-[14px] text-[#92650A]">{{ voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType) }}</span></span>
             <span aria-hidden="true">›</span>
           </button>
           <p class="text-[14px] text-[#6B7280]">변경한 문구는 마지막 저장하기를 눌러야 반영돼요. 수정하지 않고 다음으로 진행해도 괜찮아요.</p>
@@ -140,10 +149,11 @@
           <Card class="overflow-hidden">
             <div v-for="row in summaryRows" :key="row.label" class="flex justify-between gap-4 border-b border-[#F3F4F6] px-5 py-4 last:border-0">
               <span class="text-[15px] text-[#6B7280]">{{ row.label }}</span>
-              <span class="text-right text-[16px] font-bold text-[#111827]">{{ row.value }}</span>
+              <span class="whitespace-pre-line text-right text-[16px] font-bold text-[#111827]">{{ row.value }}</span>
             </div>
           </Card>
           <p v-if="submitError" class="rounded-[14px] bg-[#FEF2F2] p-4 text-[15px] text-[#B91C1C]" role="alert">{{ submitError }}</p>
+          <p v-if="savedTargets.length" class="text-[15px] text-[#6B7280]">저장 완료한 음성: {{ savedTargets.join(', ') }}</p>
         </section>
       </main>
 
@@ -166,6 +176,9 @@ import Card from '../components/common/Card.vue';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 import { useAppStore } from '../stores/appStore';
+import { patternApi } from '../api/patternApi.js';
+import { saveGuidanceDraft, voiceLabel } from '../api/guidanceApi.js';
+import { apiUrl } from '../api/httpClient.js';
 
 const route = useRoute();
 const store = useAppStore();
@@ -184,6 +197,11 @@ const selectedType = ref('');
 const shortcutNumber = ref(null);
 const title = ref('');
 const description = ref('');
+const descriptionVoice = ref({});
+const persistedId = ref(editing.value ? Number(route.query.edit) : null);
+const savedTargets = ref([]);
+const initialSignature = ref('');
+const draftSignature = computed(() => JSON.stringify([selectedType.value, shortcutNumber.value, title.value, description.value, linkedBankAccountId.value]));
 const linkedBankAccountId = ref(null);
 const stepInstructions = ref([]);
 const selectedStep = ref(null);
@@ -211,9 +229,10 @@ const summaryRows = computed(() => [
   { label: '금융 업무', value: typeLabel(selectedType.value) },
   { label: '패턴 이름', value: title.value },
   { label: '시작 전 설명', value: description.value },
+  { label: '시작 안내 음성', value: voiceLabel(descriptionVoice.value, store.currentUser?.settings?.guideVoiceType) },
   ...(selectedPerson.value ? [{ label: '받는 사람', value: `${selectedPerson.value.name} · ${selectedPerson.value.relation}` }] : []),
   { label: '안내 단계', value: `${stepInstructions.value.length}단계` },
-  ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: step.instructionText })),
+  ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: `${step.instructionText}\n${voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType)}` })),
 ]);
 
 const TYPE_LABELS = {
@@ -234,14 +253,17 @@ function typeLabel(type) {
 }
 
 function isUsed(number) {
-  return store.patterns.some((pattern) => pattern.num === number && pattern.patternId !== Number(route.query.edit));
+  return store.patterns.some((pattern) => pattern.num === number && pattern.patternId !== persistedId.value);
 }
 
 function selectTemplate(template) {
-  if (!template.available || editing.value) return;
+  if (!template.available || persistedId.value) return;
+  if (voiceDraftChanged.value && !window.confirm('음성 초안을 버리고 다른 업무를 선택할까요?')) return;
   selectedType.value = template.patternType;
   title.value = template.defaultTitle;
   description.value = template.defaultDescription;
+  descriptionVoice.value = {};
+  voiceDraftChanged.value = false;
   linkedBankAccountId.value = null;
   stepInstructions.value = [...template.steps].sort((a, b) => a.stepOrder - b.stepOrder).map((step) => ({ ...step }));
 }
@@ -261,9 +283,11 @@ async function initialize() {
       shortcutNumber.value = detail.shortcutNumber;
       title.value = detail.title;
       description.value = detail.description;
+      descriptionVoice.value = { ...detail.guidance };
       linkedBankAccountId.value = detail.linkedAccount?.accountId ?? null;
       stepInstructions.value = [...detail.steps].sort((a, b) => a.stepOrder - b.stepOrder).map((step) => ({ ...step }));
     }
+    initialSignature.value = draftSignature.value;
   } catch (error) {
     loadError.value = error?.message ?? '패턴 정보를 불러오지 못했습니다.';
   } finally {
@@ -285,14 +309,14 @@ async function continueOrSubmit() {
     instructionText: step.instructionText,
   }));
   try {
-    const detail = editing.value
-      ? await store.updatePattern(Number(route.query.edit), {
+    const detail = persistedId.value
+      ? await patternApi.updatePattern(persistedId.value, {
         title: title.value,
         description: description.value,
         linkedBankAccountId: linkedBankAccountId.value,
         stepInstructions: instructions,
       })
-      : await store.createPattern({
+      : await patternApi.createPattern({
         patternType: selectedType.value,
         shortcutNumber: shortcutNumber.value,
         title: title.value,
@@ -300,11 +324,30 @@ async function continueOrSubmit() {
         linkedBankAccountId: linkedBankAccountId.value,
         stepInstructions: instructions,
       });
+    // 이후 조회/업로드가 실패해도 성공한 생성 ID로 다시 저장한다.
+    persistedId.value = detail.patternId;
+    const targets = [
+      { target: 'start', name: '시작 안내', text: description.value, voice: descriptionVoice.value },
+      ...stepInstructions.value.map((step) => ({ target: step.stepCode, name: step.stepName, text: step.instructionText, voice: step.guidance })),
+    ];
+    for (const target of targets.filter((item) => item.voice?.changed)) {
+      const result = await saveGuidanceDraft(detail.patternId, target.target, { ...target.voice, text: target.text });
+      Object.assign(target.voice, result, { audioUrl: result.audioUrl ? apiUrl(result.audioUrl) : null, recording: null, changed: false });
+      if (!savedTargets.value.includes(target.name)) savedTargets.value.push(target.name);
+    }
+    await store.loadPatternDetail(detail.patternId);
+    await store.loadPatterns(true);
     store.showToast(editing.value ? '패턴을 수정했어요.' : '새 패턴을 등록했어요.');
     saved.value = true;
     await store.navigate('pattern-detail', { params: { patternId: detail.patternId }, replace: true });
   } catch (error) {
     submitError.value = error?.message ?? '패턴을 저장하지 못했습니다.';
+    if (persistedId.value) {
+      try {
+        await store.loadPatternDetail(persistedId.value);
+        submitError.value += ' 서버에 저장된 상태를 다시 확인했어요. 패턴은 유지되며 남은 음성 초안도 보관했어요. 다시 저장하면 이어서 처리해요.';
+      } catch { submitError.value += ' 저장 상태를 다시 확인하지 못했어요. 초안을 유지했으니 연결을 확인하고 다시 저장해 주세요.'; }
+    }
   } finally {
     submitting.value = false;
   }
@@ -312,28 +355,33 @@ async function continueOrSubmit() {
 
 onMounted(initialize);
 
-function acceptDescription(text) {
-  if (description.value !== text) voiceDraftChanged.value = true;
-  description.value = text;
+function acceptDescription(draft) {
+  voiceDraftChanged.value = true;
+  description.value = draft.text;
+  descriptionVoice.value = { ...descriptionVoice.value, ...draft, changed: true,
+    voiceScriptOutdated: descriptionVoice.value.voiceScriptOutdated || Boolean(descriptionVoice.value.audioUrl && descriptionVoice.value.text !== draft.text) };
   voiceDirty.value = false;
   stageIndex.value++;
 }
 
-function acceptStep(text) {
-  if (selectedStep.value.instructionText !== text) voiceDraftChanged.value = true;
-  selectedStep.value.instructionText = text;
+function acceptStep(draft) {
+  voiceDraftChanged.value = true;
+  selectedStep.value.instructionText = draft.text;
+  const previous = selectedStep.value.guidance;
+  selectedStep.value.guidance = { ...previous, ...draft, changed: true,
+    voiceScriptOutdated: previous?.voiceScriptOutdated || Boolean(previous?.audioUrl && previous.text !== draft.text) };
   selectedStep.value = null;
   voiceDirty.value = false;
 }
 
 function back() {
   if (submitting.value) return;
-  if (voiceDirty.value && !window.confirm('편집 중인 문구를 버리고 돌아갈까요?')) return;
+  if (voiceDirty.value && !window.confirm('편집 중인 문구와 녹음을 버리고 돌아갈까요?')) return;
   voiceDirty.value = false;
   if (selectedStep.value) selectedStep.value = null;
   else if (stageIndex.value > 0) stageIndex.value--;
   else store.goBack();
 }
 
-onBeforeRouteLeave(() => saved.value || (!submitting.value && (!(voiceDirty.value || voiceDraftChanged.value) || window.confirm('저장하지 않은 문구를 버리고 이동할까요?'))));
+onBeforeRouteLeave(() => saved.value || (!submitting.value && (!(voiceDirty.value || voiceDraftChanged.value || draftSignature.value !== initialSignature.value) || window.confirm('저장하지 않은 문구와 녹음을 버리고 이동할까요?'))));
 </script>

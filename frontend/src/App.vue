@@ -14,7 +14,8 @@
         :text="voiceText"
         :speed="voiceSpeed"
         :voice-mode="voiceMode"
-        :family-audio-url="activeStep?.voiceFilePath ?? ''"
+        :family-audio-url="activeStep?.guidance?.audioUrl ?? ''"
+        :script-outdated="activeStep?.guidance?.voiceScriptOutdated ?? false"
         :notice="guidanceNotice"
         :guided="Boolean(activeStep)"
       />
@@ -83,7 +84,7 @@ const { notice: guidanceNotice, handleClick: handleGuidanceClick } = useStepGuid
   },
 );
 const voiceSpeed = computed(() => store.currentUser?.settings?.voiceSpeed ?? 'NORMAL');
-const voiceMode = computed(() => store.currentUser?.settings?.guideVoiceType ?? 'TTS');
+const voiceMode = computed(() => activeStep.value?.guidance?.voiceMode ?? store.currentUser?.settings?.guideVoiceType ?? 'TTS');
 const uiScale = computed(() => ({ SMALL: 0.94, NORMAL: 1, LARGE: 1.08 })[
   store.currentUser?.settings?.fontSize ?? 'NORMAL'
 ] ?? 1);
