@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAppStore } from '../stores/appStore.js';
 import AddPersonView from '../views/AddPersonView.vue';
 import AnalysisView from '../views/AnalysisView.vue';
+import InstructionImprovementView from '../views/InstructionImprovementView.vue';
 import AuthCallbackView from '../views/AuthCallbackView.vue';
 import ConsentView from '../views/ConsentView.vue';
 import ContactManageView from '../views/ContactManageView.vue';
@@ -76,6 +77,7 @@ const routes = [
   { path: '/patterns/:patternId/steps/voice', name: 'step-voice-list', component: StepVoiceEditView, meta: protectedMeta },
   { path: '/patterns/:patternId/steps/:stepOrder/voice', name: 'step-voice-edit', component: StepVoiceEditView, meta: protectedMeta },
   { path: '/analysis', name: 'analysis', component: AnalysisView, meta: { requiresAuth: true } },
+  { path: '/analysis/improvement', name: 'instruction-improvement', component: InstructionImprovementView, meta: { requiresAuth: true } },
   { path: '/settings', name: 'settings', component: SettingsView, meta: protectedMeta },
   { path: '/settings/people', name: 'contact-manage', component: ContactManageView, meta: protectedMeta },
   { path: '/settings/people/edit', name: 'add-person', component: AddPersonView, meta: protectedMeta },

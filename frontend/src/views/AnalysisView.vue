@@ -82,6 +82,7 @@
                 <div class="flex justify-between gap-2"><dt>평균 소요 시간</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.averageDurationSeconds === null ? '측정 기록 없음' : report.difficultStep.averageDurationSeconds + '초' }}</dd></div>
               </dl>
             </div>
+            <Btn class="mt-4" variant="secondary" @click="store.navigate('instruction-improvement', { query: period })">이 단계 안내 문구 쉽게 바꾸기</Btn>
           </template>
           <p v-else class="text-[17px] text-[#4B5563]">분석할 단계 방문 기록이 없어 어려운 단계를 표시할 수 없어요.</p>
         </Card>
