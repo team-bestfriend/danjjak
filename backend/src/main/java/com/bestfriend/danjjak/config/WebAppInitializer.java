@@ -2,6 +2,8 @@ package com.bestfriend.danjjak.config;
 
 import java.nio.charset.StandardCharsets;
 import javax.servlet.Filter;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.SessionCookieConfig;
@@ -9,6 +11,11 @@ import org.springframework.web.filter.CharacterEncodingFilter;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 public class WebAppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+
+    @Override
+    protected void customizeRegistration(ServletRegistration.Dynamic registration) {
+        registration.setMultipartConfig(new MultipartConfigElement("", 10 * 1024 * 1024, 11 * 1024 * 1024, 0));
+    }
 
     @Override
     public void onStartup(ServletContext servletContext) throws ServletException {

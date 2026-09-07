@@ -30,6 +30,120 @@ tags:
   - name: Usage Analysis
     description: 이용 기록 기반 수행 횟수와 단계별 행동 분석
 paths:
+  /api/patterns/{patternId}/guidance:
+    parameters:
+      - $ref: '#/components/parameters/PatternId'
+    get:
+      tags: [Patterns]
+      operationId: getPatternGuidance
+      summary: 시작 안내와 단계별 음성 설정 조회
+      description: target은 시작 안내의 start 또는 서버 템플릿의 stepCode이다. 미리듣기와 편집은 실행 로그를 만들지 않는다.
+      responses:
+        '200':
+          description: 저장된 안내 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Guidance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/patterns/{patternId}/guidance/{target}:
+    parameters:
+      - $ref: '#/components/parameters/PatternId'
+      - $ref: '#/components/parameters/GuidanceTarget'
+    put:
+      tags: [Patterns]
+      operationId: updatePatternGuidance
+      summary: 대상 안내 문구와 음성 선택 저장
+      description: null 음성 선택은 사용자 기본 설정을 따른다. 문구가 바뀌어도 녹음은 보존되며 voiceScriptOutdated가 true가 된다. 음성 선택만 바꾸면 녹음을 삭제하지 않는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                voiceMode:
+                  type: string
+                  nullable: true
+                  enum: [TTS, FAMILY, null]
+      responses:
+        '200':
+          description: 실제 저장된 대상 안내
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guidance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/patterns/{patternId}/guidance/{target}/audio:
+    parameters:
+      - $ref: '#/components/parameters/PatternId'
+      - $ref: '#/components/parameters/GuidanceTarget'
+    post:
+      tags: [Patterns]
+      operationId: uploadGuidanceAudio
+      summary: 가족 녹음 업로드 또는 교체
+      description: 10MB 이하 WebM, OGG, MP4, MP3, WAV를 허용한다. 현재 저장된 문구를 읽은 녹음을 올린다. 성공하면 불일치 표시를 해제한다. 실패하면 이전 파일과 참조를 유지한다. 음성 선택은 별도로 저장한다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 교체된 녹음 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guidance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: 10MB 초과
+        '415':
+          description: 지원하지 않는 파일 형식
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    get:
+      tags: [Patterns]
+      operationId: getGuidanceAudio
+      summary: 로그인 사용자 소유 안내의 녹음 재생
+      responses:
+        '200':
+          description: 녹음의 Content-Type으로 반환하며 브라우저 캐시를 저장하지 않는다.
+          content:
+            audio/*:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/auth/kakao/start:
     get:
       tags: [Authentication]
@@ -752,6 +866,13 @@ components:
       in: cookie
       name: DANJJAKSESSION
   parameters:
+    GuidanceTarget:
+      name: target
+      in: path
+      required: true
+      description: 시작 안내는 start, 실제 단계는 서버 템플릿의 stepCode
+      schema:
+        type: string
     AccountId:
       name: accountId
       in: path
@@ -850,6 +971,30 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    Guidance:
+      type: object
+      required: [target, text, voiceMode, audioUrl, voiceContentType, voiceScriptOutdated]
+      properties:
+        target:
+          type: string
+        text:
+          type: string
+          maxLength: 500
+        voiceMode:
+          type: string
+          nullable: true
+          enum: [TTS, FAMILY, null]
+          description: 대상의 선택이 null이면 사용자 기본 음성을 따른다.
+        audioUrl:
+          type: string
+          nullable: true
+          description: 같은 서버의 인증된 녹음 재생 API 경로. 실제 저장 폴더 경로는 노출하지 않는다.
+        voiceContentType:
+          type: string
+          nullable: true
+        voiceScriptOutdated:
+          type: boolean
+          description: 녹음 이후 문구가 수정되었는지 여부. 새 녹음 업로드 성공 시 해제된다.
     HealthResponse:
       type: object
       required: [status]

@@ -34,6 +34,18 @@ IntelliJ에서 Tomcat을 실행할 때는 Tomcat Run Configuration의 `Environme
 API key가 없거나 OpenAI API 크레딧을 사용할 수 없으면 실제 TTS 호출이 실패할 수 있습니다.
 실제 secret 값은 코드, 설정 파일, 로그에 작성하지 않습니다.
 
+## 가족 음성 저장
+
+V6 마이그레이션을 적용한 뒤 새 WAR를 사용합니다. 녹음은 기본적으로 Tomcat 실행 사용자의
+`~/.danjjak/voices`에 저장합니다. `DANJJAK_VOICE_DIR`로 쓰기 가능한 다른 폴더를 지정할 수
+있습니다. 재배포 때 삭제되는 `webapps`나 임시 폴더는 피하세요.
+
+`GET /api/patterns/{patternId}/guidance`로 시작 안내와 단계별 문구·음성 선택·녹음 상태를
+읽습니다. 대상은 시작 안내의 `start` 또는 템플릿의 `stepCode`입니다. 대상별 `PUT`은
+문구와 음성 선택을, `POST .../{target}/audio`는 multipart의 `file`을 저장합니다.
+음성은 10MB 이하 WebM, OGG, MP4, MP3, WAV를 지원합니다. 재생 URL은 같은 사용자의
+로그인 세션을 요구합니다. 문구 변경은 기존 녹음을 유지하며 재녹음 필요 상태를 남깁니다.
+
 ## 카카오 OAuth·나에게 보내기 설정
 
 로컬 카카오 로그인과 HIGH 이상거래의 실제 `나에게 보내기`를 사용하려면 다음 사용자

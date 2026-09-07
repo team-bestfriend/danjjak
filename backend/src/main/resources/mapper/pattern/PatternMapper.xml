@@ -157,7 +157,9 @@
 
     <update id="updatePattern">
         UPDATE financial_patterns
-        SET title = #{title},
+        SET voice_script_outdated = voice_script_outdated OR
+                (voice_file_path IS NOT NULL AND BINARY description != BINARY #{description}),
+            title = #{title},
             description = #{description},
             linked_bank_account_id = #{linkedAccountId}
         WHERE user_id = #{userId}
@@ -168,7 +170,9 @@
     <update id="updateStepInstruction">
         UPDATE pattern_steps ps
         JOIN financial_patterns fp ON fp.financial_pattern_id = ps.financial_pattern_id
-        SET ps.instruction_text = #{instructionText}
+        SET ps.voice_script_outdated = ps.voice_script_outdated OR
+                (ps.voice_file_path IS NOT NULL AND BINARY ps.instruction_text != BINARY #{instructionText}),
+            ps.instruction_text = #{instructionText}
         WHERE fp.user_id = #{userId}
           AND fp.financial_pattern_id = #{patternId}
           AND fp.is_active = TRUE
