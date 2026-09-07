@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -24,10 +26,17 @@ public class GlobalExceptionHandler {
         ConstraintViolationException.class,
         HttpMessageNotReadableException.class,
         MissingServletRequestParameterException.class,
-        MethodArgumentTypeMismatchException.class
+        MethodArgumentTypeMismatchException.class,
+        MissingServletRequestPartException.class
     })
     public ResponseEntity<ApiError> handleValidationException(Exception exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_REQUEST", "요청 값이 올바르지 않습니다."));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUploadLimit(MaxUploadSizeExceededException exception) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new ApiError("VOICE_TOO_LARGE", "녹음 파일은 10MB 이하로 올려 주세요."));
     }
 }

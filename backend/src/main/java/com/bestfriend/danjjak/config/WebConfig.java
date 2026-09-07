@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.List;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -24,6 +26,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
                         type = FilterType.ANNOTATION,
                         classes = Controller.class))
 public class WebConfig implements WebMvcConfigurer {
+
+    @Bean
+    public StandardServletMultipartResolver multipartResolver() {
+        return new StandardServletMultipartResolver();
+    }
 
     @Override
     public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
