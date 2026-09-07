@@ -15,8 +15,6 @@
     <div
       className="flex-1 flex flex-col px-4 overflow-y-auto"
       style="padding-top: 12px; padding-bottom: 10px; gap: 10px;"
-      @touchstart="onTouchStart"
-      @touchend="onTouchEnd"
     >
       <!-- 직접 송금하기 — Primary CTA -->
       <button
@@ -79,8 +77,11 @@
         <div className="flex items-center flex-shrink-0">
           <p className="font-semibold text-[#111827]" style="font-size: 16px;">내 단축번호</p>
         </div>
+        <p class="text-[14px] text-[#6B7280]" role="status">{{ store.homePage }} / 3페이지 · 좌우로 밀어 넘겨요. 꾹 누르면 순서를 바꿔요.</p>
 
-        <div className="flex-1" style="min-height: 0;">
+        <div className="flex-1" style="min-height: 0; touch-action: none;"
+          @pointerdown.capture="beginSwipe" @pointermove.capture="moveSwipe"
+          @pointerup.capture="endSwipe" @pointercancel.capture="cancelSwipe" @click.capture="guardSwipeClick">
           <div v-if="store.patternLoading && store.patterns.length === 0" className="flex h-full items-center justify-center rounded-[18px] bg-white text-[#6B7280]">
             단축번호를 불러오고 있어요…
           </div>
@@ -181,6 +182,7 @@ import PatternGrid from '../components/common/PatternGrid.vue';
 import FocusModeCard from '../components/common/FocusModeCard.vue';
 import { useShortcutSpeech } from '../composables/useShortcutSpeech.js';
 import { voiceCommandExamples } from '../features/voice/shortcutCommands.js';
+import { swipePage } from '../features/shortcutSwipe.js';
 
 const store = useAppStore();
 
@@ -306,7 +308,7 @@ function onDocPointerUp() {
     const didReorder = targetNum !== null && targetNum !== sourceNum;
     if (didReorder) store.reorder(sourceNum, targetNum);
     drag.value = null;
-    justDropped.value = didReorder;
+    justDropped.value = true;
   }
 }
 
@@ -324,9 +326,8 @@ function removeDocListeners() {
 }
 
 function handlePointerDown(num, e) {
-  if (store.patternOrderSaving) return;
+  if (store.patternOrderSaving || e.isPrimary === false || e.button !== 0) return;
   if (!store.patterns.find((p) => p.num === num)) return;
-  e.preventDefault();
   const x = e.clientX, y = e.clientY;
   startPos.value = { x, y };
 
@@ -399,19 +400,56 @@ async function startFocusedPattern() {
 
 onMounted(() => { void store.loadPatterns(); });
 
-// Swipe page navigation
-const swipeStartX = ref(null);
-function onTouchStart(e) {
-  swipeStartX.value = e.touches[0].clientX;
+let swipe = null;
+let suppressClick = false;
+function beginSwipe(event) {
+  if (event.isPrimary === false || event.button !== 0 || store.patternOrderSaving || drag.value) return;
+  suppressClick = false;
+  justDropped.value = false;
+  const scrollArea = event.currentTarget.closest('.overflow-y-auto');
+  swipe = { id: event.pointerId, x: event.clientX, y: event.clientY, vertical: false,
+    scrollArea, scrollTop: scrollArea?.scrollTop ?? 0 };
 }
-function onTouchEnd(e) {
-  if (swipeStartX.value === null) return;
-  const delta = e.changedTouches[0].clientX - swipeStartX.value;
-  if (Math.abs(delta) > 60) {
-    if (delta < 0) store.homePage = Math.min(store.homePage + 1, 3);
-    else store.homePage = Math.max(store.homePage - 1, 1);
+function moveSwipe(event) {
+  if (!swipe || event.pointerId !== swipe.id) return;
+  handlePointerMove(event);
+  if (drag.value) return;
+  const dx = event.clientX - swipe.x;
+  const dy = event.clientY - swipe.y;
+  if (Math.hypot(dx, dy) <= MOVE_THRESHOLD) return;
+  if (!suppressClick) swipe.vertical = Math.abs(dy) > Math.abs(dx);
+  suppressClick = true;
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+  // 카드의 길게 누르기와 세로 스크롤을 함께 지원한다. 가로 이동만 페이지를 바꾼다.
+  if (swipe.vertical && event.pointerType === 'touch' && swipe.scrollArea) {
+    swipe.scrollArea.scrollTop = swipe.scrollTop - dy;
   }
-  swipeStartX.value = null;
+}
+function endSwipe(event) {
+  handlePointerUp();
+  if (!swipe || event.pointerId !== swipe.id) return;
+  const dx = event.clientX - swipe.x;
+  const dy = event.clientY - swipe.y;
+  if (drag.value || Math.hypot(dx, dy) > MOVE_THRESHOLD) suppressClick = true;
+  if (!swipe.vertical) store.homePage = swipePage(store.homePage, dx, dy, Boolean(drag.value));
+  swipe = null;
+}
+function cancelSwipe() {
+  handlePointerCancel();
+  swipe = null;
+  suppressClick = true;
+}
+function guardSwipeClick(event) {
+  if (event.detail === 0) {
+    suppressClick = false;
+    justDropped.value = false;
+    return;
+  }
+  if (!suppressClick && !justDropped.value) return;
+  suppressClick = false;
+  justDropped.value = false;
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 onUnmounted(() => {
