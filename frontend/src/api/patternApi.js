@@ -1,9 +1,15 @@
 import { request } from './httpClient.js';
+import { guidanceApi, withGuidance } from './guidanceApi.js';
 
 export const patternApi = {
   getTemplates: () => request('/api/pattern-templates'),
   getPatterns: () => request('/api/patterns'),
-  getPattern: (patternId) => request(`/api/patterns/${patternId}`),
+  getPattern: async (patternId) => {
+    const [pattern, targets] = await Promise.all([
+      request(`/api/patterns/${patternId}`), guidanceApi.getAll(patternId),
+    ]);
+    return withGuidance(pattern, targets);
+  },
   createPattern: (payload) => request('/api/patterns', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -19,10 +25,13 @@ export const patternApi = {
   deactivatePattern: (patternId) => request(`/api/patterns/${patternId}`, {
     method: 'DELETE',
   }),
-  startExecution: (patternId, sourceBankAccountId) => request(`/api/patterns/${patternId}/executions`, {
-    method: 'POST',
-    body: JSON.stringify(sourceBankAccountId ? { sourceBankAccountId } : {}),
-  }),
+  startExecution: async (patternId, sourceBankAccountId) => {
+    const targets = await guidanceApi.getAll(patternId);
+    const result = await request(`/api/patterns/${patternId}/executions`, {
+      method: 'POST', body: JSON.stringify(sourceBankAccountId ? { sourceBankAccountId } : {}),
+    });
+    return { ...result, pattern: withGuidance(result.pattern, targets) };
+  },
   startVisit: (executionId, stepId) => request(`/api/pattern-executions/${executionId}/visits`, {
     method: 'POST',
     body: JSON.stringify({ stepId }),
