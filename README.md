@@ -50,6 +50,8 @@ KB IT's Your Life 해커톤
 - 단계별 TTS 안내
 - 선택할 UI 요소 하이라이트
 - 안내 문구 저장 및 조회
+- 시작·단계별 가족 음성 녹음·교체와 TTS 대체
+- 문구 비교 후 명시적 적용 및 해당 단계 재녹음 연결
 
 ### 🚨 이상거래 탐지
 
@@ -65,6 +67,8 @@ KB IT's Your Life 해커톤
 - 어려움을 겪은 단계 요약
 
 ## 🧭 주요 시연 흐름
+
+초기 시드·FDS 재현·검증 결과는 [반복 실행 및 최종 검증](docs/demo-verification.md)을 참고하세요.
 
 <!-- TODO: Add the demo flow image at docs/assets/demo-flow.png. -->
 <!-- ![단짝 주요 시연 흐름](docs/assets/demo-flow.png) -->
