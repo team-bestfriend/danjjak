@@ -30,9 +30,12 @@
           <div>
             <p className="font-semibold text-[#111827] mb-3" style="font-size: 19px;">글씨 크기</p>
             <SegControl
+              label="글씨 크기"
+              :disabled="settingsSaving"
               :options="[{ key: 'small', label: '작게' }, { key: 'normal', label: '보통' }, { key: 'large', label: '크게' }]"
               v-model:value="fontSize"
             />
+            <p class="mt-3 rounded-[14px] bg-[#FFFBEB] p-4 text-[#374151]" :style="{ fontSize: `calc(18px * ${{ small: 0.95, normal: 1, large: 1.15 }[fontSize]})` }">이 크기로 안내를 읽어요.<br>버튼 크기는 그대로 유지해요.</p>
           </div>
         </Card>
       </div>
@@ -44,18 +47,26 @@
           <div>
             <p className="font-semibold text-[#111827] mb-3" style="font-size: 19px;">안내 속도</p>
             <SegControl
+              label="안내 속도"
+              :disabled="settingsSaving"
               :options="[{ key: 'slow', label: '느리게' }, { key: 'normal', label: '보통' }, { key: 'fast', label: '빠르게' }]"
               v-model:value="guideSpeed"
             />
+            <p class="mt-3 text-[15px] text-[#6B7280]">자동 음성과 저장된 가족 음성 모두에 적용해요.</p>
+            <button type="button" class="mt-3 min-h-12 w-full rounded-[14px] bg-[#FFF3CC] px-3 text-[17px] font-bold text-[#92650A]" :disabled="previewLoading" @click="previewVoice">{{ previewLoading ? '음성 준비 중…' : previewPlaying ? '미리듣기 멈추기' : '이 속도로 자동 음성 들어보기' }}</button>
+            <p class="mt-2 text-[14px] text-[#6B7280]">Marin · AI가 생성한 한국어 안내 음성이에요.</p>
+            <p v-if="previewError" class="mt-2 text-[15px] text-[#B91C1C]" role="alert">{{ previewError }} 설정은 계속 저장할 수 있어요.</p>
           </div>
           <div className="border-t border-[#F3F4F6] pt-5">
             <p className="font-semibold text-[#111827] mb-3" style="font-size: 19px;">음성 안내 방식</p>
             <SegControl
+              label="기본 음성 안내 방식"
+              :disabled="settingsSaving"
               :options="[{ key: 'tts', label: '자동 음성(TTS)' }, { key: 'family', label: '가족 음성' }]"
               v-model:value="voiceMode"
             />
             <p className="text-[#9CA3AF] mt-2 px-1" style="font-size: 13px;">
-              {{ voiceMode === 'tts' ? '등록 정보를 기반으로 자동 생성된 음성이 재생됩니다.' : '가족이 직접 녹음한 음성이 재생됩니다.' }}
+              {{ voiceMode === 'tts' ? '현재 안내 문구를 자동 음성으로 읽어요.' : '저장된 가족 녹음이 없거나 재생되지 않으면 같은 문구를 자동 음성으로 읽어요.' }} 패턴에서 따로 선택한 음성은 유지돼요.
             </p>
           </div>
           <button
@@ -169,7 +180,8 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+import { useTtsAudio } from '../composables/useTtsAudio.js';
 import { useAppStore } from '../stores/appStore';
 import SafeArea from '../components/common/SafeArea.vue';
 import Card from '../components/common/Card.vue';
@@ -182,6 +194,17 @@ const store = useAppStore();
 const fontSize = ref("normal");
 const guideSpeed = ref("normal");
 const voiceMode = ref("tts");
+const previewEnabled = ref(false);
+const { playing: previewPlaying, loading: previewLoading, error: previewError, toggle: togglePreview, cleanup: stopPreview } = useTtsAudio(
+  '안녕하세요. 단짝과 함께 천천히 확인해요. 받는 분과 금액이 맞으면 다음 버튼을 눌러 주세요.',
+  { speed: () => guideSpeed.value.toUpperCase(), enabled: previewEnabled, autoplay: true },
+);
+watch(guideSpeed, () => { previewEnabled.value = false; stopPreview(); }, { flush: 'sync' });
+watch([fontSize, guideSpeed, voiceMode], () => { settingsSaved.value = false; });
+function previewVoice() {
+  if (!previewEnabled.value) previewEnabled.value = true;
+  else void togglePreview();
+}
 const settingsSaving = ref(false);
 const settingsError = ref("");
 const settingsSaved = ref(false);

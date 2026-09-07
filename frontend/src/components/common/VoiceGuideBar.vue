@@ -1,14 +1,14 @@
 <template>
   <div
-    class="z-20 max-h-[40%] flex-shrink-0 overflow-y-auto bg-[#FAFAF8] px-4 py-3"
+    class="z-20 flex-shrink-0 overflow-y-auto bg-[#FAFAF8] px-4 py-3"
+    :class="collapsed ? 'max-h-[24%]' : 'max-h-[40%]'"
     aria-label="현재 단계 안내"
   >
     <div
       class="overflow-hidden rounded-[22px] bg-white"
       style="box-shadow: 0 -2px 24px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.07); border: 1px solid #EEEEED;"
     >
-      <p v-if="guided" class="px-4 pt-3 text-[14px] font-bold text-[#92650A]">지금 할 일</p>
-      <div class="flex items-start gap-3 px-4 pb-2 pt-3">
+      <div class="sticky top-0 z-10 flex items-center gap-3 bg-white px-4 pb-2 pt-3">
         <button
           type="button"
           class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full transition-transform active:scale-95 disabled:opacity-50"
@@ -19,17 +19,19 @@
         >
           <span style="font-size: 17px; line-height: 1; color: #111827;">{{ loading ? '…' : playing ? '⏸' : '▶' }}</span>
         </button>
-        <p
+        <span class="flex-1 text-[15px] font-bold text-[#92650A]">{{ guided ? '지금 할 일' : '음성 안내' }}</span>
+        <button type="button" class="min-h-12 rounded-[12px] bg-[#FFF3CC] px-3 text-[15px] font-bold text-[#92650A]" :aria-expanded="!collapsed" @click="collapsed = !collapsed">{{ collapsed ? '펼치기' : '접기' }}</button>
+      </div>
+      <p
           id="step-guidance-caption"
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          class="flex-1 font-bold leading-snug text-[#111827]"
+          class="px-4 pb-3 font-bold leading-snug text-[#111827]"
           style="font-size: 19px; word-break: keep-all; overflow-wrap: anywhere;"
         >“{{ text }}”</p>
-      </div>
 
-      <div class="flex items-center gap-3 px-4 pb-3">
+      <div v-if="!collapsed" class="flex items-center gap-3 px-4 pb-3">
         <div class="flex h-[26px] flex-1 items-end gap-[2.5px]" aria-hidden="true">
           <div
             v-for="(height, index) in WAVE"
@@ -69,6 +71,8 @@
 
 <script setup>
 import { useGuidanceAudio } from '../../composables/useGuidanceAudio.js';
+
+const collapsed = defineModel('collapsed', { type: Boolean, default: false });
 
 const props = defineProps({
   text: { type: String, required: true },

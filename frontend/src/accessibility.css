@@ -1,0 +1,38 @@
+/* 원본 화면의 px 글꼴만 조절한다. 버튼과 화면 전체를 축소하지 않는다. */
+.app-shell { --text-scale: 1; font-size: calc(16px * var(--text-scale)); }
+@layer base {
+  .app-shell button { min-width: 48px; min-height: 48px; }
+}
+.app-shell button:focus-visible, .app-shell a:focus-visible {
+  outline: 3px solid #2563EB;
+  outline-offset: 2px;
+}
+.app-shell [class~="text-[#9CA3AF]"] { color: #6B7280; }
+
+/* Figma 변환 화면의 인라인 글꼴과 Tailwind 글꼴을 같은 기준으로 적용한다. */
+.app-shell :is([class~="text-[10px]"], [style*="font-size: 10px"], [style*="font-size:10px"]) { font-size: calc(10px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[11px]"], [style*="font-size: 11px"], [style*="font-size:11px"]) { font-size: calc(11px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[12px]"], [style*="font-size: 12px"], [style*="font-size:12px"]) { font-size: calc(12px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[13px]"], [style*="font-size: 13px"], [style*="font-size:13px"]) { font-size: calc(13px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[14px]"], [style*="font-size: 14px"], [style*="font-size:14px"]) { font-size: calc(14px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[15px]"], [style*="font-size: 15px"], [style*="font-size:15px"]) { font-size: calc(15px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[16px]"], [style*="font-size: 16px"], [style*="font-size:16px"]) { font-size: calc(16px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[17px]"], [style*="font-size: 17px"], [style*="font-size:17px"]) { font-size: calc(17px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[18px]"], [style*="font-size: 18px"], [style*="font-size:18px"]) { font-size: calc(18px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[19px]"], [style*="font-size: 19px"], [style*="font-size:19px"]) { font-size: calc(19px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[20px]"], [style*="font-size: 20px"], [style*="font-size:20px"]) { font-size: calc(20px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[21px]"], [style*="font-size: 21px"], [style*="font-size:21px"]) { font-size: calc(21px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[22px]"], [style*="font-size: 22px"], [style*="font-size:22px"]) { font-size: calc(22px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[23px]"], [style*="font-size: 23px"], [style*="font-size:23px"]) { font-size: calc(23px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[24px]"], [style*="font-size: 24px"], [style*="font-size:24px"]) { font-size: calc(24px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[25px]"], [style*="font-size: 25px"], [style*="font-size:25px"]) { font-size: calc(25px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[26px]"], [style*="font-size: 26px"], [style*="font-size:26px"]) { font-size: calc(26px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[27px]"], [style*="font-size: 27px"], [style*="font-size:27px"]) { font-size: calc(27px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[28px]"], [style*="font-size: 28px"], [style*="font-size:28px"]) { font-size: calc(28px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[30px]"], [style*="font-size: 30px"], [style*="font-size:30px"]) { font-size: calc(30px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[32px]"], [style*="font-size: 32px"], [style*="font-size:32px"]) { font-size: calc(32px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[38px]"], [style*="font-size: 38px"], [style*="font-size:38px"]) { font-size: calc(38px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[40px]"], [style*="font-size: 40px"], [style*="font-size:40px"]) { font-size: calc(40px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[54px]"], [style*="font-size: 54px"], [style*="font-size:54px"]) { font-size: calc(54px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[64px]"], [style*="font-size: 64px"], [style*="font-size:64px"]) { font-size: calc(64px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[76px]"], [style*="font-size: 76px"], [style*="font-size:76px"]) { font-size: calc(76px * var(--text-scale)) !important; }

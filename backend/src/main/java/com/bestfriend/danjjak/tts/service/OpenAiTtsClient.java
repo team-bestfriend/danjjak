@@ -106,7 +106,7 @@ public class OpenAiTtsClient implements TtsClient {
         body.put(
             "instructions",
             "Speak in Korean with a warm, friendly, and calm tone. "
-                + "Speak clearly and slightly slowly. "
+                + "Speak clearly at a natural conversational pace. "
                 + "Use natural pauses between sentences. "
                 + "Sound like a kind family member giving simple guidance. "
                 + "Do not sound robotic or overly cheerful."

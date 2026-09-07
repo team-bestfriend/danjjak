@@ -10,7 +10,7 @@
       ]"
     >
       <Ic :name="t.icon" />
-      <span :class="['text-[10px] font-bold mt-0.5', active === t.id ? 'text-[#D97706]' : 'text-[#9CA3AF]']">
+      <span :class="['text-[14px] font-bold mt-0.5', active === t.id ? 'text-[#D97706]' : 'text-[#6B7280]']">
         {{ t.label }}
       </span>
     </button>
