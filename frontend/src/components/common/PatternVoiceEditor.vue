@@ -82,14 +82,15 @@ const props = defineProps({
   audioUrl: { type: String, default: null },
   voiceScriptOutdated: Boolean,
   recordingDraft: { type: Object, default: null },
+  openFamily: Boolean,
   actionLabel: { type: String, default: '이 음성 저장' },
 });
 const emit = defineEmits(['confirm', 'cancel', 'dirty']);
 const inputId = useId();
-const mode = ref('select');
+const mode = ref(props.openFamily ? 'family' : 'select');
 const editing = ref(false);
 const draft = ref(props.text);
-const selectedMode = ref(props.voiceMode);
+const selectedMode = ref(props.openFamily ? 'FAMILY' : props.voiceMode);
 const recording = ref(props.recordingDraft);
 const recordedAudio = ref(null);
 const playbackError = ref('');
@@ -107,7 +108,7 @@ const { playing, loading, error, toggle, cleanup } = useTtsAudio(
   () => draft.value.trim(),
   { speed: () => props.speed, autoplay: true, enabled: previewEnabled },
 );
-watch(dirty, (value) => emit('dirty', value));
+watch(dirty, (value) => emit('dirty', value), { immediate: true });
 watch(draft, () => { stopPreview(); recordedAudio.value?.pause(); });
 watch(recording, (value) => {
   if (localUrl.value) URL.revokeObjectURL(localUrl.value);

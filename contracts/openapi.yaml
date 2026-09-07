@@ -30,6 +30,82 @@ tags:
   - name: Usage Analysis
     description: 이용 기록 기반 수행 횟수와 단계별 행동 분석
 paths:
+  /api/usage-analysis/instruction-suggestion:
+    get:
+      tags: [Usage Analysis]
+      operationId: getInstructionSuggestion
+      summary: 같은 기간의 어려운 단계에 대한 문구 제안 조회
+      description: 동의와 분석 상태를 보존한다. 어려운 단계가 없으면 suggestion은 null이며 저장 문구나 실행 로그를 변경하지 않는다.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 현재 문구와 단계 코드 기반 제안
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, from, to, suggestion]
+                properties:
+                  status:
+                    type: string
+                    enum: [CONSENT_REQUIRED, CONSENT_DECLINED, NO_DATA, AVAILABLE]
+                  from: { type: string, format: date }
+                  to: { type: string, format: date }
+                  suggestion:
+                    type: object
+                    nullable: true
+                    allOf:
+                      - $ref: '#/components/schemas/InstructionSuggestion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/patterns/{patternId}/steps/{stepId}/instruction-suggestion:
+    parameters:
+      - $ref: '#/components/parameters/PatternId'
+      - name: stepId
+        in: path
+        required: true
+        schema: { type: integer, format: int64, minimum: 1 }
+    post:
+      tags: [Usage Analysis]
+      operationId: applyInstructionSuggestion
+      summary: 선택한 단계에 제안 문구 명시적으로 적용
+      description: 서버가 단계 코드로 제안을 계산해 같은 instructionText를 갱신한다. 음성 선택과 파일을 보존하며 기존 녹음과의 불일치를 표시한다. 비교한 현재 문구가 달라졌으면 409를 반환한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedText]
+              properties:
+                expectedText: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200':
+          description: 적용 후 해당 단계의 안내 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guidance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 비교한 문구가 변경됨. 다시 조회한 뒤 비교하고 적용해야 한다.
   /api/patterns/{patternId}/guidance:
     parameters:
       - $ref: '#/components/parameters/PatternId'
@@ -971,6 +1047,20 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    InstructionSuggestion:
+      type: object
+      required: [patternId, patternTitle, stepId, stepOrder, stepCode, stepName, currentText, suggestedText, hasFamilyAudio, voiceScriptOutdated]
+      properties:
+        patternId: { type: integer, format: int64 }
+        patternTitle: { type: string }
+        stepId: { type: integer, format: int64 }
+        stepOrder: { type: integer }
+        stepCode: { type: string }
+        stepName: { type: string }
+        currentText: { type: string }
+        suggestedText: { type: string }
+        hasFamilyAudio: { type: boolean }
+        voiceScriptOutdated: { type: boolean }
     Guidance:
       type: object
       required: [target, text, voiceMode, audioUrl, voiceContentType, voiceScriptOutdated]

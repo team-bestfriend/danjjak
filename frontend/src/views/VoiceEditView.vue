@@ -32,6 +32,7 @@
           :default-mode="store.currentUser?.settings?.guideVoiceType"
           :audio-url="currentGuidance?.audioUrl"
           :voice-script-outdated="currentGuidance?.voiceScriptOutdated"
+          :open-family="route.query.rerecord === '1'"
           :saving="saving"
           @dirty="dirty = $event"
           @confirm="save"
