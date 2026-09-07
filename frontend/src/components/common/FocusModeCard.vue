@@ -1,9 +1,10 @@
 <template>
   <div
-    class="mx-5 w-full max-w-[340px] overflow-hidden rounded-[28px] bg-white"
+    class="mx-5 flex max-h-[calc(100%-40px)] w-full max-w-[340px] flex-col overflow-hidden rounded-[28px] bg-white"
     style="box-shadow: 0 8px 40px rgba(0,0,0,0.22);"
     @click.stop
   >
+    <div class="min-h-0 flex-1 overflow-y-auto">
     <div class="flex flex-col items-center justify-center gap-2 px-8 pb-8 pt-10" style="background: #FFBC00;">
       <span class="font-black leading-none text-[#111827]" style="font-size: 76px;">{{ pat.num }}</span>
       <span class="text-center font-black text-[#111827]" style="font-size: 22px; margin-top: 4px;">{{ pat.label }}</span>
@@ -15,7 +16,7 @@
     <div class="space-y-4 p-5">
       <div>
         <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · {{ voiceMode === 'FAMILY' ? '가족 음성' : '자동 TTS' }}</p>
-        <div class="flex items-center gap-3">
+        <div class="flex items-start gap-3">
           <button
             type="button"
             class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-[14px] font-bold disabled:opacity-50"
@@ -27,7 +28,7 @@
             {{ loading ? '…' : playing ? '⏸' : '▶' }}
           </button>
           <div class="flex-1">
-            <p class="mb-1.5 text-[14px] font-bold text-[#111827]">“{{ quote }}”</p>
+            <p class="mb-1.5 text-[18px] font-bold leading-relaxed text-[#111827]" style="word-break: keep-all; overflow-wrap: anywhere;">“{{ quote }}”</p>
             <div class="flex h-5 items-end gap-px" aria-hidden="true">
               <div
                 v-for="(_, index) in 28"
@@ -50,7 +51,9 @@
         </p>
       </div>
 
-      <div class="flex gap-2 pt-1">
+    </div>
+    </div>
+      <div class="flex flex-shrink-0 gap-2 border-t border-[#EEEEED] bg-white p-5">
         <button
           type="button"
           class="h-14 flex-1 rounded-[14px] border-2 border-[#E5E7EB] font-bold text-[#374151]"
@@ -64,7 +67,6 @@
           @click="$emit('start')"
         >시작하기</button>
       </div>
-    </div>
   </div>
 </template>
 

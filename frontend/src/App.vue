@@ -1,7 +1,7 @@
 <template>
   <div class="fixed inset-0 flex items-start justify-center overflow-hidden bg-[#E5E7EB]">
     <div
-      class="relative flex flex-col flex-shrink-0 overflow-hidden bg-white"
+      class="app-shell relative flex flex-col flex-shrink-0 overflow-hidden bg-white"
       :style="appShellStyle"
     >
       <div ref="routeArea" class="min-h-0 flex-1 overflow-hidden" @click.capture="handleGuidanceClick">
@@ -9,6 +9,7 @@
       </div>
 
       <VoiceGuideBar
+        v-model:collapsed="guidanceCollapsed"
         v-if="voiceText"
         :key="`${route.name}:${activeStep?.stepId ?? ''}`"
         :text="voiceText"
@@ -44,6 +45,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useAppStore();
 const routeArea = ref(null);
+const guidanceCollapsed = ref(false);
 
 const VOICE_TEXTS = {
   'transfer-source': '송금할 본인 계좌를 선택해 주세요.',
@@ -85,14 +87,13 @@ const { notice: guidanceNotice, handleClick: handleGuidanceClick } = useStepGuid
 );
 const voiceSpeed = computed(() => store.currentUser?.settings?.voiceSpeed ?? 'NORMAL');
 const voiceMode = computed(() => activeStep.value?.guidance?.voiceMode ?? store.currentUser?.settings?.guideVoiceType ?? 'TTS');
-const uiScale = computed(() => ({ SMALL: 0.94, NORMAL: 1, LARGE: 1.08 })[
+const textScale = computed(() => ({ SMALL: 0.95, NORMAL: 1, LARGE: 1.15 })[
   store.currentUser?.settings?.fontSize ?? 'NORMAL'
 ] ?? 1);
 const appShellStyle = computed(() => ({
-  width: `${390 / uiScale.value}px`,
-  height: `${100 / uiScale.value}%`,
-  transform: `scale(${uiScale.value})`,
-  transformOrigin: 'top center',
+  width: 'min(390px, 100vw)',
+  height: '100%',
+  '--text-scale': textScale.value,
 }));
 
 watch(
