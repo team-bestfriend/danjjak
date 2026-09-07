@@ -20,6 +20,8 @@ import java.util.List;
 import javax.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -83,15 +85,16 @@ class TransferControllerTest {
                 .andExpect(content().string(containsString("\"action\":\"CANCEL\"")));
     }
 
-    @Test
-    void rejectsDirectRecipientWithInvalidAccountNumber() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"ABC", "--------", "1-------", "1234567", "-12345678", "12345678-", "123--45678", "123456789012345678901"})
+    void rejectsDirectRecipientWithInvalidAccountNumber(String accountNumber) throws Exception {
         mockMvc.perform(
                         post("/api/transfers")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         "{\"sourceAccountId\":1,\"directRecipient\":{"
                                                 + "\"name\":\"박친구\",\"bankCode\":\"004\","
-                                                + "\"bankName\":\"국민은행\",\"accountNumber\":\"ABC\"},"
+                                                + "\"bankName\":\"국민은행\",\"accountNumber\":\"" + accountNumber + "\"},"
                                                 + "\"amount\":1000,\"pin\":\"1234\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("\"code\":\"INVALID_REQUEST\"")));

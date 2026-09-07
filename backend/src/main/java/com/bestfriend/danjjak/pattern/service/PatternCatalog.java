@@ -30,7 +30,7 @@ public class PatternCatalog {
                         available(
                                 PatternType.MANAGEMENT_FEE_CHECK,
                                 "관리비 확인",
-                                "이번 달 관리비 내역을 확인하는 업무입니다.",
+                                "선택한 계좌의 전체 기간 관리비 거래를 확인하는 업무입니다.",
                                 false,
                                 oneStep("CHECK_RESULT", "관리비 확인", "관리비 내역을 확인해 주세요.", "task-3")),
                         available(

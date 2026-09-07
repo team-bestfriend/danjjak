@@ -87,6 +87,7 @@
     <StepBar :current="3" :total="6" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <p class="font-bold text-[#111827] text-[26px]">받는 계좌를 입력해 주세요.</p>
+      <p class="rounded-[14px] bg-[#FFFBEB] p-4 text-[15px] text-[#92650A]">시연용 송금이에요. 계좌번호 형식을 확인한 뒤 시연 거래로 기록해요. 실제 은행의 계좌 존재 여부는 확인하지 않아요.</p>
       <label class="block space-y-2">
         <span class="font-bold text-[#374151] text-[17px]">받는 분 이름</span>
         <input
@@ -147,7 +148,7 @@
           inputmode="numeric"
           class="w-full min-h-[58px] rounded-[16px] border-2 border-[#E5E7EB] focus:border-[#FFBC00] outline-none px-4 text-[20px] font-bold"
         />
-        <p id="direct-recipient-account-help" class="text-[14px] text-[#6B7280]">숫자와 하이픈을 포함해 8자 이상 입력해 주세요.</p>
+        <p id="direct-recipient-account-help" class="text-[14px] text-[#6B7280]">숫자 8~20자리를 입력해 주세요. 숫자 사이에 하이픈(-)을 넣을 수 있어요.</p>
         <p v-if="directFieldErrors.account" id="direct-recipient-account-error" class="text-[14px] text-[#B91C1C]" role="alert">
           {{ directFieldErrors.account }}
         </p>
@@ -432,6 +433,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useAppStore } from '../stores/appStore';
 import { BANKS } from '../constants/banks';
+import { directAccountPattern } from '../features/directRecipient.js';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 import StepBar from '../components/common/StepBar.vue';
@@ -463,7 +465,7 @@ const patternTargetMissing = computed(() => (
 const canProceedDirect = computed(() => (
   recipientName.value.length > 0
   && Boolean(selectedBank.value)
-  && /^[0-9-]{8,50}$/.test(accountNumber.value)
+  && directAccountPattern.test(accountNumber.value)
 ));
 const directFieldErrors = computed(() => ({
   name: directTouched.value.name && recipientName.value.length === 0
@@ -472,8 +474,8 @@ const directFieldErrors = computed(() => ({
   bank: directTouched.value.bank && !selectedBank.value
     ? '은행을 선택해 주세요.'
     : '',
-  account: directTouched.value.account && !/^[0-9-]{8,50}$/.test(accountNumber.value)
-    ? '계좌번호는 숫자와 하이픈을 포함해 8~50자로 입력해 주세요.'
+  account: directTouched.value.account && !directAccountPattern.test(accountNumber.value)
+    ? '숫자 8~20자리인지 확인해 주세요. 하이픈은 숫자 사이에 하나씩 넣어 주세요.'
     : '',
 }));
 const guardianPhone = computed(() => store.support?.guardian?.phoneNumber ?? '');

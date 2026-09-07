@@ -21,7 +21,7 @@ public final class TransferDtos {
             @NotBlank @Size(max = 50) String bankName,
             @NotBlank
                     @Size(min = 8, max = 50)
-                    @Pattern(regexp = "^[0-9-]+$")
+                    @Pattern(regexp = "^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$")
                     String accountNumber) {}
 
     public record TransferRequest(

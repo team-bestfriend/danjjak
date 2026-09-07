@@ -43,6 +43,11 @@
         </select>
       </label>
 
+      <div class="rounded-[16px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-[15px] text-[#92650A]">
+        <p class="font-bold">시연용 거래 데이터 · 전체 기간{{ taskConfig?.category ? ` · ${categoryLabel} 분류` : '' }}</p>
+        <p class="mt-1">{{ taskConfig?.category ? `선택한 계좌에서 ‘${categoryLabel}’ 분류의 거래만 모아 보여줘요. 계좌를 바꾸면 해당 계좌의 같은 분류를 확인해요.` : '선택한 계좌의 저장된 잔액과 거래 내역을 확인해요.' }}</p>
+      </div>
+
       <p v-if="store.financeWarning" class="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-3 text-[#92400E]" role="status">{{ store.financeWarning }}</p>
 
       <p v-if="store.financeLoading || store.inquiryLoading" class="rounded-2xl bg-white p-5 text-[#6B7280]">금융 정보를 불러오고 있어요…</p>
@@ -186,6 +191,7 @@ const taskConfig = computed(() => ({
 }[props.taskName] ?? null));
 const isInquiryTask = computed(() => Boolean(taskConfig.value));
 const inquiryTitle = computed(() => taskConfig.value?.title ?? '금융 조회');
+const categoryLabel = computed(() => ({ PENSION: '연금', MANAGEMENT_FEE: '관리비', UTILITY_BILL: '공과금' }[taskConfig.value?.category] ?? '전체'));
 const showAccountBalance = computed(() => ['task-4', 'task-5'].includes(props.taskName));
 const selectedInquiryAccount = computed(() => (
   store.ownedAccounts.find((owned) => owned.accountId === store.selectedInquiryAccountId) ?? null
