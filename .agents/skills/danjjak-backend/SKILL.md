@@ -5,6 +5,10 @@ description: Implement or update the Danjjak Spring Framework backend, MyBatis p
 
 # Danjjak Backend
 
+## Requirements
+
+Read the [index](../../../docs/specs/requirements.md) → [architecture](../../../docs/specs/requirements/architecture.md) → relevant feature and decisions/scenarios. Follow the index's source priority and pre-event scope.
+
 ## Stack
 
 - JDK 17

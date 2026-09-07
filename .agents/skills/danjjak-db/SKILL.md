@@ -5,6 +5,10 @@ description: Work on the Danjjak MySQL schema, Flyway migrations, mock seed data
 
 # Danjjak Database
 
+## Requirements
+
+Read the [index](../../../docs/specs/requirements.md) → [architecture](../../../docs/specs/requirements/architecture.md) + [people/accounts](../../../docs/specs/requirements/people-accounts.md) → relevant persistence rules. Historical seeds do not limit multiple accounts or mock import. Follow the pre-event design scope.
+
 Before database work, read the documents that match the task:
 
 - Schema, queries, persistence, or seed data: read [references/schema-contract.md](references/schema-contract.md).

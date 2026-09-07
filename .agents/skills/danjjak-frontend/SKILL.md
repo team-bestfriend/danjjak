@@ -5,6 +5,10 @@ description: Implement or update the Danjjak Vue frontend, including converting 
 
 # Danjjak Frontend
 
+## Requirements
+
+Read the [index](../../../docs/specs/requirements.md) → [shared UX](../../../docs/specs/requirements/shared-ux.md) → relevant feature and decisions/scenarios. Target specs take priority over stale Figma or implementation references.
+
 ## Stack
 
 - Vue 3

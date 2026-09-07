@@ -5,6 +5,10 @@ description: Create or update Danjjak HTTP endpoints and keep the OpenAPI contra
 
 # Danjjak API Contract
 
+## Requirements
+
+Read the [index](../../../docs/specs/requirements.md) → [architecture](../../../docs/specs/requirements/architecture.md) → relevant feature inputs/errors/scenarios. Specs define behavior; OpenAPI defines concrete HTTP fields during implementation.
+
 ## Source of Truth
 
 - Use `contracts/openapi.yaml` as the authoritative HTTP contract.

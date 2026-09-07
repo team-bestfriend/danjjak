@@ -33,13 +33,21 @@
 
 ## Routing
 
-- Frontend work: read `.agents/skills/danjjak-frontend/SKILL.md`.
-- Backend work: read `.agents/skills/danjjak-backend/SKILL.md`.
-- API contract work: read `.agents/skills/danjjak-api/SKILL.md`.
-- Shortcut, transfer, FDS, or usage-analysis work: read `.agents/skills/danjjak-domain/SKILL.md` and only the relevant reference.
-- Database or local MySQL work: read `.agents/skills/danjjak-db/SKILL.md`.
-- Feature implementation or Issue planning: read `docs/specs/requirements.md`, then only the relevant linked requirement documents.
-- Read multiple skills only when the task spans multiple areas.
+Start with the [requirements index](docs/specs/requirements.md), then only the relevant feature, decisions, and scenarios. Follow its Agent Guide for source priority and pre-event scope.
+
+| Work | Skill |
+| --- | --- |
+| Frontend | [danjjak-frontend](.agents/skills/danjjak-frontend/SKILL.md) |
+| Backend | [danjjak-backend](.agents/skills/danjjak-backend/SKILL.md) |
+| HTTP contract | [danjjak-api](.agents/skills/danjjak-api/SKILL.md) |
+| Shortcut, transfer, FDS, analysis | [danjjak-domain](.agents/skills/danjjak-domain/SKILL.md) |
+| Database | [danjjak-db](.agents/skills/danjjak-db/SKILL.md) |
+
+## Documentation
+
+- Korean: product rules, UI copy, human-facing design, code comments, and Javadoc.
+- English: agent routing, workflow, and implementation instructions.
+- Prefer short tables or bullets; preserve IDs and behavior. Link shared rules instead of duplicating or translating them twice.
 
 ## Shared Rules
 

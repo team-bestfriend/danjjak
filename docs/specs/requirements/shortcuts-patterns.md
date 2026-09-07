@@ -1,95 +1,91 @@
-# Shortcuts and Financial Patterns
+# 단축번호·패턴
 
-## Requirements
+[목차](../requirements.md)
 
-| ID | Requirement | Required behavior |
+## 요구사항
+
+| ID | 기능 | 완료 조건 |
 | --- | --- | --- |
-| FR-010 | Default shortcuts | A seeded demo user receives eight default active shortcuts. |
-| FR-011 | Number limit | Active shortcuts use unique numbers from 1 through 12, with no more than 12 active patterns per user. |
-| FR-012 | Pattern management | Add, update, deactivate, and reorder patterns. |
-| FR-013 | Template selection | Create patterns only from predefined templates returned by the server. |
-| FR-014 | Transfer-recipient link | A transfer pattern links to a registered person's recipient account. |
-| FR-015 | Pattern information update | Update title, pre-start description, linked account, and step instructions. |
-| FR-016 | Pre-execution confirmation | Selecting a shortcut shows task details and requires an explicit start action. |
-| FR-017 | Ordered execution | Execute the ordered screens and instructions from the retrieved pattern detail. |
+| FR-010 | 기본 패턴 | 모의 사용자에게 활성 8개 |
+| FR-011 | 번호 제한 | 사용자별 1–12, 중복 없음, 활성 최대 12개 |
+| FR-012 | 관리 | 등록·수정·번호 이동/교환·비활성화 |
+| FR-013 | 템플릿 | 정해진 업무 템플릿으로 등록 |
+| FR-014 | 송금 대상 | 등록 사람의 특정 받는 계좌 연결 |
+| FR-015 | 패턴 수정 | 이름·설명·계좌·설명 음성·단계 문구/음성 |
+| FR-016 | 시작 확인 | 카드·음성 선택 → 확인창 → 시작하기 |
+| FR-017 | 순차 실행 | 저장된 단계 순서·안내 적용 |
 
-## Default Shortcuts
+## 기본 업무
 
-| Number | Task | Linked data |
+| 번호 | 업무 | 자료 |
 | --- | --- | --- |
-| 1 | Transfer to son | Son's seeded recipient account |
-| 2 | Check pension deposit | Pension transaction in the default owned account |
-| 3 | Check maintenance fee | Maintenance-fee transaction in the default owned account |
-| 4 | Check balance | Default owned account |
-| 5 | View transaction history | Default owned account |
-| 6 | Call customer center | Server-provided support contact |
-| 7 | Transfer to daughter | Daughter's seeded recipient account |
-| 8 | Check utility payment | Utility transaction in the default owned account |
+| 1 | 아들에게 송금하기 | 아들의 특정 등록 계좌 |
+| 2 | 연금 입금 확인 | 기본 내 계좌의 연금 거래 |
+| 3 | 관리비 납부 확인 | 기본 내 계좌의 관리비 거래 |
+| 4 | 잔액 확인 | 기본 내 계좌 |
+| 5 | 거래내역 보기 | 기본 내 계좌 |
+| 6 | 고객센터 전화하기 | 제공된 연락처 |
+| 7 | 딸에게 송금하기 | 딸의 특정 등록 계좌 |
+| 8 | 공과금 납부 확인 | 기본 내 계좌의 공과금 거래 |
 
-## Template Rules
+- 템플릿 7종: 송금·연금·관리비·잔액·거래내역·고객센터·공과금.
+- 아들·딸 송금은 같은 템플릿의 별도 패턴.
+- 제외: 자유 업무/단계 설계, 자동이체·카드·예금만기·환율.
 
-- Required demo templates cover transfer, pension inquiry, maintenance-fee inquiry, balance inquiry, transaction history, customer-center call, and utility inquiry.
-- A template returned with `available=false` remains visible only as disabled UI when useful and cannot be selected or registered.
-- Do not expose card history, automatic transfer, deposit maturity, exchange rate, or another unspecified task as an active hardcoded feature.
-- Do not provide free-form task types or an arbitrary step designer.
-- Creation copies the selected template's current default steps and instructions into the new pattern according to the API contract.
+## 등록·수정
 
-## Registration Flow
+**템플릿 → 빈 번호 → 송금 대상 계좌 → 이름·설명 → 음성 → 최종 확인·저장**
 
-1. Retrieve and select an available template.
-2. Select an unused shortcut number from 1 through 12.
-3. For a transfer template, select a registered person's recipient account.
-4. Review and optionally edit the default title and pre-start description.
-5. Configure pre-start voice and review the ordered step-voice list, optionally editing each script, selecting TTS/family voice, and recording family audio as defined in [Guidance and Voice](guidance-voice.md#guidance-targets-and-editing-flow).
-6. Review a final summary containing the number, title, description, linked recipient when applicable, step count, and voice-configuration drafts.
-7. Submit once, then update home and pattern list only after a successful response. Text, mode, recording, skip, and partial-save behavior follow [Script Editing and Save Behavior](guidance-voice.md#script-editing-and-save-behavior).
+| 패턴 수정 항목 | 내용 |
+| --- | --- |
+| 기본 정보 | 번호·이름·연결 계좌 |
+| 패턴 설명과 음성 | 설명 문구·AI/가족 선택·미리 듣기·녹음 |
+| 단계별 안내와 음성 | 실제 단계 목록·개별 문구·음성·녹음 |
+| 최종 확인 | 변경 내용·저장 상태 |
 
-## Validation and Limits
+| 입력·상태 | 규칙 |
+| --- | --- |
+| 이름 | 공백만 불가, 최대 50자 |
+| 설명·단계 문구 | 최대 500자, 상세는 [음성 편집](guidance-voice.md) |
+| 송금 대상 | 사람 선택 후 특정 계좌 확인. 한 개도 확인 |
+| 등록 실패 | 번호 중복·범위 초과·13번째 활성·사용 불가 템플릿·계좌 누락 안내 |
+| 분석에서 수정 | 패턴 수정의 해당 단계 편집기로 연결 |
 
-- Reject a number outside 1 through 12.
-- Reject a thirteenth active pattern.
-- Reject duplicate active shortcut numbers except through an explicitly confirmed swap operation.
-- Reject registration from an unavailable or stale template.
-- Require a valid linked registered recipient for transfer patterns.
-- Do not mark a pattern as registered before the server confirms the mutation.
+## 홈·번호 관리
 
-## Edit, Reorder, and Deactivate
+| 동작 | 결과 |
+| --- | --- |
+| 홈 페이지 | 1–4 / 5–8 / 9–12, 버튼·가로 넘기기 |
+| 카드·목록·확인창 | 업무 이름을 번호보다 크게 |
+| 빈 번호 | 등록 진입 |
+| 빈 번호로 이동 | 해당 패턴 번호 변경 |
+| 사용 중 번호로 이동 | 두 업무·번호 표시 → 교환 확인 |
+| 교환 취소·실패 | 이전 순서 유지·복구 |
+| 성공 후 되돌리기 | 가능. 교환 전 확인은 별도 유지 |
+| 비활성화 | 번호 해제·재사용, 과거 실행/단계 기록 보존 |
+| 비활성 과거 항목 | 분석 가능, 실행·수정 불가 |
+| 최근 이용 | 실제 시각 또는 기록 없음. 고정 ‘오늘’ 금지 |
 
-- Fetch persisted pattern detail before filling the edit form.
-- The edit flow includes pre-start and individual step voice editors (FR-054 through FR-056), preserving stored text, choices, and recordings unless explicitly changed. Pattern detail provides access to the same editors.
-- Moving to an unused number changes only the current pattern's number.
-- Moving to an occupied number requires an explicit confirmation to swap the two pattern numbers.
-- Submit the complete active shortcut order in one reorder request.
-- Deactivation changes the record to `is_active=false` and `shortcut_number=null`; it is not a row deletion.
-- A deactivated number becomes available to another active pattern.
-- Preserve execution and step logs after deactivation.
-- On edit, reorder, swap, or deactivate failure, restore the last server-confirmed state and explain the failure.
-- Editing step instructions requires a contract capable of persisting them. Do not keep a frontend-only edit that disappears on refetch.
+## 실행 단계
 
-## Home Behavior
+| 업무 | 단계 |
+| --- | --- |
+| 등록 송금 | 내 계좌 → 받는 사람 → 받는 계좌 → 금액 → 최종 확인 → 본인 확인 |
+| 금융 조회 | 결과 확인 1단계 |
+| 고객센터 | 연락처 확인·전화 걸기 1단계 |
 
-- Home displays active patterns in shortcut-number order and makes the number visually dominant.
-- Empty slots may support pattern registration but must not look like completed financial functions.
-- Selecting an active shortcut opens pre-execution confirmation; it does not immediately perform an inquiry or transfer.
-- A missing or deactivated pattern reached through stale UI is removed after refresh and cannot start.
-- A predefined voice command may highlight a matching active shortcut, but it cannot start the task automatically.
+- 연결 사람·계좌는 미리 선택 가능, 확인 화면 생략 불가.
+- ‘아들에게 송금하기’도 1→2→3의 연속 순서.
+- 시작 확인창·경고·완료는 템플릿 단계에 포함하지 않음.
 
-## Execution Start
+## Agent Notes
 
-- Confirmation shows shortcut number, title, description, and recipient/account summary for a transfer pattern.
-- Play the saved description using the pre-start target's effective TTS/family mode and fallback rules in [Guidance and Voice](guidance-voice.md#playback-selection); playback completion is not required to start.
-- Create a pattern execution only when the user selects `Start`.
-- Closing or cancelling confirmation leaves the user on home and creates no execution record.
-- The first executable step comes from the retrieved ordered pattern detail, not a hardcoded screen list.
-- Do not mark the pattern execution complete before the linked inquiry or transfer actually completes.
-
-## Completion Criteria
-
-- FR-010: A newly prepared seeded user sees exactly eight default active shortcuts.
-- FR-011: A thirteenth active pattern and an unconfirmed duplicate number are rejected.
-- FR-012: Create, update, move/swap, and deactivate changes survive refetch.
-- FR-013: An unavailable template cannot be registered.
-- FR-014: A transfer pattern detail identifies its linked person and recipient account.
-- FR-015: Updated title, description, account link, and step instructions are used by later execution.
-- FR-016: Shortcut selection alone never completes or starts the financial task.
-- FR-017: Execution follows the ordered steps returned for the pattern.
+- Persist the complete active order consistently; require swap confirmation for both number picking and drag.
+- Distinguish tap, scroll, swipe, and long press. Ending a gesture must not start a task.
+- Refetch persisted detail for editing and validate availability before start. Never execute stale inactive targets.
+- Confirmation shows title, number, description, and transfer recipient/account. Use saved pre-start voice; playback completion is not required.
+- Create an execution only after Start and only with recording consent. Closing confirmation creates no execution or financial request.
+- Follow returned step identities/order, not hardcoded screen order. Every default/new target needs a valid template default.
+- Preserve parent drafts and target-specific edits; use [voice save rules](guidance-voice.md).
+- Complete only after the actual task result; follow [execution boundaries](usage-analysis.md).
+- Acceptance: [SC-003, 004, 013, 017](validation-scenarios.md).
