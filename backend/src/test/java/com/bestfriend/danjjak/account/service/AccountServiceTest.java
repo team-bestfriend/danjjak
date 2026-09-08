@@ -1,7 +1,9 @@
 package com.bestfriend.danjjak.account.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -17,6 +19,7 @@ import com.bestfriend.danjjak.account.model.RegisteredPersonAccountRecord;
 import com.bestfriend.danjjak.account.model.RegisteredPersonCommand;
 import com.bestfriend.danjjak.common.error.ApiException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +53,61 @@ class AccountServiceTest {
         assertEquals(1L, result.get(0).accountId());
         assertEquals(new BigDecimal("50000000"), result.get(0).balance());
         assertEquals(true, result.get(0).primary());
+    }
+
+    @Test
+    void returnsImportedAndCandidateMockAccountOptions() {
+        AccountRecord imported = ownedAccount(1L, true, LocalDateTime.now());
+        AccountRecord candidate = ownedAccount(2L, false, null);
+        when(accountMapper.findMockAccountImportOptions(1L))
+                .thenReturn(List.of(imported, candidate));
+
+        var result = accountService.getMockAccountImportOptions(1L);
+
+        assertTrue(result.get(0).imported());
+        assertFalse(result.get(1).imported());
+    }
+
+    @Test
+    void importsFirstMockAccountAsPrimaryWithoutResettingItsData() {
+        AccountRecord candidate = ownedAccount(2L, false, null);
+        AccountRecord imported = ownedAccount(2L, true, LocalDateTime.now());
+        when(accountMapper.findOwnedAccountImportOption(1L, 2L)).thenReturn(candidate);
+        when(accountMapper.countImportedOwnedAccounts(1L)).thenReturn(0);
+        when(accountMapper.findOwnedAccount(1L, 2L)).thenReturn(imported);
+
+        var result = accountService.importMockAccount(1L, 2L);
+
+        assertEquals(new BigDecimal("50000000"), result.balance());
+        assertTrue(result.primary());
+        verify(accountMapper).markOwnedAccountImported(1L, 2L, true);
+    }
+
+    @Test
+    void repeatedImportReturnsExistingAccountWithoutUpdatingIt() {
+        AccountRecord imported = ownedAccount(2L, false, LocalDateTime.now());
+        when(accountMapper.findOwnedAccountImportOption(1L, 2L)).thenReturn(imported);
+        when(accountMapper.findOwnedAccount(1L, 2L)).thenReturn(imported);
+
+        accountService.importMockAccount(1L, 2L);
+
+        verify(accountMapper, never())
+                .markOwnedAccountImported(
+                        org.mockito.ArgumentMatchers.anyLong(),
+                        org.mockito.ArgumentMatchers.anyLong(),
+                        org.mockito.ArgumentMatchers.anyBoolean());
+    }
+
+    @Test
+    void rejectsMockAccountOptionOwnedByAnotherUser() {
+        when(accountMapper.findOwnedAccountImportOption(1L, 99L)).thenReturn(null);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.importMockAccount(1L, 99L));
+
+        assertEquals("ACCOUNT_IMPORT_OPTION_NOT_FOUND", exception.getCode());
     }
 
     @Test
@@ -207,5 +265,19 @@ class AccountServiceTest {
         record.setAccountNumber("1002-000-000001");
         record.setAccountAlias("민수 계좌");
         return record;
+    }
+
+    private AccountRecord ownedAccount(
+            long accountId, boolean primary, LocalDateTime importedAt) {
+        AccountRecord account = new AccountRecord();
+        account.setAccountId(accountId);
+        account.setBankCode("088");
+        account.setBankName("신한은행");
+        account.setAccountNumber("110-000-000001");
+        account.setAccountAlias("생활비 통장");
+        account.setBalance(new BigDecimal("50000000"));
+        account.setPrimary(primary);
+        account.setImportedAt(importedAt);
+        return account;
     }
 }

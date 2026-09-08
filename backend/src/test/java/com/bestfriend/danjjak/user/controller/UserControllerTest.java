@@ -54,12 +54,14 @@ class UserControllerTest {
                         new CurrentUserResponse(
                                 1L,
                                 "김단짝",
+                                true,
                                 new ConsentSettings(false, false, false),
                                 new AccessibilitySettings(
                                         FontSize.LARGE, VoiceSpeed.SLOW, GuideVoiceType.TTS)));
 
         mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"accountReady\":true")))
                 .andExpect(content().string(containsString("\"name\":\"김단짝\"")))
                 .andExpect(content().string(containsString("\"completed\":false")))
                 .andExpect(content().string(containsString("\"fontSize\":\"LARGE\"")));

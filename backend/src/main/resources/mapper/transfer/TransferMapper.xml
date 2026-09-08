@@ -32,6 +32,7 @@
         WHERE user_id = #{userId}
           AND bank_account_id = #{accountId}
           AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
         FOR UPDATE
     </select>
 
@@ -88,6 +89,7 @@
         WHERE user_id = #{userId}
           AND bank_account_id = #{accountId}
           AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
           AND balance &gt;= #{amount}
     </update>
 

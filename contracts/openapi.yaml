@@ -331,6 +331,37 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OwnedAccount'
+  /api/accounts/import-options:
+    get:
+      tags: [Accounts]
+      operationId: getMockAccountImportOptions
+      summary: 모의 본인 계좌 불러오기 선택지 조회
+      responses:
+        '200':
+          description: 불러온 계좌와 아직 불러오지 않은 후보 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MockAccountImportOption'
+  /api/accounts/{accountId}/import:
+    post:
+      tags: [Accounts]
+      operationId: importMockAccount
+      summary: 선택한 모의 본인 계좌 불러오기
+      description: 이미 불러온 계좌를 다시 요청해도 잔액과 기존 자료를 변경하지 않고 같은 결과를 반환한다.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: 불러온 본인 계좌
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnedAccount'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/accounts/{accountId}/balance:
     get:
       tags: [Accounts]
@@ -1201,6 +1232,31 @@ components:
           minimum: 0
         primary:
           type: boolean
+    MockAccountImportOption:
+      type: object
+      required:
+        [accountId, bankCode, bankName, accountNumber, balance, primary, imported]
+      properties:
+        accountId:
+          type: integer
+          format: int64
+        bankCode:
+          type: string
+        bankName:
+          type: string
+        accountNumber:
+          type: string
+        accountAlias:
+          type: string
+          nullable: true
+        balance:
+          type: integer
+          format: int64
+          minimum: 0
+        primary:
+          type: boolean
+        imported:
+          type: boolean
     BalanceResponse:
       type: object
       required: [accountId, balance]
@@ -1509,7 +1565,7 @@ components:
           description: 실제 카카오 발송 성공 시 서버가 기록한 발송 시각
     CurrentUserResponse:
       type: object
-      required: [userId, name, consents, settings]
+      required: [userId, name, accountReady, consents, settings]
       properties:
         userId:
           type: integer
@@ -1518,6 +1574,9 @@ components:
         name:
           type: string
           maxLength: 50
+        accountReady:
+          type: boolean
+          description: 사용 가능한 모의 본인 계좌가 한 개 이상이면 true
         consents:
           $ref: '#/components/schemas/ConsentSettings'
         settings:

@@ -60,7 +60,11 @@ async function save() {
       usageLogAgreed: usageLogAgreed.value,
       guardianShareAgreed: guardianShareAgreed.value,
     });
-    await router.replace({ name: route.query.edit === '1' ? 'settings' : 'home' });
+    await router.replace({
+      name: route.query.edit === '1'
+        ? 'settings'
+        : store.currentUser?.accountReady ? 'home' : 'account-import',
+    });
   } catch (error) {
     errorMessage.value = error?.message ?? '동의 내용을 저장하지 못했습니다. 다시 시도해 주세요.';
   } finally {

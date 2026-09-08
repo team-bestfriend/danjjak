@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bestfriend.danjjak.config.RootConfig;
+import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.ExecutionFinishRequest;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.ExecutionStartRequest;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.ExecutionStatus;
@@ -40,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 class PatternDatabaseIntegrationTest {
 
     @Autowired private PatternService patternService;
+    @Autowired private AccountService accountService;
     @Autowired private UserService userService;
     @Autowired private DataSource dataSource;
 
@@ -48,6 +50,7 @@ class PatternDatabaseIntegrationTest {
     @BeforeEach
     void setUp() {
         jdbcTemplate = new JdbcTemplate(dataSource);
+        accountService.importMockAccount(1L, 1L);
     }
 
     @Test

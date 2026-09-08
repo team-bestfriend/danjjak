@@ -28,10 +28,12 @@ class AccountDatabaseIntegrationTest {
 
     @Test
     void readsSeededAccountsPeopleBalanceAndCategoryTransactions() {
+        accountService.importMockAccount(1L, 1L);
+
         var accounts = accountService.getOwnedAccounts(1L);
         var people = accountService.getRegisteredPersons(1L);
 
-        assertEquals(2, accounts.size());
+        assertEquals(1, accounts.size());
         assertTrue(accounts.get(0).primary());
         assertEquals(new BigDecimal("50000000"), accountService.getBalance(1L, 1L).balance());
         assertEquals(2, people.size());
@@ -44,6 +46,31 @@ class AccountDatabaseIntegrationTest {
         assertFalse(accountService.getTransactions(1L, 1L, "PENSION").isEmpty());
         assertFalse(accountService.getTransactions(1L, 1L, "MANAGEMENT_FEE").isEmpty());
         assertFalse(accountService.getTransactions(1L, 1L, "UTILITY_BILL").isEmpty());
+    }
+
+    @Test
+    void importsCandidateOnceWithoutResettingBalance() {
+        var before = accountService.getMockAccountImportOptions(1L);
+        assertEquals(0, accountService.getOwnedAccounts(1L).size());
+        var candidate = before.stream()
+                .filter(option -> !option.imported())
+                .findFirst()
+                .orElseThrow();
+
+        var imported = accountService.importMockAccount(1L, candidate.accountId());
+        var repeated = accountService.importMockAccount(1L, candidate.accountId());
+        var after = accountService.getMockAccountImportOptions(1L);
+
+        assertEquals(candidate.balance(), imported.balance());
+        assertEquals(imported, repeated);
+        assertEquals(1, accountService.getOwnedAccounts(1L).size());
+        assertTrue(imported.primary());
+        assertTrue(
+                after.stream()
+                        .filter(option -> option.accountId() == candidate.accountId())
+                        .findFirst()
+                        .orElseThrow()
+                        .imported());
     }
 
     @Test

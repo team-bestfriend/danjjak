@@ -118,7 +118,10 @@
 
     <select id="countUserAccount" resultType="int">
         SELECT COUNT(*) FROM bank_accounts
-        WHERE user_id = #{userId} AND bank_account_id = #{accountId}
+        WHERE user_id = #{userId}
+          AND bank_account_id = #{accountId}
+          AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
     </select>
 
     <select id="countRegisteredRecipientAccount" resultType="int">
@@ -133,6 +136,7 @@
         FROM bank_accounts
         WHERE user_id = #{userId}
           AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
         ORDER BY is_primary DESC, bank_account_id
         LIMIT 1
     </select>
@@ -216,6 +220,7 @@
         WHERE user_id = #{userId}
           AND bank_account_id = #{accountId}
           AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
     </select>
 
     <select id="findExecutionStatusForUpdate" resultType="string">

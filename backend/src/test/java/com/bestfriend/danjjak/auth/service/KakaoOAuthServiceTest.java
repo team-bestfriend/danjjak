@@ -26,6 +26,7 @@ class KakaoOAuthServiceTest {
                 new CurrentUserResponse(
                         1L,
                         "김단짝",
+                        true,
                         new ConsentSettings(true, true, false),
                         new AccessibilitySettings(
                                 FontSize.NORMAL, VoiceSpeed.NORMAL, GuideVoiceType.TTS));

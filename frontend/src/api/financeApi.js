@@ -2,6 +2,10 @@ import { request } from './httpClient.js';
 
 export const accountApi = {
   getOwnedAccounts: () => request('/api/accounts'),
+  getMockAccountImportOptions: () => request('/api/accounts/import-options'),
+  importMockAccount: (accountId) => request(`/api/accounts/${accountId}/import`, {
+    method: 'POST',
+  }),
   getBalance: (accountId) => request(`/api/accounts/${accountId}/balance`),
   getTransactions: (accountId, category) => {
     const query = category ? `?category=${encodeURIComponent(category)}` : '';

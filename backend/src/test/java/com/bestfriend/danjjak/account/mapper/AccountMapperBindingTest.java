@@ -31,6 +31,10 @@ class AccountMapperBindingTest {
         List.of(
                         "findOwnedAccounts",
                         "findOwnedAccount",
+                        "findMockAccountImportOptions",
+                        "findOwnedAccountImportOption",
+                        "countImportedOwnedAccounts",
+                        "markOwnedAccountImported",
                         "findRegisteredPersons",
                         "findRegisteredPerson",
                         "findRecipientAccount",

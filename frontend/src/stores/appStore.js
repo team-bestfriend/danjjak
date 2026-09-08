@@ -15,6 +15,7 @@ const ERROR_MESSAGES = {
   INVALID_RECIPIENT: '받는 계좌 정보를 다시 확인해 주세요.',
   INVALID_REQUEST: '입력한 정보를 다시 확인해 주세요.',
   ACCOUNT_ALREADY_EXISTS: '이미 등록된 계좌입니다.',
+  ACCOUNT_IMPORT_OPTION_NOT_FOUND: '불러올 모의 계좌를 찾을 수 없습니다.',
   REGISTERED_PERSON_NOT_FOUND: '등록된 사람을 찾을 수 없습니다.',
   ANOMALY_ALREADY_RESOLVED: '이미 처리된 이상거래입니다.',
   SESSION_REQUIRED: '로그인이 만료되었습니다. 카카오 로그인 후 다시 시도해 주세요.',
@@ -217,6 +218,11 @@ export const useAppStore = defineStore('app', () => {
   const financeError = ref('');
   const financeWarning = ref('');
   let pendingFinancialDataLoad = null;
+  const mockAccountImportOptions = ref([]);
+  const accountImportLoading = ref(false);
+  const accountImportError = ref('');
+  const accountImportSavingId = ref(null);
+  let pendingAccountImportOptionsLoad = null;
 
   const selectedInquiryAccountId = ref(null);
   const inquiryBalance = ref(null);
@@ -323,6 +329,9 @@ export const useAppStore = defineStore('app', () => {
     ownedAccounts.value = [];
     people.value = [];
     accountsByPerson.value = {};
+    mockAccountImportOptions.value = [];
+    accountImportError.value = '';
+    accountImportSavingId.value = null;
     support.value = null;
     supportLoaded.value = false;
     transferAmount.value = '0';
@@ -548,6 +557,13 @@ export const useAppStore = defineStore('app', () => {
     };
   }
 
+  function mapMockAccountImportOption(account) {
+    return {
+      ...mapOwnedAccount(account),
+      imported: Boolean(account.imported),
+    };
+  }
+
   function mapRegisteredPerson(person) {
     return {
       id: person.registeredPersonId,
@@ -618,6 +634,49 @@ export const useAppStore = defineStore('app', () => {
       }
     })();
     return pendingFinancialDataLoad;
+  }
+
+  function loadMockAccountImportOptions(force = false) {
+    if (pendingAccountImportOptionsLoad) return pendingAccountImportOptionsLoad;
+    if (mockAccountImportOptions.value.length > 0 && !force) return Promise.resolve(true);
+    pendingAccountImportOptionsLoad = (async () => {
+      accountImportLoading.value = true;
+      accountImportError.value = '';
+      try {
+        const rows = await accountApi.getMockAccountImportOptions();
+        mockAccountImportOptions.value = rows.map(mapMockAccountImportOption);
+        return true;
+      } catch (error) {
+        mockAccountImportOptions.value = [];
+        accountImportError.value = toMessage(error, '모의 계좌를 불러오지 못했습니다.');
+        return false;
+      } finally {
+        accountImportLoading.value = false;
+        pendingAccountImportOptionsLoad = null;
+      }
+    })();
+    return pendingAccountImportOptionsLoad;
+  }
+
+  async function importMockAccount(accountId) {
+    if (accountImportSavingId.value !== null) return null;
+    accountImportSavingId.value = accountId;
+    accountImportError.value = '';
+    try {
+      const saved = await accountApi.importMockAccount(accountId);
+      currentUser.value = { ...currentUser.value, accountReady: true };
+      financeLoaded.value = false;
+      await Promise.all([
+        loadFinancialData(true),
+        loadMockAccountImportOptions(true),
+      ]);
+      return saved;
+    } catch (error) {
+      accountImportError.value = toMessage(error, '선택한 모의 계좌를 불러오지 못했습니다.');
+      throw error;
+    } finally {
+      accountImportSavingId.value = null;
+    }
   }
 
   async function saveRegisteredPerson(payload, registeredPersonId = null) {
@@ -1047,6 +1106,10 @@ export const useAppStore = defineStore('app', () => {
     financeLoaded,
     financeError,
     financeWarning,
+    mockAccountImportOptions,
+    accountImportLoading,
+    accountImportError,
+    accountImportSavingId,
     selectedInquiryAccountId,
     inquiryBalance,
     inquiryTransactions,
@@ -1105,6 +1168,8 @@ export const useAppStore = defineStore('app', () => {
     recordPatternNavigation,
     finishPatternExecution,
     loadFinancialData,
+    loadMockAccountImportOptions,
+    importMockAccount,
     saveRegisteredPerson,
     saveRecipientAccount,
     loadInquiry,

@@ -1,6 +1,7 @@
 package com.bestfriend.danjjak.account.service;
 
 import com.bestfriend.danjjak.account.dto.AccountDtos.BalanceResponse;
+import com.bestfriend.danjjak.account.dto.AccountDtos.MockAccountImportOptionResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.OwnedAccountResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountResponse;
@@ -45,6 +46,29 @@ public class AccountService {
     @Transactional(readOnly = true)
     public List<OwnedAccountResponse> getOwnedAccounts(long userId) {
         return accountMapper.findOwnedAccounts(userId).stream().map(this::toOwnedResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MockAccountImportOptionResponse> getMockAccountImportOptions(long userId) {
+        return accountMapper.findMockAccountImportOptions(userId).stream()
+                .map(this::toImportOptionResponse)
+                .toList();
+    }
+
+    @Transactional
+    public OwnedAccountResponse importMockAccount(long userId, long accountId) {
+        AccountRecord option = accountMapper.findOwnedAccountImportOption(userId, accountId);
+        if (option == null) {
+            throw new ApiException(
+                    HttpStatus.NOT_FOUND,
+                    "ACCOUNT_IMPORT_OPTION_NOT_FOUND",
+                    "불러올 모의 계좌를 찾을 수 없습니다.");
+        }
+        if (option.getImportedAt() == null) {
+            boolean makePrimary = accountMapper.countImportedOwnedAccounts(userId) == 0;
+            accountMapper.markOwnedAccountImported(userId, accountId, makePrimary);
+        }
+        return toOwnedResponse(requireOwnedAccount(userId, accountId));
     }
 
     @Transactional(readOnly = true)
@@ -171,6 +195,18 @@ public class AccountService {
                 account.getAccountAlias(),
                 account.getBalance(),
                 account.isPrimary());
+    }
+
+    private MockAccountImportOptionResponse toImportOptionResponse(AccountRecord account) {
+        return new MockAccountImportOptionResponse(
+                account.getAccountId(),
+                account.getBankCode(),
+                account.getBankName(),
+                account.getAccountNumber(),
+                account.getAccountAlias(),
+                account.getBalance(),
+                account.isPrimary(),
+                account.getImportedAt() != null);
     }
 
     private List<RegisteredPersonResponse> toRegisteredResponses(

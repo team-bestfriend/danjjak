@@ -94,6 +94,7 @@ public class UserService {
         return new CurrentUserResponse(
                 user.getUserId(),
                 user.getName(),
+                user.isAccountReady(),
                 new ConsentSettings(
                         user.isConsentCompleted(),
                         user.isUsageLogAgreed(),

@@ -72,6 +72,7 @@ test('인증 세션은 서버 사용자와 접근성 설정을 적용하고 중�
       user: {
         userId: 1,
         name: '김단짝',
+        accountReady: true,
         consents: { completed: true, usageLogAgreed: true, guardianShareAgreed: false },
         settings: { fontSize: 'LARGE', voiceSpeed: 'SLOW', guideVoiceType: 'TTS' },
       },
@@ -391,6 +392,98 @@ test('본인 계좌와 등록 수취 계좌를 분리하고 기본 계좌를 선
   assert.equal(store.accountsByPerson[7][1].accountId, 4);
   assert.equal(store.people[0].accounts, 2);
   assert.equal(store.accountsByPerson[7][0].balance, undefined);
+});
+
+test('모의 본인 계좌의 불러옴 상태와 후보를 함께 조회한다', async () => {
+  const store = createStore();
+  globalThis.fetch = async (url) => {
+    assert.equal(url, '/api/accounts/import-options');
+    return jsonResponse([{
+      accountId: 1,
+      bankName: '신한은행',
+      accountNumber: '110-000-000001',
+      accountAlias: '생활비 통장',
+      balance: 50000000,
+      primary: true,
+      imported: true,
+    }, {
+      accountId: 2,
+      bankName: '국민은행',
+      accountNumber: '123-000-000002',
+      accountAlias: '저축 통장',
+      balance: 30000000,
+      primary: false,
+      imported: false,
+    }]);
+  };
+
+  await store.loadMockAccountImportOptions();
+
+  assert.equal(store.mockAccountImportOptions[0].imported, true);
+  assert.equal(store.mockAccountImportOptions[1].imported, false);
+  assert.equal(store.mockAccountImportOptions[1].masked, '123-****-002');
+});
+
+test('모의 계좌 불러오기 중복 요청을 막고 저장 결과를 다시 조회한다', async () => {
+  const store = createStore();
+  store.currentUser = {
+    userId: 1,
+    name: '김단짝',
+    accountReady: false,
+    consents: { completed: true },
+    settings: {},
+  };
+  let importRequestCount = 0;
+  let finishImport;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/accounts/2/import' && options.method === 'POST') {
+      importRequestCount += 1;
+      return new Promise((resolve) => {
+        finishImport = () => resolve(jsonResponse({
+          accountId: 2,
+          bankName: '국민은행',
+          accountNumber: '123-000-000002',
+          accountAlias: '저축 통장',
+          balance: 30000000,
+          primary: true,
+        }));
+      });
+    }
+    if (url === '/api/accounts') {
+      return jsonResponse([{
+        accountId: 2,
+        bankName: '국민은행',
+        accountNumber: '123-000-000002',
+        accountAlias: '저축 통장',
+        balance: 30000000,
+        primary: true,
+      }]);
+    }
+    if (url === '/api/registered-persons') return jsonResponse([]);
+    if (url === '/api/accounts/import-options') {
+      return jsonResponse([{
+        accountId: 2,
+        bankName: '국민은행',
+        accountNumber: '123-000-000002',
+        accountAlias: '저축 통장',
+        balance: 30000000,
+        primary: true,
+        imported: true,
+      }]);
+    }
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  const first = store.importMockAccount(2);
+  const second = store.importMockAccount(2);
+  assert.equal(await second, null);
+  finishImport();
+  await first;
+
+  assert.equal(importRequestCount, 1);
+  assert.equal(store.currentUser.accountReady, true);
+  assert.equal(store.ownedAccounts[0].accountId, 2);
+  assert.equal(store.mockAccountImportOptions[0].imported, true);
 });
 
 test('금융 목록 재조회 실패 시 오래된 상세 데이터를 제거한다', async () => {

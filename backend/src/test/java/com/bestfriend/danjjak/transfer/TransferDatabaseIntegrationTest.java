@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bestfriend.danjjak.common.error.ApiException;
+import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.config.RootConfig;
 import com.bestfriend.danjjak.transfer.dto.TransferDtos.DirectRecipientRequest;
 import com.bestfriend.danjjak.transfer.dto.TransferDtos.ResolveAnomalyRequest;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 class TransferDatabaseIntegrationTest {
 
     @Autowired private TransferService transferService;
+    @Autowired private AccountService accountService;
     @Autowired private DataSource dataSource;
 
     private JdbcTemplate jdbcTemplate;
@@ -36,6 +38,7 @@ class TransferDatabaseIntegrationTest {
     @BeforeEach
     void setUp() {
         jdbcTemplate = new JdbcTemplate(dataSource);
+        accountService.importMockAccount(1L, 1L);
     }
 
     @Test

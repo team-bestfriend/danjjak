@@ -49,7 +49,7 @@ class TransferFdsApiIntegrationTest {
     private MockHttpSession session;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         mockMvc =
                 MockMvcBuilders.webAppContextSetup(context)
                         .addFilters(
@@ -59,6 +59,7 @@ class TransferFdsApiIntegrationTest {
         objectMapper = new ObjectMapper();
         session = new MockHttpSession();
         session.setAttribute(DemoSessionUserResolver.USER_ID_ATTRIBUTE, 1L);
+        performAndRead(post("/api/accounts/1/import"));
     }
 
     @Test
@@ -73,7 +74,7 @@ class TransferFdsApiIntegrationTest {
         assertTrue(consents.path("guardianShareAgreed").asBoolean());
 
         JsonNode accounts = performAndRead(get("/api/accounts"));
-        assertEquals(2, accounts.size());
+        assertEquals(1, accounts.size());
         assertTrue(accounts.get(0).path("primary").asBoolean());
 
         JsonNode people = performAndRead(get("/api/registered-persons"));

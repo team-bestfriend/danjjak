@@ -12,6 +12,7 @@
         <result property="accountAlias" column="account_alias"/>
         <result property="balance" column="balance"/>
         <result property="primary" column="is_primary"/>
+        <result property="importedAt" column="imported_at"/>
     </resultMap>
 
     <select id="findOwnedAccounts" resultMap="ownedAccountMap">
@@ -21,10 +22,12 @@
                account_number,
                account_alias,
                balance,
-               is_primary
+               is_primary,
+               imported_at
         FROM bank_accounts
         WHERE user_id = #{userId}
           AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
         ORDER BY is_primary DESC, bank_account_id
     </select>
 
@@ -35,12 +38,61 @@
                account_number,
                account_alias,
                balance,
-               is_primary
+               is_primary,
+               imported_at
+        FROM bank_accounts
+        WHERE user_id = #{userId}
+          AND bank_account_id = #{accountId}
+          AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
+    </select>
+
+    <select id="findMockAccountImportOptions" resultMap="ownedAccountMap">
+        SELECT bank_account_id,
+               bank_code,
+               bank_name,
+               account_number,
+               account_alias,
+               balance,
+               is_primary,
+               imported_at
+        FROM bank_accounts
+        WHERE user_id = #{userId}
+          AND registered_person_id IS NULL
+        ORDER BY imported_at IS NULL, is_primary DESC, bank_account_id
+    </select>
+
+    <select id="findOwnedAccountImportOption" resultMap="ownedAccountMap">
+        SELECT bank_account_id,
+               bank_code,
+               bank_name,
+               account_number,
+               account_alias,
+               balance,
+               is_primary,
+               imported_at
         FROM bank_accounts
         WHERE user_id = #{userId}
           AND bank_account_id = #{accountId}
           AND registered_person_id IS NULL
     </select>
+
+    <select id="countImportedOwnedAccounts" resultType="int">
+        SELECT COUNT(*)
+        FROM bank_accounts
+        WHERE user_id = #{userId}
+          AND registered_person_id IS NULL
+          AND imported_at IS NOT NULL
+    </select>
+
+    <update id="markOwnedAccountImported">
+        UPDATE bank_accounts
+        SET imported_at = COALESCE(imported_at, CURRENT_TIMESTAMP),
+            is_primary = CASE WHEN #{makePrimary} THEN TRUE ELSE is_primary END
+        WHERE user_id = #{userId}
+          AND bank_account_id = #{accountId}
+          AND registered_person_id IS NULL
+    </update>
 
     <select id="findRegisteredPersons"
             resultType="com.bestfriend.danjjak.account.model.RegisteredPersonAccountRecord">
