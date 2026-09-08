@@ -1,47 +1,16 @@
 <template>
   <form class="space-y-5" @submit.prevent="handleSave">
-    <p class="text-[21px] font-black text-[#111827]">{{ existingPerson ? '등록 정보 수정' : '새로운 사람 등록' }}</p>
+    <p class="text-[21px] font-black text-[#111827]">
+      {{ existingAccount ? '받는 계좌 수정' : '받는 계좌 추가' }}
+    </p>
+    <p class="text-[15px] text-[#6B7280]">{{ personName }} 님에게 연결할 계좌 정보를 입력해 주세요.</p>
 
-    <label class="block space-y-2">
-      <span class="text-[14px] font-bold text-[#374151]">이름</span>
-      <input
-        id="registered-person-name"
-        v-model.trim="name"
-        :aria-invalid="Boolean(fieldErrors.name)"
-        aria-describedby="registered-person-name-error"
-        @blur="touched.name = true"
-        maxlength="50"
-        placeholder="예: 김민준"
-        class="w-full min-h-[52px] rounded-[14px] border-2 border-[#E5E7EB] focus:border-[#F5B800] outline-none px-4 text-[17px] font-bold"
-      />
-      <p v-if="fieldErrors.name" id="registered-person-name-error" class="text-[13px] text-[#B91C1C]" role="alert">
-        {{ fieldErrors.name }}
-      </p>
-    </label>
-
-    <label class="block space-y-2">
-      <span class="text-[14px] font-bold text-[#374151]">관계</span>
-      <input
-        id="registered-person-relationship"
-        v-model.trim="relationship"
-        :aria-invalid="Boolean(fieldErrors.relationship)"
-        aria-describedby="registered-person-relationship-error"
-        @blur="touched.relationship = true"
-        maxlength="30"
-        placeholder="예: 아들, 딸"
-        class="w-full min-h-[52px] rounded-[14px] border-2 border-[#E5E7EB] focus:border-[#F5B800] outline-none px-4 text-[17px] font-bold"
-      />
-      <p v-if="fieldErrors.relationship" id="registered-person-relationship-error" class="text-[13px] text-[#B91C1C]" role="alert">
-        {{ fieldErrors.relationship }}
-      </p>
-    </label>
-
-    <div v-if="!existingPerson" class="space-y-2">
+    <div class="space-y-2">
       <p class="text-[14px] font-bold text-[#374151]">은행</p>
       <button
         type="button"
         :aria-invalid="Boolean(fieldErrors.bank)"
-        aria-describedby="registered-person-bank-error"
+        aria-describedby="recipient-account-bank-error"
         @click="touched.bank = true; showBanks = !showBanks"
         :class="[
           'w-full min-h-[52px] rounded-[14px] border-2 px-4 text-left text-[16px] font-bold flex items-center justify-between',
@@ -51,7 +20,7 @@
         <span>{{ selectedBank?.name || '은행 선택' }}</span>
         <span>▾</span>
       </button>
-      <p v-if="fieldErrors.bank" id="registered-person-bank-error" class="text-[13px] text-[#B91C1C]" role="alert">
+      <p v-if="fieldErrors.bank" id="recipient-account-bank-error" class="text-[13px] text-[#B91C1C]" role="alert">
         {{ fieldErrors.bank }}
       </p>
       <div v-if="showBanks" class="grid grid-cols-2 gap-2">
@@ -68,14 +37,14 @@
       </div>
     </div>
 
-    <label v-if="!existingPerson" class="block space-y-2">
+    <label class="block space-y-2">
       <span class="text-[14px] font-bold text-[#374151]">계좌 번호</span>
       <input
-        id="registered-person-account"
+        id="recipient-account-number"
         type="tel"
         :value="accountNumber"
         :aria-invalid="Boolean(fieldErrors.account)"
-        aria-describedby="registered-person-account-help registered-person-account-error"
+        aria-describedby="recipient-account-number-help recipient-account-number-error"
         @input="accountNumber = $event.target.value.replace(/[^0-9-]/g, '')"
         @blur="touched.account = true"
         maxlength="50"
@@ -83,18 +52,18 @@
         inputmode="numeric"
         class="w-full min-h-[52px] rounded-[14px] border-2 border-[#E5E7EB] focus:border-[#F5B800] outline-none px-4 text-[17px] font-bold"
       />
-      <p id="registered-person-account-help" class="text-[13px] text-[#6B7280]">숫자 8~20자와 숫자 사이의 하이픈만 입력할 수 있어요.</p>
-      <p v-if="fieldErrors.account" id="registered-person-account-error" class="text-[13px] text-[#B91C1C]" role="alert">
+      <p id="recipient-account-number-help" class="text-[13px] text-[#6B7280]">숫자 8~20자와 숫자 사이의 하이픈만 입력할 수 있어요.</p>
+      <p v-if="fieldErrors.account" id="recipient-account-number-error" class="text-[13px] text-[#B91C1C]" role="alert">
         {{ fieldErrors.account }}
       </p>
     </label>
 
-    <label v-if="!existingPerson" class="block space-y-2">
+    <label class="block space-y-2">
       <span class="text-[14px] font-bold text-[#374151]">계좌 별칭 <span class="font-normal text-[#9CA3AF]">(선택)</span></span>
       <input
         v-model.trim="accountAlias"
         maxlength="50"
-        placeholder="예: 민수 계좌"
+        placeholder="예: 민수 생활비"
         class="w-full min-h-[52px] rounded-[14px] border-2 border-[#E5E7EB] focus:border-[#F5B800] outline-none px-4 text-[16px] font-bold"
       />
     </label>
@@ -123,35 +92,29 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { ApiError } from '../../api/httpClient';
-import { BANKS } from '../../constants/banks';
+import { BANKS, findBankByName } from '../../constants/banks';
 import { useAppStore } from '../../stores/appStore';
 
 const props = defineProps({
-  existingPerson: { type: Object, default: null },
+  registeredPersonId: { type: Number, required: true },
+  personName: { type: String, required: true },
+  existingAccount: { type: Object, default: null },
 });
 const emit = defineEmits(['saved', 'cancel']);
 const store = useAppStore();
-const name = ref(props.existingPerson?.name ?? '');
-const relationship = ref(props.existingPerson?.relation ?? '');
-const bankCode = ref('');
-const accountNumber = ref('');
-const accountAlias = ref('');
+const matchedBank = BANKS.find((bank) => bank.code === props.existingAccount?.bankCode)
+  ?? findBankByName(props.existingAccount?.bankName);
+const bankCode = ref(matchedBank?.code ?? '');
+const accountNumber = ref(props.existingAccount?.accountNumber ?? '');
+const accountAlias = ref(props.existingAccount?.accountAlias ?? '');
 const showBanks = ref(false);
 const saving = ref(false);
 const formError = ref('');
-const touched = ref({ name: false, relationship: false, bank: false, account: false });
+const touched = ref({ bank: false, account: false });
 const selectedBank = computed(() => BANKS.find((bank) => bank.code === bankCode.value) ?? null);
 const validAccountNumber = computed(() => /^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$/.test(accountNumber.value));
-const canSave = computed(() => (
-  name.value.length > 0
-  && relationship.value.length > 0
-  && (props.existingPerson || (Boolean(selectedBank.value) && validAccountNumber.value))
-));
+const canSave = computed(() => Boolean(selectedBank.value) && validAccountNumber.value);
 const fieldErrors = computed(() => ({
-  name: touched.value.name && name.value.length === 0 ? '이름을 입력해 주세요.' : '',
-  relationship: touched.value.relationship && relationship.value.length === 0
-    ? '관계를 입력해 주세요.'
-    : '',
   bank: touched.value.bank && !selectedBank.value ? '은행을 선택해 주세요.' : '',
   account: touched.value.account && !validAccountNumber.value
     ? '계좌번호는 숫자 8~20자와 숫자 사이의 하이픈만 입력해 주세요.'
@@ -160,33 +123,27 @@ const fieldErrors = computed(() => ({
 
 async function handleSave() {
   if (!canSave.value || saving.value) {
-    formError.value = props.existingPerson
-      ? '이름과 관계를 모두 확인해 주세요.'
-      : '이름, 관계, 은행, 계좌번호를 모두 확인해 주세요.';
+    formError.value = '은행과 계좌번호를 모두 확인해 주세요.';
     return;
   }
   saving.value = true;
   formError.value = '';
   try {
-    const personPayload = {
-      name: name.value,
-      relationship: relationship.value,
-    };
-    const saved = await store.saveRegisteredPerson(
-      props.existingPerson ? personPayload : {
-        ...personPayload,
+    const saved = await store.saveRecipientAccount(
+      props.registeredPersonId,
+      {
         bankCode: selectedBank.value.code,
         bankName: selectedBank.value.name,
         accountNumber: accountNumber.value,
         accountAlias: accountAlias.value || null,
       },
-      props.existingPerson?.id ?? null,
+      props.existingAccount?.accountId ?? null,
     );
     emit('saved', saved.registeredPersonId);
   } catch (error) {
     formError.value = error instanceof ApiError
       ? error.message
-      : '등록 정보를 저장하지 못했습니다. 다시 시도해 주세요.';
+      : '계좌 정보를 저장하지 못했습니다. 다시 시도해 주세요.';
   } finally {
     saving.value = false;
   }

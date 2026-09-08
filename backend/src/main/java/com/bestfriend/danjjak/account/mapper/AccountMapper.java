@@ -18,9 +18,21 @@ public interface AccountMapper {
 
     List<RegisteredPersonAccountRecord> findRegisteredPersons(long userId);
 
-    RegisteredPersonAccountRecord findRegisteredPerson(
+    List<RegisteredPersonAccountRecord> findRegisteredPerson(
             @Param("userId") long userId,
             @Param("registeredPersonId") long registeredPersonId);
+
+    RegisteredPersonAccountRecord findRecipientAccount(
+            @Param("userId") long userId,
+            @Param("registeredPersonId") long registeredPersonId,
+            @Param("accountId") long accountId);
+
+    int countDuplicateRecipientAccounts(
+            @Param("userId") long userId,
+            @Param("registeredPersonId") long registeredPersonId,
+            @Param("bankCode") String bankCode,
+            @Param("normalizedAccountNumber") String normalizedAccountNumber,
+            @Param("excludedAccountId") Long excludedAccountId);
 
     int insertRegisteredPerson(RegisteredPersonCommand command);
 

@@ -57,7 +57,7 @@
           ON ba.registered_person_id = rp.registered_person_id
          AND ba.user_id = rp.user_id
         WHERE rp.user_id = #{userId}
-        ORDER BY rp.registered_person_id
+        ORDER BY rp.registered_person_id, ba.bank_account_id
     </select>
 
     <select id="findRegisteredPerson"
@@ -76,6 +76,38 @@
          AND ba.user_id = rp.user_id
         WHERE rp.user_id = #{userId}
           AND rp.registered_person_id = #{registeredPersonId}
+        ORDER BY ba.bank_account_id
+    </select>
+
+    <select id="findRecipientAccount"
+            resultType="com.bestfriend.danjjak.account.model.RegisteredPersonAccountRecord">
+        SELECT rp.registered_person_id,
+               rp.name,
+               rp.relationship,
+               ba.bank_account_id AS account_id,
+               ba.bank_code,
+               ba.bank_name,
+               ba.account_number,
+               ba.account_alias
+        FROM registered_persons rp
+        JOIN bank_accounts ba
+          ON ba.registered_person_id = rp.registered_person_id
+         AND ba.user_id = rp.user_id
+        WHERE rp.user_id = #{userId}
+          AND rp.registered_person_id = #{registeredPersonId}
+          AND ba.bank_account_id = #{accountId}
+    </select>
+
+    <select id="countDuplicateRecipientAccounts" resultType="int">
+        SELECT COUNT(*)
+        FROM bank_accounts
+        WHERE user_id = #{userId}
+          AND registered_person_id = #{registeredPersonId}
+          AND bank_code = #{bankCode}
+          AND REPLACE(account_number, '-', '') = #{normalizedAccountNumber}
+        <if test="excludedAccountId != null">
+          AND bank_account_id != #{excludedAccountId}
+        </if>
     </select>
 
     <insert id="insertRegisteredPerson"

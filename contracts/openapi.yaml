@@ -412,7 +412,7 @@ paths:
     put:
       tags: [Registered People]
       operationId: updateRegisteredPerson
-      summary: 등록 인물과 수취 계좌 수정
+      summary: 등록 인물의 이름과 관계 수정
       parameters:
         - $ref: '#/components/parameters/RegisteredPersonId'
       requestBody:
@@ -420,10 +420,61 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisteredPersonRequest'
+              $ref: '#/components/schemas/RegisteredPersonUpdateRequest'
       responses:
         '200':
           description: 수정된 등록 인물
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisteredPerson'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/registered-persons/{registeredPersonId}/accounts:
+    post:
+      tags: [Registered People]
+      operationId: addRecipientAccount
+      summary: 기존 등록 인물에게 받는 계좌 추가
+      parameters:
+        - $ref: '#/components/parameters/RegisteredPersonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipientAccountRequest'
+      responses:
+        '201':
+          description: 계좌가 추가된 등록 인물
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisteredPerson'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/registered-persons/{registeredPersonId}/accounts/{accountId}:
+    put:
+      tags: [Registered People]
+      operationId: updateRecipientAccount
+      summary: 기존 등록 인물의 받는 계좌 수정
+      parameters:
+        - $ref: '#/components/parameters/RegisteredPersonId'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipientAccountRequest'
+      responses:
+        '200':
+          description: 계좌가 수정된 등록 인물
           content:
             application/json:
               schema:
@@ -1179,7 +1230,7 @@ components:
           nullable: true
     RegisteredPerson:
       type: object
-      required: [registeredPersonId, name, relationship, account]
+      required: [registeredPersonId, name, relationship, accounts]
       properties:
         registeredPersonId:
           type: integer
@@ -1188,11 +1239,15 @@ components:
           type: string
         relationship:
           type: string
-        account:
-          $ref: '#/components/schemas/RecipientAccount'
+        accounts:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RecipientAccount'
     RegisteredPersonRequest:
       type: object
       required: [name, relationship, bankCode, bankName, accountNumber]
+      additionalProperties: false
       properties:
         name:
           type: string
@@ -1214,7 +1269,42 @@ components:
           type: string
           minLength: 8
           maxLength: 50
-          pattern: '^[0-9-]+$'
+          pattern: '^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$'
+        accountAlias:
+          type: string
+          maxLength: 50
+          nullable: true
+    RegisteredPersonUpdateRequest:
+      type: object
+      required: [name, relationship]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        relationship:
+          type: string
+          minLength: 1
+          maxLength: 30
+    RecipientAccountRequest:
+      type: object
+      required: [bankCode, bankName, accountNumber]
+      additionalProperties: false
+      properties:
+        bankCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+        bankName:
+          type: string
+          minLength: 1
+          maxLength: 50
+        accountNumber:
+          type: string
+          minLength: 8
+          maxLength: 50
+          pattern: '^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$'
         accountAlias:
           type: string
           maxLength: 50

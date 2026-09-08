@@ -16,6 +16,14 @@ export const accountApi = {
     method: 'PUT',
     body: JSON.stringify(payload),
   }),
+  addRecipientAccount: (registeredPersonId, payload) => request(`/api/registered-persons/${registeredPersonId}/accounts`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  updateRecipientAccount: (registeredPersonId, accountId, payload) => request(`/api/registered-persons/${registeredPersonId}/accounts/${accountId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
 };
 
 export const transferApi = {

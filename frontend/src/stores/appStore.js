@@ -187,6 +187,8 @@ export const useAppStore = defineStore('app', () => {
   const activePatternDetail = ref(null);
   const editingId = ref(null);
   const editingPersonId = ref(null);
+  const accountFormPersonId = ref(null);
+  const editingRecipientAccountId = ref(null);
   const homePage = ref(1);
   const toast = ref(null);
   const userName = ref('순자');
@@ -552,7 +554,7 @@ export const useAppStore = defineStore('app', () => {
       name: person.name,
       emoji: person.relationship === '아들' ? '👨' : person.relationship === '딸' ? '👩' : '👤',
       relation: person.relationship,
-      accounts: person.account ? 1 : 0,
+      accounts: person.accounts.length,
     };
   }
 
@@ -585,7 +587,7 @@ export const useAppStore = defineStore('app', () => {
         people.value = personRows.map(mapRegisteredPerson);
         accountsByPerson.value = Object.fromEntries(personRows.map((person) => [
           person.registeredPersonId,
-          person.account ? [mapRecipientAccount(person.account)] : [],
+          person.accounts.map(mapRecipientAccount),
         ]));
         if (!ownedAccounts.value.some((account) => account.accountId === selectedInquiryAccountId.value)) {
           selectedInquiryAccountId.value = defaultOwnedAccount.value?.accountId ?? null;
@@ -622,6 +624,19 @@ export const useAppStore = defineStore('app', () => {
     const saved = registeredPersonId
       ? await accountApi.updateRegisteredPerson(registeredPersonId, payload)
       : await accountApi.createRegisteredPerson(payload);
+    if (pendingFinancialDataLoad) await pendingFinancialDataLoad;
+    await loadFinancialData(true);
+    return saved;
+  }
+
+  async function saveRecipientAccount(
+    registeredPersonId,
+    payload,
+    accountId = null,
+  ) {
+    const saved = accountId
+      ? await accountApi.updateRecipientAccount(registeredPersonId, accountId, payload)
+      : await accountApi.addRecipientAccount(registeredPersonId, payload);
     if (pendingFinancialDataLoad) await pendingFinancialDataLoad;
     await loadFinancialData(true);
     return saved;
@@ -1021,6 +1036,8 @@ export const useAppStore = defineStore('app', () => {
     patternExecutionError,
     editingId,
     editingPersonId,
+    accountFormPersonId,
+    editingRecipientAccountId,
     homePage,
     toast,
     ownedAccounts,
@@ -1089,6 +1106,7 @@ export const useAppStore = defineStore('app', () => {
     finishPatternExecution,
     loadFinancialData,
     saveRegisteredPerson,
+    saveRecipientAccount,
     loadInquiry,
     loadSupport,
     saveGuardian,
