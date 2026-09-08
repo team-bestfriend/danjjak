@@ -278,7 +278,7 @@ export function installRouterGuards(pinia) {
       return { name: "home" };
     }
 
-    // 모의 본인 계좌 준비 전에는 금융 화면을 시작하지 않는다.
+    // 본인 계좌 준비 전에는 금융 화면을 시작하지 않는다.
     if (to.meta.requiresAccount && !accountReady) {
       return { name: "account-import" };
     }

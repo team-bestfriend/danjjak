@@ -62,7 +62,7 @@ public class AccountService {
             throw new ApiException(
                     HttpStatus.NOT_FOUND,
                     "ACCOUNT_IMPORT_OPTION_NOT_FOUND",
-                    "불러올 모의 계좌를 찾을 수 없습니다.");
+                    "불러올 계좌를 찾을 수 없습니다.");
         }
         if (option.getImportedAt() == null) {
             boolean makePrimary = accountMapper.countImportedOwnedAccounts(userId) == 0;
