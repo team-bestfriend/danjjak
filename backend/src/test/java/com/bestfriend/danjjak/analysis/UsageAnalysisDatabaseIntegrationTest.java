@@ -92,6 +92,10 @@ class UsageAnalysisDatabaseIntegrationTest {
         var result = analyze();
         assertEquals(0, result.patterns().get(0).completedCount());
         assertEquals(15, result.difficultStep().errorScore());
+        assertEquals(7, result.difficultStep().retryCount());
+        assertEquals(3, result.difficultStep().backCount());
+        assertEquals(3, result.difficultStep().wrongTouchCount());
+        assertEquals(2, result.difficultStep().routeDeviationCount());
         assertEquals(3, result.difficultStep().visitCount());
         assertEquals(0, new BigDecimal("15.5").compareTo(result.difficultStep().averageDurationSeconds()));
     }

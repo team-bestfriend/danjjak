@@ -71,7 +71,8 @@ public class UsageAnalysisService {
     private StepAnalysisResponse toStep(StepAnalysisRecord row) {
         return new StepAnalysisResponse(row.getPatternId(), row.getStepId(), row.getStepCode(),
                 row.getStepName(), row.getStepOrder(), row.getVisitCount(), row.getErrorScore(),
-                row.getAverageDurationSeconds());
+                row.getRetryCount(), row.getBackCount(), row.getWrongTouchCount(),
+                row.getRouteDeviationCount(), row.getAverageDurationSeconds());
     }
 
     private UsageAnalysisResponse empty(AnalysisStatus status, LocalDate from, LocalDate to) {

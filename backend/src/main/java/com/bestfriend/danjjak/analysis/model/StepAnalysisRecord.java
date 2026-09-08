@@ -11,6 +11,10 @@ public class StepAnalysisRecord {
     private int stepOrder;
     private long visitCount;
     private long errorScore;
+    private long retryCount;
+    private long backCount;
+    private long wrongTouchCount;
+    private long routeDeviationCount;
     private BigDecimal averageDurationSeconds;
 
     public long getPatternId() { return patternId; }
@@ -27,6 +31,14 @@ public class StepAnalysisRecord {
     public void setVisitCount(long visitCount) { this.visitCount = visitCount; }
     public long getErrorScore() { return errorScore; }
     public void setErrorScore(long errorScore) { this.errorScore = errorScore; }
+    public long getRetryCount() { return retryCount; }
+    public void setRetryCount(long retryCount) { this.retryCount = retryCount; }
+    public long getBackCount() { return backCount; }
+    public void setBackCount(long backCount) { this.backCount = backCount; }
+    public long getWrongTouchCount() { return wrongTouchCount; }
+    public void setWrongTouchCount(long wrongTouchCount) { this.wrongTouchCount = wrongTouchCount; }
+    public long getRouteDeviationCount() { return routeDeviationCount; }
+    public void setRouteDeviationCount(long routeDeviationCount) { this.routeDeviationCount = routeDeviationCount; }
     public BigDecimal getAverageDurationSeconds() { return averageDurationSeconds; }
     public void setAverageDurationSeconds(BigDecimal averageDurationSeconds) { this.averageDurationSeconds = averageDurationSeconds; }
 }
