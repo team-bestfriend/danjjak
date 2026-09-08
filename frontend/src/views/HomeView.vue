@@ -26,7 +26,7 @@
         <span style="font-size: 20px; font-weight: 600; color: #111827;">직접 송금하기</span>
       </button>
 
-      <!-- 음성으로 말하기 — Secondary CTA -->
+      <!-- 말로 선택하기 -->
       <div className="flex-shrink-0">
         <button
           @click="toggleStt"
@@ -55,21 +55,14 @@
           </template>
           <template v-else>
             <Ic name="Mic" />
-            <span>{{ speechSupported ? '음성으로 말하기' : '음성 인식 지원 안 됨' }}</span>
+            <span>{{ speechSupported ? '말로 선택하기' : '음성 인식 지원 안 됨' }}</span>
           </template>
         </button>
 
-        <p id="voice-command-status" class="mt-2 text-[15px] leading-relaxed text-[#374151]" role="status" aria-live="polite" aria-atomic="true">{{ sttMessage }}</p>
+        <p id="voice-command-status" :class="{ 'mt-2': sttMessage }" class="text-[15px] leading-relaxed text-[#374151]" role="status" aria-live="polite" aria-atomic="true">{{ sttMessage }}</p>
         <button v-if="highlightedPattern" type="button" class="mt-2 min-h-12 w-full rounded-[14px] border-2 border-[#B8860B] bg-[#FFFBEB] px-3 py-2 font-bold text-[#111827]" :disabled="store.patternLoading" @click="handleCardClick(highlightedPattern.num, highlightedPattern)">
           {{ highlightedPattern.num }}번 업무 확인하기
         </button>
-        <details class="mt-1 text-[14px] leading-relaxed text-[#6B7280]">
-          <summary class="min-h-12 cursor-pointer py-3">지원 문장과 마이크 사용 안내</summary>
-          <p>원하는 단축번호를 찾을 때만 마이크를 사용해요. 단짝은 인식한 문장과 음성을 저장하지 않아요. 브라우저의 음성 인식 서비스로 음성이 전송될 수 있어요.</p>
-          <ul class="mt-2 list-inside list-disc">
-            <li v-for="example in voiceCommandExamples" :key="example">{{ example }}</li>
-          </ul>
-        </details>
       </div>
 
       <!-- 내 단축번호 + 그리드 + 페이지 도트 -->
@@ -77,9 +70,8 @@
         <div className="flex items-center flex-shrink-0">
           <p className="font-semibold text-[#111827]" style="font-size: 16px;">내 단축번호</p>
         </div>
-        <p class="text-[14px] text-[#6B7280]" role="status">{{ store.homePage }} / 3페이지 · 좌우로 밀어 넘겨요. 꾹 누르면 순서를 바꿔요.</p>
 
-        <div className="flex-1" style="min-height: 0; touch-action: none;"
+        <div className="flex-1" style="min-height: min-content; touch-action: none;"
           @pointerdown.capture="beginSwipe" @pointermove.capture="moveSwipe"
           @pointerup.capture="endSwipe" @pointercancel.capture="cancelSwipe" @click.capture="guardSwipeClick">
           <div v-if="store.patternLoading && store.patterns.length === 0" className="flex h-full items-center justify-center rounded-[18px] bg-white text-[#6B7280]">
@@ -181,7 +173,6 @@ import NavBar from '../components/common/NavBar.vue';
 import PatternGrid from '../components/common/PatternGrid.vue';
 import FocusModeCard from '../components/common/FocusModeCard.vue';
 import { useShortcutSpeech } from '../composables/useShortcutSpeech.js';
-import { voiceCommandExamples } from '../features/voice/shortcutCommands.js';
 import { swipePage } from '../features/shortcutSwipe.js';
 
 const store = useAppStore();
