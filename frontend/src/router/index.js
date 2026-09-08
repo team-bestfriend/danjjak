@@ -8,6 +8,7 @@ import ConsentView from "../views/ConsentView.vue";
 import ContactManageView from "../views/ContactManageView.vue";
 import FeatureIntroView from "../views/FeatureIntroView.vue";
 import HomeView from "../views/HomeView.vue";
+import InstructionImprovementView from "../views/InstructionImprovementView.vue";
 import LoginView from "../views/LoginView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 import OnboardingView from "../views/OnboardingView.vue";
@@ -160,6 +161,14 @@ const routes = [
     path: "/analysis",
     name: "analysis",
     component: AnalysisView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: "/analysis/improvement",
+    name: "instruction-improvement",
+    component: InstructionImprovementView,
     meta: {
       requiresAuth: true,
     },
