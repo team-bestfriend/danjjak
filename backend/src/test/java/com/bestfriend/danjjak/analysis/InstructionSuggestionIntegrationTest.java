@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.bestfriend.danjjak.analysis.dto.InstructionSuggestionDtos.ApplySuggestionRequest;
 import com.bestfriend.danjjak.analysis.dto.UsageAnalysisDtos.AnalysisStatus;
 import com.bestfriend.danjjak.analysis.service.InstructionSuggestionService;
+import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.common.error.ApiException;
 import com.bestfriend.danjjak.config.RootConfig;
 import com.bestfriend.danjjak.pattern.dto.GuidanceDtos.GuidanceUpdateRequest;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class InstructionSuggestionIntegrationTest {
     @Autowired PatternService patterns;
+    @Autowired AccountService accounts;
     @Autowired GuidanceService guidance;
     @Autowired InstructionSuggestionService suggestions;
     @Autowired UserService users;
@@ -39,6 +41,7 @@ class InstructionSuggestionIntegrationTest {
 
     @Test
     void recordedVisitToAnalysisToSuggestionToNextExecutionPreservesFamilyAudio() throws Exception {
+        accounts.importMockAccount(1, 1);
         users.updateConsents(1, new ConsentUpdateRequest(true, false));
         var pattern = patterns.getPattern(1, patterns.getPatterns(1).get(0).patternId());
         var step = pattern.steps().get(0);

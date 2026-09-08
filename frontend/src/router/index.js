@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAppStore } from "../stores/appStore.js";
 
 import AddPersonView from "../views/AddPersonView.vue";
+import AccountImportView from "../views/AccountImportView.vue";
 import AnalysisView from "../views/AnalysisView.vue";
 import AuthCallbackView from "../views/AuthCallbackView.vue";
 import ConsentView from "../views/ConsentView.vue";
@@ -20,9 +21,14 @@ import TaskView from "../views/TaskView.vue";
 import TransferFlowView from "../views/TransferFlowView.vue";
 import VoiceEditView from "../views/VoiceEditView.vue";
 
-const protectedMeta = {
+const consentMeta = {
   requiresAuth: true,
   requiresConsent: true,
+};
+
+const protectedMeta = {
+  ...consentMeta,
+  requiresAccount: true,
 };
 
 const taskRoutes = [
@@ -106,6 +112,12 @@ const routes = [
     },
   },
   {
+    path: "/account-import",
+    name: "account-import",
+    component: AccountImportView,
+    meta: consentMeta,
+  },
+  {
     path: "/home",
     name: "home",
     component: HomeView,
@@ -177,19 +189,19 @@ const routes = [
     path: "/settings",
     name: "settings",
     component: SettingsView,
-    meta: protectedMeta,
+    meta: consentMeta,
   },
   {
     path: "/settings/people",
     name: "contact-manage",
     component: ContactManageView,
-    meta: protectedMeta,
+    meta: consentMeta,
   },
   {
     path: "/settings/people/edit",
     name: "add-person",
     component: AddPersonView,
-    meta: protectedMeta,
+    meta: consentMeta,
   },
   {
     path: "/:pathMatch(.*)*",
@@ -221,6 +233,7 @@ export function installRouterGuards(pinia) {
     const store = useAppStore(pinia);
     const authenticated = await store.checkSession();
     const consentCompleted = Boolean(store.currentUser?.consents?.completed);
+    const accountReady = Boolean(store.currentUser?.accountReady);
 
     // 인증이 필요한 화면에 비로그인 사용자가 접근한 경우
     if (to.meta.requiresAuth && !authenticated) {
@@ -235,14 +248,14 @@ export function installRouterGuards(pinia) {
     // 로그인된 사용자가 시작·소개·로그인 화면에 접근한 경우
     if (authenticated && PUBLIC_ENTRY_ROUTES.has(String(to.name))) {
       return {
-        name: consentCompleted ? "home" : "consent",
+        name: consentCompleted ? (accountReady ? "home" : "account-import") : "consent",
       };
     }
 
     // 이미 동의를 완료한 사용자가 동의 화면에 접근한 경우
     if (to.name === "consent" && consentCompleted && to.query.edit !== "1") {
       return {
-        name: "home",
+        name: accountReady ? "home" : "account-import",
       };
     }
 
@@ -251,6 +264,16 @@ export function installRouterGuards(pinia) {
       return {
         name: "consent",
       };
+    }
+
+    // 계좌 준비가 끝난 사용자는 설정에서 진입한 경우에만 불러오기 화면을 다시 연다.
+    if (to.name === "account-import" && accountReady && to.query.manage !== "1") {
+      return { name: "home" };
+    }
+
+    // 모의 본인 계좌 준비 전에는 금융 화면을 시작하지 않는다.
+    if (to.meta.requiresAccount && !accountReady) {
+      return { name: "account-import" };
     }
 
     // 송금 과정에 필요한 출금 계좌가 없는 경우

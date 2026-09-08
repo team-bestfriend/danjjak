@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bestfriend.danjjak.config.RootConfig;
+import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.user.dto.UserDtos.AccessibilitySettings;
 import com.bestfriend.danjjak.user.dto.UserDtos.ConsentUpdateRequest;
 import com.bestfriend.danjjak.user.dto.UserDtos.FontSize;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 class UserDatabaseIntegrationTest {
 
     @Autowired private UserService userService;
+    @Autowired private AccountService accountService;
     @Autowired private DataSource dataSource;
 
     private JdbcTemplate jdbcTemplate;
@@ -56,6 +58,7 @@ class UserDatabaseIntegrationTest {
         assertFalse(consents.guardianShareAgreed());
         assertEquals(FontSize.SMALL, settings.fontSize());
         assertTrue(currentUser.consents().completed());
+        assertFalse(currentUser.accountReady());
         assertEquals(VoiceSpeed.FAST, currentUser.settings().voiceSpeed());
         assertEquals(GuideVoiceType.FAMILY, currentUser.settings().guideVoiceType());
     }
@@ -88,11 +91,15 @@ class UserDatabaseIntegrationTest {
                         FontSize.LARGE, VoiceSpeed.SLOW, GuideVoiceType.TTS));
 
         var initialLogin = userService.findOrBindKakaoUser(kakaoUserId);
+        assertFalse(initialLogin.accountReady());
+        accountService.importMockAccount(initialLogin.userId(), 1L);
         var relogin = userService.findOrBindKakaoUser(kakaoUserId);
 
         assertEquals(1L, initialLogin.userId());
-        assertEquals(initialLogin, relogin);
+        assertEquals(initialLogin.userId(), relogin.userId());
+        assertEquals(initialLogin.name(), relogin.name());
         assertTrue(relogin.consents().usageLogAgreed());
+        assertTrue(relogin.accountReady());
         assertFalse(relogin.consents().guardianShareAgreed());
         assertEquals(FontSize.LARGE, relogin.settings().fontSize());
         assertEquals(VoiceSpeed.SLOW, relogin.settings().voiceSpeed());

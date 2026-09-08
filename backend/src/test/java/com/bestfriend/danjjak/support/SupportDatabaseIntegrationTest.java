@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.config.RootConfig;
 import com.bestfriend.danjjak.support.dto.SupportDtos.GuardianContactRequest;
 import com.bestfriend.danjjak.support.mapper.SupportMapper;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 class SupportDatabaseIntegrationTest {
 
     @Autowired private SupportService supportService;
+    @Autowired private AccountService accountService;
     @Autowired private GuardianNotificationService notificationService;
     @Autowired private SupportMapper supportMapper;
     @Autowired private TransferService transferService;
@@ -46,6 +48,7 @@ class SupportDatabaseIntegrationTest {
     @BeforeEach
     void setUp() {
         jdbcTemplate = new JdbcTemplate(dataSource);
+        accountService.importMockAccount(1L, 1L);
     }
 
     @Test

@@ -5,6 +5,7 @@ public class UserSettingsRecord {
     private long userId;
     private Long kakaoUserId;
     private String name;
+    private boolean accountReady;
     private boolean usageLogAgreed;
     private boolean guardianShareAgreed;
     private boolean consentCompleted;
@@ -34,6 +35,14 @@ public class UserSettingsRecord {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isAccountReady() {
+        return accountReady;
+    }
+
+    public void setAccountReady(boolean accountReady) {
+        this.accountReady = accountReady;
     }
 
     public boolean isUsageLogAgreed() {

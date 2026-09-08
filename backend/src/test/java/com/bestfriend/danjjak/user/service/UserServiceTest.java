@@ -39,6 +39,7 @@ class UserServiceTest {
 
         assertEquals(1L, result.userId());
         assertEquals("김단짝", result.name());
+        assertFalse(result.accountReady());
         assertFalse(result.consents().completed());
         assertEquals(FontSize.LARGE, result.settings().fontSize());
         assertEquals(VoiceSpeed.SLOW, result.settings().voiceSpeed());

@@ -1,6 +1,7 @@
 package com.bestfriend.danjjak.account.controller;
 
 import com.bestfriend.danjjak.account.dto.AccountDtos.BalanceResponse;
+import com.bestfriend.danjjak.account.dto.AccountDtos.MockAccountImportOptionResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.OwnedAccountResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonRequest;
@@ -38,6 +39,20 @@ public class AccountController {
     @GetMapping("/accounts")
     public List<OwnedAccountResponse> getAccounts(HttpSession session) {
         return accountService.getOwnedAccounts(userResolver.resolveUserId(session));
+    }
+
+    @GetMapping("/accounts/import-options")
+    public List<MockAccountImportOptionResponse> getMockAccountImportOptions(
+            HttpSession session) {
+        return accountService.getMockAccountImportOptions(
+                userResolver.resolveUserId(session));
+    }
+
+    @PostMapping("/accounts/{accountId}/import")
+    public OwnedAccountResponse importMockAccount(
+            @PathVariable long accountId, HttpSession session) {
+        return accountService.importMockAccount(
+                userResolver.resolveUserId(session), accountId);
     }
 
     @GetMapping("/accounts/{accountId}/balance")

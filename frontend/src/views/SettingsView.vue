@@ -129,6 +129,20 @@
           <button
             type="button"
             className="w-full flex items-center justify-between px-5 py-4 text-left active:bg-[#F9FAFB]"
+            @click="store.navigate('account-import', { query: { manage: '1' } })"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-[#E8F3FF] border border-[#93C5FD] flex items-center justify-center font-bold text-[#1D4ED8]" style="font-size: 15px;">내 계좌</div>
+              <div>
+                <p className="font-semibold text-[#111827]" style="font-size: 19px;">내 계좌 관리</p>
+                <p className="text-[#9CA3AF]" style="font-size: 14px;">모의 본인 계좌 확인·추가</p>
+              </div>
+            </div>
+            <Ic name="ChevR" />
+          </button>
+          <button
+            type="button"
+            className="w-full flex items-center justify-between border-t border-[#F3F4F6] px-5 py-4 text-left active:bg-[#F9FAFB]"
             @click="store.navigate('contact-manage')"
           >
             <div className="flex items-center gap-3">

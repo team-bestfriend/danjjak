@@ -173,6 +173,7 @@ class AuthControllerTest {
         return new CurrentUserResponse(
                 1L,
                 "김단짝",
+                true,
                 new ConsentSettings(false, false, false),
                 new AccessibilitySettings(
                         FontSize.NORMAL, VoiceSpeed.NORMAL, GuideVoiceType.TTS));

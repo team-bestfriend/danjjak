@@ -62,7 +62,9 @@ onMounted(async () => {
     processing.value = false;
     return;
   }
-  const nextRoute = store.currentUser?.consents?.completed ? 'home' : 'consent';
+  const nextRoute = store.currentUser?.consents?.completed
+    ? (store.currentUser?.accountReady ? 'home' : 'account-import')
+    : 'consent';
   await router.replace({ name: nextRoute });
 });
 </script>

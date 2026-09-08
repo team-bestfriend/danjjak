@@ -9,6 +9,7 @@ public final class UserDtos {
     public record CurrentUserResponse(
             long userId,
             String name,
+            boolean accountReady,
             ConsentSettings consents,
             AccessibilitySettings settings) {}
 

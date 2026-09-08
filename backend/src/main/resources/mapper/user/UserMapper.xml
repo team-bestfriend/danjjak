@@ -13,7 +13,14 @@
                consent_completed,
                font_size,
                voice_speed,
-               guide_voice_type
+               guide_voice_type,
+               EXISTS (
+                   SELECT 1
+                   FROM bank_accounts ba
+                   WHERE ba.user_id = users.user_id
+                     AND ba.registered_person_id IS NULL
+                     AND ba.imported_at IS NOT NULL
+               ) AS account_ready
         FROM users
         WHERE user_id = #{userId}
     </select>
@@ -28,7 +35,14 @@
                consent_completed,
                font_size,
                voice_speed,
-               guide_voice_type
+               guide_voice_type,
+               EXISTS (
+                   SELECT 1
+                   FROM bank_accounts ba
+                   WHERE ba.user_id = users.user_id
+                     AND ba.registered_person_id IS NULL
+                     AND ba.imported_at IS NOT NULL
+               ) AS account_ready
         FROM users
         WHERE kakao_user_id = #{kakaoUserId}
     </select>
@@ -43,7 +57,14 @@
                consent_completed,
                font_size,
                voice_speed,
-               guide_voice_type
+               guide_voice_type,
+               EXISTS (
+                   SELECT 1
+                   FROM bank_accounts ba
+                   WHERE ba.user_id = users.user_id
+                     AND ba.registered_person_id IS NULL
+                     AND ba.imported_at IS NOT NULL
+               ) AS account_ready
         FROM users
         WHERE kakao_user_id IS NULL
         ORDER BY user_id

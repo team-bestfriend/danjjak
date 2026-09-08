@@ -20,6 +20,16 @@ public final class AccountDtos {
             BigDecimal balance,
             boolean primary) {}
 
+    public record MockAccountImportOptionResponse(
+            long accountId,
+            String bankCode,
+            String bankName,
+            String accountNumber,
+            String accountAlias,
+            BigDecimal balance,
+            boolean primary,
+            boolean imported) {}
+
     public record RecipientAccountResponse(
             long accountId,
             String bankCode,

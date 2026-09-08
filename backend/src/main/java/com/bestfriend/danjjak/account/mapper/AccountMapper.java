@@ -16,6 +16,18 @@ public interface AccountMapper {
     AccountRecord findOwnedAccount(
             @Param("userId") long userId, @Param("accountId") long accountId);
 
+    List<AccountRecord> findMockAccountImportOptions(long userId);
+
+    AccountRecord findOwnedAccountImportOption(
+            @Param("userId") long userId, @Param("accountId") long accountId);
+
+    int countImportedOwnedAccounts(long userId);
+
+    int markOwnedAccountImported(
+            @Param("userId") long userId,
+            @Param("accountId") long accountId,
+            @Param("makePrimary") boolean makePrimary);
+
     List<RegisteredPersonAccountRecord> findRegisteredPersons(long userId);
 
     List<RegisteredPersonAccountRecord> findRegisteredPerson(

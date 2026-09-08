@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bestfriend.danjjak.account.dto.AccountDtos.OwnedAccountResponse;
+import com.bestfriend.danjjak.account.dto.AccountDtos.MockAccountImportOptionResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonResponse;
 import com.bestfriend.danjjak.account.service.AccountService;
@@ -66,6 +67,44 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("\"primary\":true")))
                 .andExpect(content().string(containsString("신한은행")));
+    }
+
+    @Test
+    void returnsMockAccountImportOptions() throws Exception {
+        when(accountService.getMockAccountImportOptions(1L))
+                .thenReturn(
+                        List.of(
+                                new MockAccountImportOptionResponse(
+                                        2L,
+                                        "004",
+                                        "국민은행",
+                                        "123-000-000002",
+                                        "저축 통장",
+                                        new BigDecimal("30000000"),
+                                        false,
+                                        false)));
+
+        mockMvc.perform(get("/api/accounts/import-options"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"imported\":false")));
+    }
+
+    @Test
+    void importsSelectedMockAccount() throws Exception {
+        when(accountService.importMockAccount(1L, 2L))
+                .thenReturn(
+                        new OwnedAccountResponse(
+                                2L,
+                                "004",
+                                "국민은행",
+                                "123-000-000002",
+                                "저축 통장",
+                                new BigDecimal("30000000"),
+                                false));
+
+        mockMvc.perform(post("/api/accounts/2/import"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"accountId\":2")));
     }
 
     @Test

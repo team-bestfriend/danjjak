@@ -1,6 +1,7 @@
 package com.bestfriend.danjjak.account.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class AccountRecord {
 
@@ -11,6 +12,7 @@ public class AccountRecord {
     private String accountAlias;
     private BigDecimal balance;
     private boolean primary;
+    private LocalDateTime importedAt;
 
     public Long getAccountId() {
         return accountId;
@@ -66,5 +68,13 @@ public class AccountRecord {
 
     public void setPrimary(boolean primary) {
         this.primary = primary;
+    }
+
+    public LocalDateTime getImportedAt() {
+        return importedAt;
+    }
+
+    public void setImportedAt(LocalDateTime importedAt) {
+        this.importedAt = importedAt;
     }
 }
