@@ -2,6 +2,7 @@ package com.bestfriend.danjjak.account.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -30,7 +31,7 @@ public final class AccountDtos {
             long registeredPersonId,
             String name,
             String relationship,
-            RecipientAccountResponse account) {}
+            List<RecipientAccountResponse> accounts) {}
 
     public record RegisteredPersonRequest(
             @NotBlank @Size(max = 50) String name,
@@ -38,8 +39,21 @@ public final class AccountDtos {
             @NotBlank @Size(max = 20) String bankCode,
             @NotBlank @Size(max = 50) String bankName,
             @NotBlank
-                    @Size(min = 8, max = 50)
-                    @Pattern(regexp = "^[0-9-]+$")
+                    @Size(max = 50)
+                    @Pattern(regexp = "^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$")
+                    String accountNumber,
+            @Size(max = 50) String accountAlias) {}
+
+    public record RegisteredPersonUpdateRequest(
+            @NotBlank @Size(max = 50) String name,
+            @NotBlank @Size(max = 30) String relationship) {}
+
+    public record RecipientAccountRequest(
+            @NotBlank @Size(max = 20) String bankCode,
+            @NotBlank @Size(max = 50) String bankName,
+            @NotBlank
+                    @Size(max = 50)
+                    @Pattern(regexp = "^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$")
                     String accountNumber,
             @Size(max = 50) String accountAlias) {}
 

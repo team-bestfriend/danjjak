@@ -33,6 +33,8 @@ class AccountMapperBindingTest {
                         "findOwnedAccount",
                         "findRegisteredPersons",
                         "findRegisteredPerson",
+                        "findRecipientAccount",
+                        "countDuplicateRecipientAccounts",
                         "insertRegisteredPerson",
                         "insertRecipientAccount",
                         "updateRegisteredPerson",

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -76,12 +77,13 @@ class AccountControllerTest {
                                 10L,
                                 "김민수",
                                 "아들",
-                                new RecipientAccountResponse(
-                                        20L,
-                                        "020",
-                                        "우리은행",
-                                        "1002-000-000001",
-                                        "민수 계좌")));
+                                List.of(
+                                        new RecipientAccountResponse(
+                                                20L,
+                                                "020",
+                                                "우리은행",
+                                                "1002-000-000001",
+                                                "민수 계좌"))));
 
         mockMvc.perform(
                         post("/api/registered-persons")
@@ -107,5 +109,65 @@ class AccountControllerTest {
                 .andExpect(content().string(containsString("\"code\":\"INVALID_REQUEST\"")));
 
         verifyNoInteractions(accountService);
+    }
+
+    @Test
+    void addsRecipientAccountToExistingPerson() throws Exception {
+        when(accountService.addRecipientAccount(
+                        org.mockito.ArgumentMatchers.eq(1L),
+                        org.mockito.ArgumentMatchers.eq(10L),
+                        any()))
+                .thenReturn(
+                        new RegisteredPersonResponse(
+                                10L,
+                                "김민수",
+                                "아들",
+                                List.of(
+                                        new RecipientAccountResponse(
+                                                21L,
+                                                "088",
+                                                "신한은행",
+                                                "110-222-333333",
+                                                "생활비"))));
+
+        mockMvc.perform(
+                        post("/api/registered-persons/10/accounts")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"bankCode\":\"088\",\"bankName\":\"신한은행\","
+                                                + "\"accountNumber\":\"110-222-333333\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(content().string(containsString("\"accountId\":21")));
+    }
+
+    @Test
+    void updatesOnlySelectedRecipientAccount() throws Exception {
+        when(accountService.updateRecipientAccount(
+                        org.mockito.ArgumentMatchers.eq(1L),
+                        org.mockito.ArgumentMatchers.eq(10L),
+                        org.mockito.ArgumentMatchers.eq(21L),
+                        any()))
+                .thenReturn(
+                        new RegisteredPersonResponse(
+                                10L,
+                                "김민수",
+                                "아들",
+                                List.of(
+                                        new RecipientAccountResponse(
+                                                21L,
+                                                "088",
+                                                "신한은행",
+                                                "110-222-333333",
+                                                "수정 계좌"))));
+
+        mockMvc.perform(
+                        put("/api/registered-persons/10/accounts/21")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"bankCode\":\"088\",\"bankName\":\"신한은행\","
+                                                + "\"accountNumber\":\"110-222-333333\","
+                                                + "\"accountAlias\":\"수정 계좌\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("수정 계좌")));
     }
 }

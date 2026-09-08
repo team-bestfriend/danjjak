@@ -4,10 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonRequest;
+import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonUpdateRequest;
 import com.bestfriend.danjjak.account.mapper.AccountMapper;
 import com.bestfriend.danjjak.account.model.AccountRecord;
 import com.bestfriend.danjjak.account.model.RegisteredPersonAccountRecord;
@@ -63,14 +66,109 @@ class AccountServiceTest {
                         })
                 .when(accountMapper)
                 .insertRegisteredPerson(org.mockito.ArgumentMatchers.any());
-        when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(saved);
+        when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(List.of(saved));
 
         var result = accountService.createRegisteredPerson(1L, request);
 
         assertEquals("김민수", result.name());
-        assertEquals("우리은행", result.account().bankName());
+        assertEquals("우리은행", result.accounts().get(0).bankName());
         verify(accountMapper).insertRegisteredPerson(org.mockito.ArgumentMatchers.any());
         verify(accountMapper).insertRecipientAccount(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void groupsMultipleAccountsUnderOneRegisteredPerson() {
+        RegisteredPersonAccountRecord first = registeredPersonRecord();
+        RegisteredPersonAccountRecord second = registeredPersonRecord();
+        second.setAccountId(21L);
+        second.setBankCode("088");
+        second.setBankName("신한은행");
+        second.setAccountNumber("110-222-333333");
+        when(accountMapper.findRegisteredPersons(1L)).thenReturn(List.of(first, second));
+
+        var result = accountService.getRegisteredPersons(1L);
+
+        assertEquals(1, result.size());
+        assertEquals(2, result.get(0).accounts().size());
+        assertEquals(21L, result.get(0).accounts().get(1).accountId());
+    }
+
+    @Test
+    void updatesOnlyRegisteredPersonInformation() {
+        RegisteredPersonAccountRecord current = registeredPersonRecord();
+        when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(List.of(current));
+
+        accountService.updateRegisteredPerson(
+                1L, 10L, new RegisteredPersonUpdateRequest("김민준", "보호자"));
+
+        verify(accountMapper).updateRegisteredPerson(org.mockito.ArgumentMatchers.any());
+        verify(accountMapper, never()).updateRecipientAccount(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void addsSecondAccountToExistingPerson() {
+        RegisteredPersonAccountRecord first = registeredPersonRecord();
+        RegisteredPersonAccountRecord second = registeredPersonRecord();
+        second.setAccountId(21L);
+        second.setBankCode("088");
+        second.setBankName("신한은행");
+        second.setAccountNumber("110-222-333333");
+        when(accountMapper.findRegisteredPerson(1L, 10L))
+                .thenReturn(List.of(first), List.of(first, second));
+        when(accountMapper.countDuplicateRecipientAccounts(
+                        1L, 10L, "088", "110222333333", null))
+                .thenReturn(0);
+
+        var result =
+                accountService.addRecipientAccount(
+                        1L,
+                        10L,
+                        new RecipientAccountRequest(
+                                "088", "신한은행", "110-222-333333", "생활비"));
+
+        assertEquals(2, result.accounts().size());
+        verify(accountMapper).insertRecipientAccount(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void rejectsSameAccountNumberWithDifferentHyphenFormat() {
+        RegisteredPersonAccountRecord current = registeredPersonRecord();
+        when(accountMapper.findRecipientAccount(1L, 10L, 21L)).thenReturn(current);
+        when(accountMapper.countDuplicateRecipientAccounts(
+                        1L, 10L, "020", "1002000000001", 21L))
+                .thenReturn(1);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () ->
+                                accountService.updateRecipientAccount(
+                                        1L,
+                                        10L,
+                                        21L,
+                                        new RecipientAccountRequest(
+                                                "020", "우리은행", "1002-000-000001", null)));
+
+        assertEquals("ACCOUNT_ALREADY_EXISTS", exception.getCode());
+        verify(accountMapper, never()).updateRecipientAccount(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void hidesRecipientAccountOwnedByAnotherPerson() {
+        when(accountMapper.findRecipientAccount(1L, 10L, 99L)).thenReturn(null);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () ->
+                                accountService.updateRecipientAccount(
+                                        1L,
+                                        10L,
+                                        99L,
+                                        new RecipientAccountRequest(
+                                                "020", "우리은행", "1002-000-000001", null)));
+
+        assertEquals("RECIPIENT_ACCOUNT_NOT_FOUND", exception.getCode());
     }
 
     @Test

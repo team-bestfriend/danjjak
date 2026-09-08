@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.config.RootConfig;
 import java.math.BigDecimal;
@@ -43,5 +44,42 @@ class AccountDatabaseIntegrationTest {
         assertFalse(accountService.getTransactions(1L, 1L, "PENSION").isEmpty());
         assertFalse(accountService.getTransactions(1L, 1L, "MANAGEMENT_FEE").isEmpty());
         assertFalse(accountService.getTransactions(1L, 1L, "UTILITY_BILL").isEmpty());
+    }
+
+    @Test
+    void addsUpdatesAndReloadsSecondRecipientAccount() {
+        var person = accountService.getRegisteredPersons(1L).stream()
+                .filter(item -> item.name().equals("김민수"))
+                .findFirst()
+                .orElseThrow();
+        int previousCount = person.accounts().size();
+
+        var added =
+                accountService.addRecipientAccount(
+                        1L,
+                        person.registeredPersonId(),
+                        new RecipientAccountRequest(
+                                "088", "신한은행", "999-88-777777", "추가 계좌"));
+        long addedAccountId = added.accounts().get(added.accounts().size() - 1).accountId();
+
+        accountService.updateRecipientAccount(
+                1L,
+                person.registeredPersonId(),
+                addedAccountId,
+                new RecipientAccountRequest(
+                        "088", "신한은행", "999-88-777777", "수정된 계좌"));
+        var reloaded = accountService.getRegisteredPersons(1L).stream()
+                .filter(item -> item.registeredPersonId() == person.registeredPersonId())
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(previousCount + 1, reloaded.accounts().size());
+        assertEquals(
+                "수정된 계좌",
+                reloaded.accounts().stream()
+                        .filter(account -> account.accountId() == addedAccountId)
+                        .findFirst()
+                        .orElseThrow()
+                        .accountAlias());
     }
 }

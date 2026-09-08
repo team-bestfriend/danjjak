@@ -363,13 +363,19 @@ test('본인 계좌와 등록 수취 계좌를 분리하고 기본 계좌를 선
         registeredPersonId: 7,
         name: '김민수',
         relationship: '아들',
-        account: {
+        accounts: [{
           accountId: 3,
           bankCode: '020',
           bankName: '우리은행',
           accountNumber: '100-000-000001',
           accountAlias: '민수 계좌',
-        },
+        }, {
+          accountId: 4,
+          bankCode: '088',
+          bankName: '신한은행',
+          accountNumber: '110-222-333333',
+          accountAlias: '민수 생활비',
+        }],
       }]);
     }
     throw new Error(`예상하지 못한 요청: ${url}`);
@@ -382,6 +388,8 @@ test('본인 계좌와 등록 수취 계좌를 분리하고 기본 계좌를 선
   assert.equal(store.selectedInquiryAccountId, 1);
   assert.equal(store.ownedAccounts.some((account) => account.accountId === 3), false);
   assert.equal(store.accountsByPerson[7][0].accountId, 3);
+  assert.equal(store.accountsByPerson[7][1].accountId, 4);
+  assert.equal(store.people[0].accounts, 2);
   assert.equal(store.accountsByPerson[7][0].balance, undefined);
 });
 
@@ -508,13 +516,13 @@ test('인물 생성 성공 후 서버 목록을 재조회해 새 식별자를 �
         registeredPersonId: 3,
         name: '박친구',
         relationship: '친구',
-        account: {
+        accounts: [{
           accountId: 5,
           bankCode: '004',
           bankName: '국민은행',
           accountNumber: '999-11-223344',
           accountAlias: null,
-        },
+        }],
       }, 201);
     }
     if (url === '/api/accounts') return jsonResponse([]);
@@ -523,13 +531,13 @@ test('인물 생성 성공 후 서버 목록을 재조회해 새 식별자를 �
         registeredPersonId: 3,
         name: '박친구',
         relationship: '친구',
-        account: {
+        accounts: [{
           accountId: 5,
           bankCode: '004',
           bankName: '국민은행',
           accountNumber: '999-11-223344',
           accountAlias: null,
-        },
+        }],
       }]);
     }
     throw new Error(`예상하지 못한 요청: ${url}`);
@@ -568,13 +576,13 @@ test('인물 저장 중 기존 목록 조회가 끝나도 저장 후 목록을 �
         registeredPersonId: 4,
         name: '이정훈',
         relationship: '사위',
-        account: {
+        accounts: [{
           accountId: 6,
           bankCode: '088',
           bankName: '신한은행',
           accountNumber: '110-222-333333',
           accountAlias: null,
-        },
+        }],
       }, 201);
     }
     if (url === '/api/registered-persons') {
@@ -586,13 +594,13 @@ test('인물 저장 중 기존 목록 조회가 끝나도 저장 후 목록을 �
         registeredPersonId: 4,
         name: '이정훈',
         relationship: '사위',
-        account: {
+        accounts: [{
           accountId: 6,
           bankCode: '088',
           bankName: '신한은행',
           accountNumber: '110-222-333333',
           accountAlias: null,
-        },
+        }],
       }]);
     }
     throw new Error(`예상하지 못한 요청: ${url}`);
@@ -777,13 +785,13 @@ test('인물 수정은 기존 식별자의 PUT 요청 후 서버 목록으로 �
         registeredPersonId: 2,
         name: '김지영',
         relationship: '보호자',
-        account: {
+        accounts: [{
           accountId: 4,
           bankCode: '081',
           bankName: '하나은행',
           accountNumber: '333-44-555555',
           accountAlias: '지영 계좌',
-        },
+        }],
       });
     }
     if (url === '/api/accounts') return jsonResponse([]);
@@ -792,13 +800,13 @@ test('인물 수정은 기존 식별자의 PUT 요청 후 서버 목록으로 �
         registeredPersonId: 2,
         name: '김지영',
         relationship: '보호자',
-        account: {
+        accounts: [{
           accountId: 4,
           bankCode: '081',
           bankName: '하나은행',
           accountNumber: '333-44-555555',
           accountAlias: '지영 계좌',
-        },
+        }],
       }]);
     }
     throw new Error(`예상하지 못한 요청: ${url}`);
@@ -807,16 +815,95 @@ test('인물 수정은 기존 식별자의 PUT 요청 후 서버 목록으로 �
   await store.saveRegisteredPerson({
     name: '김지영',
     relationship: '보호자',
-    bankCode: '081',
-    bankName: '하나은행',
-    accountNumber: '333-44-555555',
-    accountAlias: '지영 계좌',
   }, 2);
 
   assert.equal(updateBody.relationship, '보호자');
+  assert.equal(updateBody.accountNumber, undefined);
   assert.equal(store.people[0].id, 2);
   assert.equal(store.people[0].relation, '보호자');
   assert.equal(store.accountsByPerson[2][0].accountId, 4);
+});
+
+test('기존 사람에게 두 번째 계좌를 추가하고 서버 목록으로 갱신한다', async () => {
+  const store = createStore();
+  let addBody;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/registered-persons/2/accounts' && options.method === 'POST') {
+      addBody = JSON.parse(options.body);
+      return jsonResponse({ registeredPersonId: 2, name: '김지영', relationship: '딸', accounts: [] }, 201);
+    }
+    if (url === '/api/accounts') return jsonResponse([]);
+    if (url === '/api/registered-persons') {
+      return jsonResponse([{
+        registeredPersonId: 2,
+        name: '김지영',
+        relationship: '딸',
+        accounts: [{
+          accountId: 4,
+          bankCode: '081',
+          bankName: '하나은행',
+          accountNumber: '333-44-555555',
+          accountAlias: '기존 계좌',
+        }, {
+          accountId: 9,
+          bankCode: '088',
+          bankName: '신한은행',
+          accountNumber: '110-222-333333',
+          accountAlias: '생활비',
+        }],
+      }]);
+    }
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  await store.saveRecipientAccount(2, {
+    bankCode: '088',
+    bankName: '신한은행',
+    accountNumber: '110-222-333333',
+    accountAlias: '생활비',
+  });
+
+  assert.equal(addBody.accountNumber, '110-222-333333');
+  assert.equal(store.people[0].accounts, 2);
+  assert.equal(store.accountsByPerson[2][1].accountId, 9);
+});
+
+test('선택한 받는 계좌만 수정하고 다시 조회한다', async () => {
+  const store = createStore();
+  let updateBody;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/registered-persons/2/accounts/9' && options.method === 'PUT') {
+      updateBody = JSON.parse(options.body);
+      return jsonResponse({ registeredPersonId: 2, name: '김지영', relationship: '딸', accounts: [] });
+    }
+    if (url === '/api/accounts') return jsonResponse([]);
+    if (url === '/api/registered-persons') {
+      return jsonResponse([{
+        registeredPersonId: 2,
+        name: '김지영',
+        relationship: '딸',
+        accounts: [{
+          accountId: 9,
+          bankCode: '088',
+          bankName: '신한은행',
+          accountNumber: '110-222-333333',
+          accountAlias: '수정된 계좌',
+        }],
+      }]);
+    }
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  await store.saveRecipientAccount(2, {
+    bankCode: '088',
+    bankName: '신한은행',
+    accountNumber: '110-222-333333',
+    accountAlias: '수정된 계좌',
+  }, 9);
+
+  assert.equal(updateBody.accountAlias, '수정된 계좌');
+  assert.equal(store.accountsByPerson[2][0].accountId, 9);
+  assert.equal(store.accountsByPerson[2][0].nickname, '수정된 계좌');
 });
 
 test('카테고리 조회는 서버 필터 쿼리를 사용하고 잔액과 결과를 함께 반영한다', async () => {

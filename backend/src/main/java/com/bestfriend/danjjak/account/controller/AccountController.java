@@ -2,8 +2,10 @@ package com.bestfriend.danjjak.account.controller;
 
 import com.bestfriend.danjjak.account.dto.AccountDtos.BalanceResponse;
 import com.bestfriend.danjjak.account.dto.AccountDtos.OwnedAccountResponse;
+import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonRequest;
 import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonResponse;
+import com.bestfriend.danjjak.account.dto.AccountDtos.RegisteredPersonUpdateRequest;
 import com.bestfriend.danjjak.account.dto.AccountDtos.TransactionResponse;
 import com.bestfriend.danjjak.account.service.AccountService;
 import com.bestfriend.danjjak.common.session.DemoSessionUserResolver;
@@ -70,9 +72,30 @@ public class AccountController {
     @PutMapping("/registered-persons/{registeredPersonId}")
     public RegisteredPersonResponse updateRegisteredPerson(
             @PathVariable long registeredPersonId,
-            @Valid @RequestBody RegisteredPersonRequest request,
+            @Valid @RequestBody RegisteredPersonUpdateRequest request,
             HttpSession session) {
         return accountService.updateRegisteredPerson(
                 userResolver.resolveUserId(session), registeredPersonId, request);
+    }
+
+    @PostMapping("/registered-persons/{registeredPersonId}/accounts")
+    public ResponseEntity<RegisteredPersonResponse> addRecipientAccount(
+            @PathVariable long registeredPersonId,
+            @Valid @RequestBody RecipientAccountRequest request,
+            HttpSession session) {
+        RegisteredPersonResponse response =
+                accountService.addRecipientAccount(
+                        userResolver.resolveUserId(session), registeredPersonId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/registered-persons/{registeredPersonId}/accounts/{accountId}")
+    public RegisteredPersonResponse updateRecipientAccount(
+            @PathVariable long registeredPersonId,
+            @PathVariable long accountId,
+            @Valid @RequestBody RecipientAccountRequest request,
+            HttpSession session) {
+        return accountService.updateRecipientAccount(
+                userResolver.resolveUserId(session), registeredPersonId, accountId, request);
     }
 }
