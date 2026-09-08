@@ -14,5 +14,7 @@ public final class InstructionSuggestionDtos {
             String stepCode, String stepName, String currentText, String suggestedText,
             boolean hasFamilyAudio, boolean voiceScriptOutdated) {}
 
-    public record ApplySuggestionRequest(@NotBlank @Size(max = 500) String expectedText) {}
+    public record ApplySuggestionRequest(
+            @NotBlank @Size(max = 500) String expectedText,
+            @NotBlank @Size(max = 500) String suggestedText) {}
 }
