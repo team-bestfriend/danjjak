@@ -65,7 +65,7 @@
         <Card className="p-5 border-2 border-[#FFBC00]" style="background: #FFFDF5;">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-11 h-11 rounded-full bg-[#FFF3CC] flex items-center justify-center flex-shrink-0 text-[22px]">📊</div>
-            <h2 class="font-semibold text-[#111827] text-[19px]">이용 중 이런 기록이 있었어요</h2>
+            <h2 class="font-semibold text-[#111827] text-[19px]">이용 중 이런 어려움이 있었어요</h2>
           </div>
           <template v-if="report.difficultStep">
             <div class="bg-[#FFF3CC] border border-[#FFBC00] rounded-[18px] p-4">
@@ -139,7 +139,7 @@ const displayPatterns = computed(() => report.value?.patterns.map((pattern) => {
     num: storedPattern?.num,
     color: storedPattern?.color ?? '#9CA3AF',
   };
-}) ?? []);
+}).sort((first, second) => second.completedCount - first.completedCount) ?? []);
 const difficultPatternTitle = computed(() => report.value?.patterns.find(
   (pattern) => pattern.patternId === report.value?.difficultStep?.patternId,
 )?.title);
