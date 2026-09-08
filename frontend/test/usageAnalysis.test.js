@@ -130,6 +130,20 @@ test('완료 횟수가 모두 0이고 어려운 단계가 null이어도 결과�
   assert.ok(!JSON.stringify(flatten(root).map((item) => item.props.style)).includes('NaN'));
 });
 
+test('패턴별 이용 현황은 완료 횟수 내림차순이며 동률은 기존 순서를 유지한다', async () => {
+  globalThis.fetch = async () => response({
+    ...empty('AVAILABLE'),
+    patterns: [
+      { patternId: 1, title: '동률 먼저', completedCount: 2 },
+      { patternId: 2, title: '가장 많이 이용', completedCount: 5 },
+      { patternId: 3, title: '동률 나중', completedCount: 2 },
+    ],
+  });
+  const text = content(await mount());
+  assert.ok(text.indexOf('가장 많이 이용') < text.indexOf('동률 먼저'));
+  assert.ok(text.indexOf('동률 먼저') < text.indexOf('동률 나중'));
+});
+
 test('행동 기록이 없으면 어려움이나 실수로 단정하지 않는다', async () => {
   globalThis.fetch = async () => response({
     ...empty('AVAILABLE'),
