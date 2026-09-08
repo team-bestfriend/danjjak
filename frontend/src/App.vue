@@ -66,7 +66,7 @@ const VOICE_TEXTS = {
   "guide-person": "보낼 사람 이름을 눌러 주세요.",
   "guide-account": "보낼 계좌를 눌러 선택해 주세요.",
   "amount-input": "보내실 금액을 입력해 주세요.",
-  "pin-entry": "비밀번호를 입력해 주세요.",
+  "pin-entry": "계좌 비밀번호를 입력해주세요.",
   "fraud-warning": "서버가 확인한 이상 거래 사유를 천천히 살펴보세요.",
   "final-confirm": "출금 계좌와 받는 분, 금액이 맞는지 확인해 주세요.",
   complete: "송금이 모두 완료됐어요. 정말 잘 하셨어요!",
