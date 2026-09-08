@@ -1,133 +1,225 @@
-# Validation Scenarios
+# 검증 시나리오
 
-Use only the scenarios relevant to the current end-to-end test, feature Epic, or cross-domain review.
+[목차](../requirements.md)
 
-## SC-001 First Login and Consent
+**본선 구현 후 검증 계획. 현재 통과 결과 아님.**
 
-1. Open the service introduction while unauthenticated.
-2. Start Kakao login and complete OAuth successfully.
-3. Verify that the Kakao identifier is associated with one seeded user.
-4. Accept usage recording and decline guardian sharing.
-5. Verify that choice completion and both values persist.
-6. Verify that home shows the seeded name and applies the returned accessibility settings.
+## Agent Guide
 
-Expected result: the user reaches home without SMS, password, name entry, or mandatory acceptance of either optional choice.
+- Run only scenarios relevant to the implemented change.
+- Record owner, environment, actual result, and remaining issues.
+- Distinguish real-provider checks, substituted responses, and untested cases.
+- Follow the linked feature rules; scenario summaries do not replace them.
 
-## SC-002 Returning Login
+## SC-001 처음 로그인·동의
 
-1. Log in again with the same Kakao user.
-2. Verify that the same seeded user is retrieved.
-3. Verify that completed consent choices and accessibility settings remain unchanged.
-4. Verify direct navigation to home without registration or repeated choice steps.
+관련: FR-001–004, 053, 058.
 
-Expected result: no second seeded user association is created.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정상 | 소개 3개 메시지 → 카카오 → 같은 모의 사용자 → 두 동의 → 모의 계좌 → 홈 |
+| 변형 | 동의 네 조합, 둘 다 거절, 취소·인증 실패·동의 저장 실패 |
+| 기대 | 이름·접근성·기본 업무 일치, 선택값 유지, 별도 회원가입·필수 동의 없음 |
 
-## SC-003 Shortcut Create, Swap, and Deactivate
+## SC-002 재로그인·로그아웃
 
-1. Retrieve the eight default active shortcuts.
-2. Register an available template in an empty number.
-3. Change its title and at least one instruction.
-4. Move it to an occupied number and explicitly confirm the number swap.
-5. Deactivate the pattern and verify that its number becomes available.
-6. Refresh and verify the server-confirmed state.
+관련: FR-002–004, 057–058.
 
-Expected result: creation, editing, swap, and deactivation persist without deleting execution history.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정상 | 같은 사용자·동의·접근성·계좌 재조회, 완료한 초기 단계 생략 |
+| 변형 | 로그아웃 후 보호 화면 진입·재로그인 |
+| 기대 | 세션 종료, 사용자·계좌 중복 없음, 잔액·설정 보존 |
 
-## SC-004 Pattern Execution and Guidance
+## SC-003 패턴 관리
 
-1. Select a transfer shortcut on home.
-2. Verify recipient and description on pre-execution confirmation.
-3. Select `Start` and verify execution plus first step visit creation when recording consent is active.
-4. Verify that caption and TTS use the same current instruction. Amount and account-PIN entry show no visual highlight and retain both guidance methods.
-5. Activate a valid non-target control and verify wrong-touch aggregation while remaining on the step.
-6. Go back and re-enter a step, then verify a new visit number.
+관련: FR-010–017.
 
-Expected result: execution follows persisted pattern steps, and measurable guidance actions are recorded without sensitive values.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정상 | 기본 8개·3페이지, 등록·문구 수정·재조회·번호 이동·비활성화 |
+| 교환 | 번호 선택·드래그 모두 사전 확인, 취소 유지·실패 복구·성공 후 되돌리기 |
+| 예외 | 13번째 활성·잘못된 번호·불가 템플릿 차단, 스크롤/드래그로 실행 금지 |
+| 기대 | 저장값 유지, 비활성 번호 재사용·기록 보존, 최근 이용 시각은 실제 값 |
 
-## SC-005 Normal Registered-recipient Transfer
+## SC-004 실행·단계 안내·조회
 
-1. Confirm the default source account and registered recipient account.
-2. Enter an amount that triggers no FDS rule.
-3. Review the transaction and enter the correct mock PIN.
-4. Verify `COMPLETED` with `NORMAL` risk behavior.
-5. Verify completion values and returned post-transfer balance.
-6. Refetch transaction history and verify the matching outgoing transaction.
+관련: FR-016–023, 032–033, 044–047.
 
-Expected result: balance deduction and transaction creation occur together exactly once.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 시작 | 확인창의 설명·대상, 취소 시 기록 없음, 시작 후 동의 시 실행·방문 생성 |
+| 단계 | 저장 문구/음성 일치, 송금 1→2→3, 단일 계좌 확인, 재방문 분리 |
+| 조작 | 금액/PIN 강조 없음, 측정 가능한 대상만 강조·행동 집계 |
+| 조회 | 잔액·거래·연금·관리비·공과금은 결과 1단계, 같은 화면 계좌 변경, 잔액 숨김/보기·입출금/분류·최신순·전체 기간 |
+| 기대 | 기록 거절에도 업무 가능·기록 없음. 정상 빈 조회는 완료, 계좌 없음/조회 실패는 미완료 |
 
-## SC-006 Direct-recipient Transfer
+## SC-005 정상 등록 송금
 
-1. Enter recipient name, bank, mapped bank code, and account number.
-2. Verify identical values on review.
-3. Complete a normal transfer.
-4. Verify recipient and amount in transaction history.
-5. Verify that registered people and recipient accounts did not grow automatically.
+관련: FR-008, 028–031, 059.
 
-Expected result: direct input is used only by the transfer and its transaction record.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정상 | 내 계좌·사람·받는 계좌 확인 → 정상 금액 → 최종 확인 → PIN → 완료 |
+| 표시 | 숫자/한글 일치, 금액 버튼은 본인 확인 이동, 완료 사람·계좌·금액·잔액 |
+| 기대 | 실제 선택 계좌에서 차감 1회·거래 1건, 거래내역 재조회 일치 |
+| 연계 | 다른 내 계좌 선택은 SC-015와 함께 확인 |
 
-## SC-007 Transfer Error Recovery
+## SC-006 직접 입력 송금
 
-1. Submit with an incorrect PIN.
-2. Verify no balance or transaction change.
-3. Verify PIN is cleared while safe recipient and amount values remain.
-4. Submit an amount greater than balance and verify the same atomicity rule.
-5. Correct the values and complete the transfer.
+관련: FR-029, 059.
 
-Expected result: failed attempts never show completion and can be corrected without an accidental duplicate transfer.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정상 | 이름·은행·계좌번호 별도 화면, 연속 단계, 뒤로 시 안전한 값 유지 |
+| 검증 | 숫자 8–20자리·내부 단일 하이픈 허용, 잘못된 문자·길이·연속/양 끝 하이픈 거절 |
+| 기대 | 입력·확인·거래 값 일치, 사람/계좌 자동 등록·패턴 기록 없음 |
+| 연계 | 완료 거래는 반복 FDS에 포함 |
 
-## SC-008 MEDIUM Anomaly
+## SC-007 송금 오류·음성
 
-1. Submit a transfer that triggers only high amount or only repetition.
-2. Verify `REQUIRES_REVIEW`, `MEDIUM`, and exactly the applicable reason.
-3. Return to transfer review, then choose continue or cancel.
-4. Verify that the anomaly final action matches transaction creation and balance behavior.
+관련: FR-022, 030–031.
 
-Expected result: one anomaly record is processed once, with no guardian-notification action.
+| 구분 | 확인 항목 |
+| --- | --- |
+| PIN 오류 | 쉬운 오류 문구·음성, PIN만 비움, 받는 계좌·금액 유지 |
+| 금액 오류 | 잔액 초과·0·음수·소수·빈 값 |
+| 복구 | 음성 실패 중에도 수정 가능, 올바른 값으로 재시도 |
+| 기대 | 오류 시 차감·거래 없음, 실행은 재시도 가능, PIN 기록·중복 송금 없음 |
 
-## SC-009 HIGH Anomaly and Kakao Notification
+## SC-008 주의·경계값
 
-1. Prepare two completed outgoing transfers inside ten minutes.
-2. Submit a transfer of at least KRW 10,000,000.
-3. Verify `HIGH` with both high-amount and repetition reasons.
-4. Explicitly select guardian notification.
-5. Verify that `SENT`, `MOCKED_NO_TOKEN`, or `MOCKED_AFTER_ACTUAL_FAILURE` is accurately distinguished.
-6. Continue or cancel and verify consistent anomaly, balance, and transaction state.
+관련: FR-035–041.
 
-Expected result: notification outcome does not approve, block, or duplicate the transfer decision.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 경계 | 반복 없음에서 9,999,999/10,000,000원, 낮은 금액에서 이전 완료 1/2건 |
+| 시간 | 10분 경계 포함, 경계 밖 제외 |
+| 결정 | 사유 하나의 주의 → 다시 확인 → 계속/취소 각각 검증 |
+| 기대 | 판정 하나, 취소 시 차감 없음, 주의에는 카톡 없음, 새 계좌·오조작만으로 추가 경고 없음 |
 
-## SC-010 Guardian and Customer-center Calls
+## SC-009 높은 주의·카톡
 
-1. Retrieve the support contacts.
-2. Update the guardian number and retrieve it again.
-3. From anomaly review, activate the guardian `tel:` link.
-4. From customer-center inquiry, activate the support `tel:` link.
+관련: FR-036–042, 053.
 
-Expected result: each action uses its server-returned number, and both numbers remain visible on a non-calling desktop.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 준비 | 같은 사용자의 서로 다른 내 계좌에서 최근 완료 2건 + 10,000,000원 이상 |
+| 화면 | 두 사유·높은 주의·‘보호자에게 카톡 보내기’, 본인 수신 시연 설명 |
+| 결과 | 실제 성공 / 자격 없음 모의 / 실제 실패 후 모의 |
+| 예외 | 동의 거절 시 실제/모의 전송 없음, 계속·취소·전화 가능 |
+| 기대 | 실제 성공만 시각 저장·미결정 재전송 방지, 결정 후 알림 거절, 최종 결정·잔액·거래 일치 |
 
-## SC-011 TTS and Family-voice Fallback
+## SC-010 보호자·고객센터 전화
 
-Requirement coverage: FR-019 through FR-026 and FR-054 through FR-056.
+관련: FR-009, 034, 043.
 
-1. Save a global voice mode and guidance speed. Open an existing pattern's edit flow and verify pre-start voice configuration and the actual ordered step-voice list from the server.
-2. Select pre-start TTS, edit the description, and finish text editing. Verify the displayed draft and actual TTS preview use the same edited text and selected speed without changing persisted values yet.
-3. Reset to the template default, verify the draft preview, then edit again. Accept the voice draft, finish pattern save, refresh, and verify confirmation uses the saved description and voice choice without creating an execution before `Start`.
-4. Reopen pre-start editing, select family voice, edit the script, record with the microphone, stop, preview, and rerecord. Save and verify the pre-start recording plays with the same visible script after refresh.
-5. Open an individual step editor from the step list, then also by direct URL/refresh. Change only that step's text and mode, preview TTS, record/replace family audio, and save. Verify its caption, TTS input, and recording script agree while other steps and pre-start guidance remain unchanged.
-6. Set pre-start to FAMILY, one step explicitly to TTS, and leave another step without an explicit mode. Change the global default and verify only the unconfigured target follows it; changing mode alone preserves existing audio.
-7. Change the script of a target with saved family audio. Verify the mismatch notice and rerecord/TTS options; text editing alone must not fabricate new audio. Check the same behavior after SC-012 suggestion application.
-8. Cancel an unsaved edit or recording, skip configuration during pattern editing, and return from a step to its parent draft. Verify saved values and unrelated drafts remain intact. New-pattern skip uses template text and the global voice default.
-9. Verify blank/overlong text, invalid targets, microphone denial, unsupported recording, failed TTS preview, upload/replacement failure, and partial-save failure. Keep recoverable drafts, disclose actual persisted state, preserve old recording references on upload failure, and prevent duplicate saves.
-10. Select FAMILY without a recording or force family playback failure for both pre-start and a step. Verify disclosed TTS fallback uses the current script and financial actions remain usable.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 보호자 | 번호 저장·재조회·확인 후 전화 동작 |
+| 예외 | 미등록은 등록 안내, 통화 미지원은 번호 표시 |
+| 고객센터 | 번호 조회만으로 완료 아님, 전화 버튼으로 패턴 완료 |
+| 기대 | 저장 번호 사용, 실제 연결·상담 성공 추정 없음, 자동 송금 승인 없음 |
 
-Expected result: pre-start and per-step text, voice choices, and actual recordings survive refetch and drive later guidance. Editing and preview create no task logs, and audio is never used as authentication. Verify the primary controls and edited text remain usable in the approved demo viewport.
+## SC-011 문구·가족 음성 편집
 
-## SC-012 Usage Analysis and Wording Improvement
+관련: FR-019–026, 054–056.
 
-1. With usage recording accepted, complete several pattern executions and step actions.
-2. Verify completed counts by financial task.
-3. Verify the difficult step and deterministic supporting metrics.
-4. Compare current and suggested instruction text.
-5. Apply the suggestion and verify it in the next execution.
-6. For a step with family audio, verify the rerecord warning and route.
+| 구분 | 확인 항목 |
+| --- | --- |
+| 진입 | 패턴 수정의 설명·실제 단계 목록, 특정 편집기의 직접 진입·새로고침 |
+| 초안 | 문구 수정·기본값·AI 미리 듣기, 녹음·재녹음·명시적 저장 |
+| 분리 | 개별 대상만 변경, 전역 기본값은 미설정 대상만 영향 |
+| 기본값 | 기본 패턴·새 패턴 모든 대상의 문구 복원 |
+| 불일치 | 기존 녹음 문구 변경 후 경고 유지·교체 성공 시 해제 |
+| 미저장 녹음 | 녹음 뒤 문구 재변경 시 재녹음/녹음 초안 버리기 |
+| 이탈 | 취소·건너뛰기·상위 복귀에서 저장값·다른 초안 보존 |
+| 실패 | 권한·미지원·빈/잘못된 형식·10 MiB 초과·업로드·부분 저장 |
+| 기대 | 이전 녹음 보존, 부분 저장 재시도 시 패턴 중복 없음, 가족 없음/실패 시 현재 문구 AI 대체, 편집 로그 없음 |
 
-Expected result: analysis reflects recorded data, applies no medical interpretation, and changes wording only after explicit success.
+## SC-012 분석·문구 개선
+
+관련: FR-044–052.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 기간 | 종료 시각 기준 최근 7일, 양쪽 날짜 경계, 기간 전 시작·기간 안 종료 |
+| 횟수 | 완료 내림차순·동률 순서·아들/딸 별도 행·합계 |
+| 후보 | 행동 합계 → 평균 시간 → 단계 순서 → 식별 순서 |
+| 빈 상태 | 미측정 시간·점수 0·방문 없음·미종료 제외, 취소/실패만 있는 0회 |
+| 동의·오류 | 미완료·거절·자료 없음·로딩·실패 구분 |
+| 적용 | 현재/제안 비교 → 적용 → 다음 실행, 원문 변경 시 재비교, 같은 문구 중복 적용 없음 |
+| 기대 | 녹음 불일치·같은 단계 재녹음, 비활성 기록 유지·수정 불가, 건강/능력 평가 없음 |
+
+## SC-013 번호·업무 음성 입력
+
+관련: FR-016, 027.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 번호 | 1–12, ‘1’·‘1번’·‘일 번’·‘십이’·‘12번’, 번호 변경 후 현재 연결 |
+| 업무 | 정해진 문장 8종, 이름·번호 변경 후에도 업무 종류·관계로 매칭 |
+| 일치 | 해당 페이지·카드 강조 → 기존 확인창 → 시작하기 |
+| 불일치 | 빈·범위 밖·비활성 번호, 여러 업무, 부정/복합 문장 |
+| 실패 | 권한·무음·시간 초과·인식 오류·종료·취소·이동 후 늦은 결과 |
+| 기대 | 취소 시 업무 시작 없음, 수동 선택 유지, 인식 문자열/명령 음성 요청·저장·로그 없음 |
+
+## SC-014 접근성·세션·새로고침
+
+관련: FR-004, 057, UX-001–014, NFR-005, 012.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 화면 | 428×926 프레임·320×568·큰 글씨, 실제 기기 안전 영역·키보드 |
+| 대상 | 홈·긴 확인창·금액·PIN·설정·긴 음성 편집기 |
+| 조작 | 48×48 이상, 업무 이름 우선, 은행명·체크·글자 뒤로 |
+| 팝업 | 초점·닫기·취소·뒤로·배경 차단·초점 복귀 |
+| 경로 | 상세/음성 대상 재조회, 잘못된·비활성 대상 복구, 알 수 없는 주소 |
+| 기대 | 진행 없는 중간/완료 주소는 설명 후 재시작, PIN 복원·성공 추정 없음, 세션 만료 후 설정 유지 |
+
+## SC-015 금융·기록 종료 경계
+
+관련: FR-008, 028–031, 044–049.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 계좌 | 기록 동의 후 기본/다른 내 계좌 각각 송금, 실제 선택과 거래·실행 일치 |
+| 재시도 | PIN 오류 동안 실행 유지·허용 합계만 기록 |
+| 종료 | 정상·경고 계속·경고 취소의 마지막 합계·방문 시각·실행 결과 한 번 확정 |
+| 후속 | 종료 후 방문 수정/중복 종료 없음, 조회/기록 실패가 재송금으로 이어지지 않음 |
+| 기대 | 동의 거절·홈 직접 송금은 패턴 집계 없음, 금융·FDS는 가능, 화면·서버·데이터 일치 |
+
+## SC-016 모의 계좌 불러오기
+
+관련: FR-007–008, 058.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정상 | 첫 로그인·동의 후 후보 선택·저장·홈 |
+| 예외 | 준비 전 금융 제한, 설정·도움말·로그아웃 가능 |
+| 반복 | 실패 재시도·설정 추가, 같은 계좌 재선택·재로그인 |
+| 기대 | 계좌 중복·잔액 초기화 없음, 실제 은행/MyData 연동 표현 없음 |
+
+## SC-017 사람별 복수 계좌
+
+관련: FR-005–008, 014, 028.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 관리 | 사람·첫 계좌 등록 → 기존 사람의 두 번째 계좌 추가·수정·재조회 |
+| 화면 | 일반 추가 버튼·계좌 수·단일/복수 모두 받는 계좌 확인 |
+| 연결 | 두 번째 계좌를 패턴 연결 → 확인창·실행·최종 확인 일치 |
+| 기대 | 사람·은행·정규화 번호 중복 차단, 이번 송금의 다른 선택이 저장 패턴을 바꾸지 않음 |
+
+## SC-018 문구·금액·음성 영역
+
+관련: FR-021–022, 030, 059–060, UX-011–012.
+
+| 구분 | 확인 항목 |
+| --- | --- |
+| 정보 | 소개·4탭, 이름 아래 시연 문구 삭제, 홈 기술 설명·자동 TTS·지금 할 일 제거 |
+| 안내 | 안내 중·멈춤·다시 듣기·펼치기, 접어도 질문·입력·행동 유지, 상세는 이용방법 |
+| 금액 | 15,000·50,000·100,000·1,000,000·10,000,000·100,000,000원의 숫자/한글 |
+| 일관성 | 입력·확인·경고·완료의 사람·금액, 쉬운 문구·은행 로고 대체·체크 |
+| 음성 | 동일 한국어 문구로 실제 톤·속도 청취 |
+| 선택 검증 | 미리 생성 채택 시 새 문구·속도 변경·실패·오래된 결과에서 현재 음성만 재생 |

@@ -1,130 +1,138 @@
-# Guided Steps, TTS, Family Voice, and Voice Commands
+# 음성·단계 안내
 
-## Requirements
+[목차](../requirements.md)
 
-| ID | Requirement | Required behavior |
+## 요구사항
+
+| ID | 기능 | 완료 조건 |
 | --- | --- | --- |
-| FR-018 | Step highlight | Visually highlight the control the user should operate in the current step. Amount and account-PIN entry omit visual highlighting while retaining captions and voice guidance. |
-| FR-019 | Instruction editing | Allow the pre-start description and current instruction text for each pattern step to be changed. |
-| FR-020 | Default wording | Use the template's default instruction when no custom instruction is supplied. |
-| FR-021 | Caption guidance | Display the current instruction as large, readable on-screen text. |
-| FR-022 | TTS guidance | Generate and play the current instruction at the selected guidance speed. |
-| FR-023 | Family-voice guidance | In family mode, play the saved recording for the current step when available. |
-| FR-024 | Family-voice recording | Record, upload, and play back audio for an individual step. |
-| FR-025 | Family-voice replacement | Replace the current step recording with a newly uploaded recording. |
-| FR-026 | TTS fallback | Use TTS with the same instruction when family audio is absent or cannot play. |
-| FR-027 | Simple voice command | Match a predefined normalized phrase to one shortcut and highlight it. |
-| FR-054 | Pre-start voice configuration | During pattern editing, choose TTS or record family voice for the pre-start description, preview it, and persist the selection. |
-| FR-055 | Per-step voice editor | Open an ordered step list and a dedicated editor for each step's text, voice mode, and recording. |
-| FR-056 | Shared script editor | Edit, reset, preview, and save the text used by TTS, visible guidance, and the family recording script for either guidance target. |
+| FR-018 | 조작 강조 | 현재 대상 강조. 금액·비밀번호는 질문·음성만 제공 |
+| FR-019 | 문구 편집 | 실행 전 설명·각 단계 안내 수정 |
+| FR-020 | 기본 문구 | 맞춤 문구 없으면 템플릿 기본값, 편집 중 복원 가능 |
+| FR-021 | 화면 안내 | 핵심 질문·행동 유지, 전체 문구 펼치기 |
+| FR-022 | AI 음성 | 현재 문구·선택 속도·자연스러운 톤 |
+| FR-023 | 가족 음성 | 해당 대상의 저장 녹음 재생 |
+| FR-024 | 녹음 | 실제 마이크 녹음·미리 듣기·저장 |
+| FR-025 | 교체 | 해당 대상 녹음만 교체 |
+| FR-026 | 대체 안내 | 가족 녹음 없음/실패 → 같은 문구의 AI 음성 |
+| FR-027 | 음성 입력 | 번호·정해진 업무 문장 → 일치 패턴 확인창 |
+| FR-054 | 설명 음성 | 패턴 수정 안에서 설명 문구·방식·녹음 편집 |
+| FR-055 | 단계 음성 | 패턴 수정의 실제 단계 목록에서 개별 편집 |
+| FR-056 | 공통 대본 | 화면 전체 안내·AI 음성·가족 녹음 대본에 같은 문구 |
+| FR-061 | 미리 생성 | 저장 후 생성·재사용 검토. 채택 전 선택 항목 |
 
-## Guidance Targets and Editing Flow
+## 편집 화면
 
-- Distinguish the pattern's pre-start guidance from its executable steps. Pre-start guidance uses the pattern description; a step uses its current `instructionText`.
-- Pattern editing includes pre-start voice configuration, an ordered step-voice list, and a final review. Pattern detail also provides entry to these editors after saving.
-- The pre-start editor offers `TTS` and `FAMILY`, current text, preview, explicit save, and a change-method action. `FAMILY` offers actual microphone recording rather than simulated elapsed time.
-- The step list comes from persisted pattern detail, including actual step identifiers, order, names, current scripts, effective voice modes, and recording availability. Reference screenshots do not fix the number or names of executable steps.
-- Selecting a step opens an editor for that specific pattern and step with the same text, mode, preview, recording, and save actions as the pre-start editor. Saving one target must not overwrite another target.
-- Direct entry or refresh reloads the selected pattern and step. Missing, inactive, or invalid targets show a recovery action instead of editing the first step or stale local data.
-- Returning from a step editor preserves the parent pattern draft. Skipping voice configuration keeps existing saved values during editing and uses template text plus the user's default mode for a newly created pattern.
-- Editing, previewing, and recording never create financial-task execution or step-action logs.
+**패턴 상세 → 패턴 수정 → 설명과 음성 / 단계별 안내와 음성**
 
-## Script Editing and Save Behavior
+| 항목 | 내용 |
+| --- | --- |
+| 설명 대상 | 실행 전 설명, 업무 단계와 별도 |
+| 단계 목록 | 순서·이름·현재 문구·음성 방식·녹음 유무 |
+| 공통 편집 | 문구·AI/가족 선택·미리 듣기·기본값·저장 |
+| 가족 편집 | 녹음·멈춤·다시 듣기·재녹음 |
+| 분석 진입 | 같은 패턴 수정의 해당 단계 |
+| 문구 길이 | 비공백, 최대 500자 |
+| 유효하지 않은 대상 | 수정 불가 이유·돌아가기 |
 
-- Both TTS and family-recording screens expose an editable text field. Pre-start text updates the pattern description; step text updates that step's `instructionText`. Do not introduce separate TTS-only and family-only scripts.
-- Show the same current draft under the text editor, send it to TTS preview at the selected speed, and display it as the script the family should read. Editing text stops obsolete preview audio.
-- `Reset to default` restores the corresponding template description or step instruction in the draft. The default must be available from the server contract; do not reconstruct it from hardcoded screen text.
-- Validate nonblank text within the existing 500-character limit before preview or save. Explain invalid input near the field and keep the draft available for correction.
-- Finishing text editing, changing voice method, previewing, or resetting changes the draft only. Mark the draft as unsaved until the applicable explicit save succeeds.
-- Within the pattern wizard, `Save this voice` accepts the target draft for final review; final pattern save persists it. In a standalone editor for an existing pattern or step, explicit save persists that target and returns the server-confirmed state to the list.
-- Final review includes pre-start and step voice choices and pending recordings. Prevent duplicate saves; show success only after the required text, mode, and audio operations succeed. On partial failure, explain what was saved, reload server state, and retain remaining drafts for retry instead of reporting full success.
-- Cancelling discards only unsaved changes. Leaving with an edited script or unsaved recording offers keep-editing or discard; navigation alone must not silently save or replace a recording.
-- Saving or refetching must preserve the selected target's script and mode. The next pre-start confirmation or step execution uses those saved values.
-- If text changes while a family recording exists, explain that the recording has not changed and offer rerecording or switching to TTS. A new recording captures the edited script only through actual recording; do not fabricate updated speech or claim that old audio matches the new text. Keeping old audio remains possible with the mismatch notice; no transcription or version-history feature is required.
+## 저장·문구 일치
 
-## Instruction Source and Priority
+| 상황 | 처리 |
+| --- | --- |
+| 편집·기본값·방식 변경·미리 듣기 | 초안만 변경 |
+| 등록 중 ‘이 음성 사용’ | 상위 초안 반영, 최종 패턴 저장으로 확정 |
+| 저장된 패턴의 개별 편집 | 해당 대상 저장으로 확정 |
+| 뒤로·취소 | 계속 편집/버리기 선택, 다른 초안 보존 |
+| 새 패턴의 설정 생략 | 기본 문구 + 사용자 기본 방식 |
+| 기존 패턴의 설정 생략 | 저장값 유지 |
+| 부분 저장 실패 | 저장된 부분 안내, 남은 초안 재시도 |
+| 기존 녹음의 문구 변경 | 불일치 안내·재녹음/AI 선택, 기존 녹음 유지 가능 |
+| 미저장 녹음 후 문구 재변경 | 재녹음 또는 녹음 초안 버리기 후 저장 |
 
-1. Use the pattern step's persisted current `instructionText` as the caption source.
-2. When the user has not customized a step, use the instruction copied from the selected template.
-3. Caption and TTS input must use the same current text.
-4. A family recording is supplemental playback linked to its pre-start or step target. It never hides or replaces the visible text or the script the family should read.
-5. A changed instruction becomes active only after a successful persisted update.
-6. Apply the same text-source rules to the pre-start description. Preview uses the draft; actual task guidance uses persisted text.
+## 재생
 
-## Step Highlight
+**대상별 선택 → 사용자 기본 방식 → AI 음성**
 
-- When a step has `targetElementId`, map it to exactly one actionable element on the current screen.
-- Highlight may use border, background, scale, or animation, but it must preserve readability and click behavior.
-- The highlighted area and actual click target must refer to the same control.
-- If the target is not rendered, do not highlight an unrelated fallback. Keep the caption visible and record a diagnostic error that contains no sensitive input.
-- When the user activates a valid non-target control during a measurable guided step, increment `wrongTouchCount` and remain on the current step when doing so is safe.
-- Never include the entered PIN or full account number in highlight metadata, captions, logs, or analytics.
+| 상태 | 동작 |
+| --- | --- |
+| AI 선택 | 현재 문구 재생 |
+| 가족 선택·재생 가능 | 저장 녹음 재생 |
+| 가족 없음·실패 | ‘AI 음성으로 안내할게요.’ + 현재 문구 |
+| 음성 전체 실패 | 질문·안내 보기·주 행동 유지, 재시도 |
+| 단계 진입 | 자동 재생 1회 시도 |
+| 자동 재생 차단 | 듣기 버튼 제공 |
+| 화면 이동 | 이전 재생·요청 중단 |
+| 오류 | 비밀번호 오류 등 중요 피드백을 화면·음성으로 안내 |
 
-## Caption Behavior
+| 음성 설정 | 기준 |
+| --- | --- |
+| 톤 | 차분·명료한 한국어. 과장·빠른 낭독·유아적인 표현 지양 |
+| 속도 | 느리게 0.8 / 보통 1.0 / 빠르게 1.2: 초기 설계값 |
+| 제어 | 다시 듣기·멈춤 |
+| 명칭 | AI 음성 / 가족 음성. 설정·최초 안내에 합성 음성 설명 |
+| 화면 정리 | 반복 TTS 표식·대본 제거: [공통 UX](shared-ux.md), D-01·04 |
 
-- Keep the current instruction visible throughout the step, including while audio is loading, playing, paused, or failed.
-- Use the current accessibility text-size setting without clipping the primary action.
-- Provide a clear replay action near the caption when audio guidance is available.
-- Changing steps cancels obsolete audio and updates the caption before or with the next playback request.
-- A caption failure caused by missing data must show a safe generic next-action message and record the configuration problem; it must not invent a financial result.
+## 녹음
 
-## TTS Playback
+| 항목 | 기준 |
+| --- | --- |
+| 시작 | 목적 설명 후 마이크 권한 |
+| 길이 | 최대 90초 |
+| 파일 | 비어 있지 않은 최대 10 MiB |
+| 형식 | WebM·OGG·MP4·MP3·WAV, 실제 기기 지원 확인 |
+| 실패 구분 | 권한·미지원·녹음·업로드·재생 |
+| 저장 | 사용자 명시적 저장, 본인 파일만 접근 |
+| 교체 실패 | 이전 녹음 유지 |
+| AI로 변경 | 가족 녹음 삭제 없음 |
+| 제외 | 음성 전사·복제·합성 가족 음성, 인증·송금 승인 용도 |
 
-- Attempt one automatic playback when entering a step.
-- If browser autoplay policy prevents playback, expose an enabled play control instead of repeatedly retrying automatically.
-- Provide replay and pause/stop behavior appropriate to the current browser capability.
-- Map `SLOW`, `NORMAL`, and `FAST` accessibility settings to the server TTS request.
-- Cancel the previous request or audio instance when navigation makes it obsolete so speech from an old screen does not continue over a new step.
-- TTS generation failure keeps the caption and financial action usable, explains that audio is unavailable, and allows retry.
-- Repeated requests for identical text and speed may be cached, but cache behavior must not replay obsolete content.
+## 번호·업무 음성 입력
 
-## Family Recording Lifecycle
+**음성으로 말하기 → 한 번 듣기 → 일치 확인 → 기존 실행 전 확인창 → 시작하기**
 
-- Apply this lifecycle separately to the pre-start target and every executable step; a pre-start recording must not be stored as a fictitious executable step.
-- Explain the recording purpose before asking for microphone permission.
-- Distinguish permission denial, unsupported browser, capture failure, upload failure, and playback failure.
-- After capture and before upload, provide preview and rerecord actions.
-- Distinguish a locally captured draft from an uploaded and saved recording; follow the explicit save boundaries above.
-- A successful new upload replaces the selected target's prior file path; revision history is outside MVP scope. Switching to TTS does not delete the saved family recording.
-- Store file path/identifier and content type in the database, not the audio binary.
-- Persist the user-authored guidance script as pattern text, but do not transcribe recordings or store/log a recording transcript.
-- If a recording is missing or family playback fails, generate or play TTS for the same current instruction and briefly disclose the fallback.
-- Family audio is never evidence of recipient identity, transaction approval, PIN verification, or guardian consent.
-- Define upload, lookup, playback metadata, and replacement in OpenAPI before implementing them.
+| 입력 | 대상 |
+| --- | --- |
+| ‘1’, ‘1번’, ‘일 번’, ‘일번’ | 현재 단축번호 1 |
+| ‘십이’, ‘12번’, ‘십이 번’ | 현재 단축번호 12 |
+| ‘아들에게 돈 보내 줘’ | 아들 관계의 송금 패턴 |
+| ‘딸에게 돈 보내 줘’ | 딸 관계의 송금 패턴 |
+| ‘연금 확인해 줘’ / ‘관리비 확인해 줘’ | 해당 조회 |
+| ‘잔액 알려 줘’ / ‘거래 내역 보여 줘’ | 해당 조회 |
+| ‘고객센터 전화해 줘’ / ‘공과금 확인해 줘’ | 해당 업무 |
+| 빈·비활성·범위 밖 번호 | 일치 없음 |
+| ‘1번 말고 2번’, ‘1번과 2번’ | 지원하지 않는 문장 |
 
-## Playback Selection
+| 상태 | 동작 |
+| --- | --- |
+| 번호 범위 | 1–12, 일·이·삼·사·오·육·칠·팔·구·십·십일·십이 |
+| 한 개 일치 | 해당 페이지·카드 강조 + 확인창 |
+| 없음·여러 개 | 다시 말하기·화면 선택 |
+| 권한 거절·무음·미지원·인식 실패 | 원인·수동 선택 |
+| 대기 한도 | 초기 20초, 말하기 종료·취소 제공 |
+| 확인창 취소 | 실행·기록·금융 요청 없음 |
+| 도움말 | 인식 서비스의 오디오 처리 가능성 설명 |
 
-Resolve the voice mode for each target before applying the table:
+## Agent Notes
 
-1. Use that pre-start target's or step's explicitly saved `TTS`/`FAMILY` choice when present.
-2. Otherwise use the user's global voice-guidance setting; use its existing default `TTS` when unset.
-3. Pre-start selection does not implicitly override step choices. A global setting change affects targets without an explicit choice and preserves explicit target choices and recordings.
+- Use one script per target. Preview uses the draft; task playback uses persisted text. Editing stops obsolete previews.
+- Keep pre-start and step identities distinct; provide defaults for all seeded/new targets. Refetch the actual target, never infer it from order/title.
+- Save only explicit changes. Preserve parent/unrelated drafts; retry partial creation against the existing pattern ID.
+- Persist existing-audio mismatch across refetch; clear only on successful replacement. Do not claim retained audio matches new text. Apply the same rule to analysis suggestions.
+- Global defaults affect only unconfigured targets. Pre-start choices do not override steps.
+- Family speed changes playback rate, not the file. Ignore late audio/recognition results after navigation or cancellation.
+- Release microphone tracks on stop/disposal. Validate content, not filename alone; store file references/MIME metadata outside audio binaries in DB.
+- Commit new file metadata before deleting the old file. A failed replacement must preserve the old reference.
+- Normalize supported number spacing and optional 번; match whole utterances, not embedded digits or negative/compound fragments.
+- Number commands follow current numbering; task phrases follow type/recipient relationship. Renaming must not break phrase matching.
+- Use deterministic matching, not open-ended interpretation. No natural-language amount entry or voice-only authorization.
+- Keep recognized text only during matching; exclude command audio/text from server requests, state, storage, and logs. Do not claim on-device-only recognition.
+- Editing/preview/recording creates no financial execution or visit logs. Never speak PIN content.
+- Acceptance: [SC-004, 007, 011, 013, 018](validation-scenarios.md).
 
-The table applies to both pre-start and step guidance. Missing family audio is a valid saved configuration with visible TTS fallback. Pre-start playback never requires the user to finish listening before starting or cancelling the task.
+## Optional: Pre-generation
 
-| Voice mode | Recording state | Required playback |
-| --- | --- | --- |
-| `TTS` | Any | TTS for current instruction |
-| `FAMILY` | Available and playable | Family recording while caption remains visible |
-| `FAMILY` | Missing | TTS fallback with a short notice |
-| `FAMILY` | Playback failure | Stop failed media, then offer or start TTS fallback without blocking the task |
-
-## Voice-command Matching
-
-- Use only predefined normalized phrases and deterministic keyword rules.
-- Normalize supported spacing and ordinary recognition variation without introducing an LLM, RAG, embeddings, or open-ended interpretation.
-- Example: a supported equivalent of “send money to my son” identifies the active son-transfer shortcut.
-- When exactly one active shortcut matches, highlight it and present confirmation; do not execute it.
-- When no shortcut or multiple shortcuts match, ask the user to retry speech or choose on screen.
-- Do not store recognized text or captured command audio in the database.
-- Microphone denial or recognition failure leaves all manual shortcut interactions available.
-
-## Completion Criteria
-
-- FR-018 through FR-021: Every representative step shows its persisted text and highlights the correct target, except amount and account-PIN entry, which retain caption and voice guidance without highlighting; a successful edit is reflected in later execution.
-- FR-022: Actual generated audio plays at the selected speed, while caption and retry remain available on failure.
-- FR-023 through FR-026: Recording, upload, playback, replacement, and TTS fallback are reproducible with a real browser audio file.
-- FR-027: Each supported demo phrase highlights only the matching shortcut and never starts a financial task automatically.
-- FR-054: Pattern editing persists pre-start TTS/family selection and actual recorded audio; confirmation uses the saved description and effective voice mode after refresh.
-- FR-055: Each real step is independently editable through list and direct entry; editing, skipping, cancelling, and refetching preserve the correct target and unrelated values.
-- FR-056: Edited and reset text is consistent across caption, TTS preview, and family script; only successful save changes later guidance, and existing audio is never silently presented as newly recorded text. Verify these behaviors in SC-011.
+- Evaluate during the event; see [D-03](design-decisions.md). Do not prepare runtime audio assets before the event.
+- Generate after script save, not per keystroke. Match script, voice, speed, and synthesis settings before reuse.
+- Track pending/ready/failed; discard obsolete results. Never replace family audio with generated audio.
+- If unavailable, generate on demand or retain readable guidance. Audio failure must not block script saving or financial work.
+- Dynamic recipient/amount/error guidance must match the current transaction.

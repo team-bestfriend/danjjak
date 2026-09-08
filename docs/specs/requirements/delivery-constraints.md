@@ -1,138 +1,81 @@
-# Delivery Constraints
+# 개발 범위·순서
 
-Read this document for API, database, integration, build, cross-domain, or Issue-planning work.
+[목차](../requirements.md)
 
-## Frontend and API Integration
+## 사전·본선 구분
 
-- Use feature API modules instead of repeating `fetch` calls in presentation components.
-- Use `VITE_API_BASE_URL` for the backend origin.
-- Preserve the names and meanings defined by `contracts/openapi.yaml` for request and response models.
-- Separate display transformations from server DTOs without calculating the same business decision independently in both layers.
-- Read shared API error codes and messages, then connect them to feature-specific recovery actions.
-- Refresh affected list and detail state after successful create, update, reorder, or deactivate operations.
-- Invalidate or refetch owned-account balance and transaction history after a completed transfer.
-- Treat the successful guardian-contact or accessibility-setting response as the new UI baseline.
-- Do not leave local state in a successful state after a failed server save.
-- Use hardcoded mock constants only in an explicitly documented fallback or preview path; do not mix them with API data on the same live screen.
+| 사전 준비 | 본선 시작 후 |
+| --- | --- |
+| 아이디어·목적·흐름 | 화면·UI 구현 |
+| 화면 구성·문구·시안 | 프론트엔드·백엔드 코드 |
+| 기술·외부 API 검토 | 로그인·AI 음성·카카오 실제 연동 |
+| 데이터 항목·관계·모의 자료 계획 | DB 구축·초기 자료 입력·연동 |
+| 구성·책임·입출력 의미 | 구체적인 HTTP 계약·구현 |
+| 환경 준비 목록·작업 순서 | 테스트·배포·발표자료 |
 
-## Current Contract Coverage
+- 기준: 제공된 대회 안내 캡처.
+- 문서 산출물: 기획·설계·검토·당일 완료 조건.
+- 실행용 초기화 자료·DB 스크립트·미리 완성한 음성 결과물 제외.
 
-The current OpenAPI contract covers:
+## 비기능 요구사항
 
-- owned accounts, balances, and transaction history;
-- registered people and recipient-account inquiry, creation, and update;
-- mock transfer and anomaly continue/cancel decisions;
-- guardian and customer-center contacts and HIGH-risk Kakao notification;
-- TTS MP3 generation;
-- current user, optional consent, and accessibility settings;
-- pattern templates and pattern list, detail, creation, update, reorder, and deactivation.
-
-## Contract Work Required Before Implementation
-
-Define or extend the OpenAPI contract before implementing:
-
-- Kakao OAuth start, callback, logout, and session-state behavior;
-- persisted pre-start and per-step voice choices, shared script updates, and default-text lookup for reset (FR-054 through FR-056);
-- family-voice upload, lookup, playback metadata, and replacement for both pre-start and step targets, including explicit-save and partial-failure behavior;
-- pattern-execution start/end and step-visit/action logging;
-- task-count and difficult-step analytics;
-- instruction suggestion and application.
-
-## Non-functional Requirements
-
-| ID | Requirement | Acceptance criterion |
+| ID | 항목 | 완료 조건 |
 | --- | --- | --- |
-| NFR-001 | Technology | Frontend uses Vue 3, Vite, Pinia, and Vue Router. Backend uses Java 17, Spring Framework 5.x, and MyBatis. |
-| NFR-002 | Database | Use MySQL and introduce schema or seed changes only through new Flyway migrations. |
-| NFR-003 | Local execution | The documented sequence can start MySQL, apply Flyway, run the backend, and run the frontend locally. |
-| NFR-004 | API contract | OpenAPI is the only authoritative HTTP field contract shared by frontend and backend. |
-| NFR-005 | Accessibility | Primary copy, targets, contrast, focus, and feedback prioritize older-user operability. |
-| NFR-006 | Sensitive data | Do not persist raw PINs, OAuth tokens, audio binaries, or real banking credentials in application tables. |
-| NFR-007 | Demo repeatability | Core mock flows remain repeatable in a documented demo environment when an external provider is unavailable. |
-| NFR-008 | Simple implementation | Do not add frameworks, abstractions, infrastructure, or expansion features that are unnecessary for the current demo. |
-| NFR-009 | Build verification | Relevant changes pass frontend build, backend test/WAR, and OpenAPI lint as applicable. |
-| NFR-010 | Integration isolation | TTS or Kakao failure does not corrupt account, transaction, or anomaly state. |
-| NFR-011 | Log protection | Do not log PINs, OAuth tokens, full account numbers, recognized speech, or recording content. |
-| NFR-012 | Demo viewport | Representative flows work without clipped or overlapping content in the approved demo viewport. Broad responsive coverage is optional. |
+| NFR-001 | 기술 | Vue 3·Vite·Pinia·Vue Router / Java 17·Spring Framework 5.x·MyBatis |
+| NFR-002 | 저장 | MySQL, 구조·모의 자료 버전 관리, Flyway 변경 순서 |
+| NFR-003 | 실행 재현 | 당일 안내로 DB·BE·FE 시작, 핵심 흐름 재현 |
+| NFR-004 | HTTP 계약 | OpenAPI로 FE·BE 필드 계약 통일 |
+| NFR-005 | 접근성 | 쉬운 문구·글씨·대비·조작 영역·상태 피드백 |
+| NFR-006 | 민감 정보 | 업무 테이블에 원문 PIN·OAuth 토큰·음성 본문·실금융 자격정보 저장 없음 |
+| NFR-007 | 반복 시연 | 준비된 세션에서 음성·카톡 실패에도 모의 금융 진행 |
+| NFR-008 | 규모 | 이번 기능에 필요한 구성만 구현 |
+| NFR-009 | 검증 | 관련 빌드·BE 검증·계약 확인·인수 시나리오 |
+| NFR-010 | 외부 서비스 | 음성·카톡 실패가 잔액·거래·판정 상태에 영향 없음 |
+| NFR-011 | 로그 | PIN·토큰·전체 계좌·인식 문자열·녹음 내용 제외 |
+| NFR-012 | 화면 | iPhone 12 Pro Max·큰 글씨·키보드·팝업·음성 제어 검증 |
 
-## Explicitly Out of Scope
+## 당일 순서
 
-- Real bank, card, payment, or settlement integration
-- Phone-number, SMS, password, or ordinary registration login
-- A login PIN
-- Separate guardian account, app, paired device, or remote approval
-- Guaranteed delivery to a guardian's Kakao account
-- Consent-document versioning and consent-change history
-- Registered-person deletion
-- Automatic saving of directly entered recipients or accounts
-- FDS rules based on new recipients, route deviation, elapsed time, weighted scoring, ML, or LLMs
-- Automatic anomaly blocking or added identity verification
-- A full Kakao notification-history table
-- Treating TTS or family voice as transaction approval or authentication
-- Instruction-text or audio-file revision history
-- MySQL BLOB storage for audio
-- LLM, RAG, embeddings, or open-ended conversation for voice commands
-- Raw click/touch coordinates or complete event streams
-- Help-request, independent-completion, medical, or cognitive evaluation metrics
-- Functional card-history, automatic-transfer, deposit-maturity, or exchange-rate inquiries
-- User-customizable shortcut icons
-- Production-grade settlement, audit, concurrency, idempotency, deployment, or monitoring
+| 순서 | 작업 | 완료물 |
+| --- | --- | --- |
+| 1 | 공통 화면·계약·데이터 설계 | 단계·상태·OpenAPI·데이터 구조 |
+| 2 | 환경·로그인·동의·모의 계좌 | 첫 이용 → 홈 |
+| 3 | 사람·복수 계좌·단축번호 | 기본 업무·관리·확인창 |
+| 4 | 조회·송금·FDS | 정상·주의·높은 주의·취소 |
+| 5 | AI/가족 안내·번호 입력 | 패턴 내 음성 편집·번호 확인창 |
+| 6 | 기록·분석·안내 개선 | 정확한 집계·비교·적용 |
+| 7 | 통합·기기 검증·시연 | 검증 결과·배포·발표자료 |
 
-## Feature Definition of Done
+## 우선순위
 
-An implementation Issue is complete only when:
+| 구분 | 항목 |
+| --- | --- |
+| 필수 기능 | 로그인·계좌·4탭·패턴·조회·송금·FDS·AI/가족 안내·번호 입력·분석 |
+| 필수 개선 | 큰 조작·쉬운 문구·업무 강조·금액 병기·단계 분리·오류 음성·패턴 내 편집 |
+| 화면 설계안 | D-01 음성 영역, D-02 분석, D-04 호칭/자산, D-05 직접 송금 순서 |
+| 선택 기술 | D-03 음성 미리 생성 |
 
-- it references the applicable requirement IDs and validation scenario;
-- the primary user action works end to end;
-- applicable loading, success, empty, validation-error, and server-error states work;
-- displayed values match the server response or a documented mock fallback;
-- no nonfunctional primary control remains deceptively active;
-- an API change is aligned across OpenAPI, backend, and frontend consumers;
-- new persisted data is introduced with a new Flyway migration rather than an applied-migration edit;
-- the smallest relevant frontend, backend, and API verification passes; and
-- the representative scenario does not regress an already completed core flow.
+## 외부 연계·실패
 
-## Issue Hierarchy and Boundaries
+| 연계 | 실패 시 |
+| --- | --- |
+| 카카오 로그인 | 재시도·취소. 로그인 성공으로 가장 금지 |
+| 모의 계좌 | 재시도, 준비 전 금융 제한 |
+| AI 음성 | 화면 안내·다시 듣기 |
+| 실제 녹음 | 권한/지원 안내·AI 선택 |
+| 번호 인식 | 수동 카드 선택 |
+| 카톡 | 실제 전송·모의 결과 구분 |
+| 전화 | 번호 표시 |
 
-```text
-Top-level MVP Epic
-└── Feature Epic
-    └── Implementation Issue
-```
+## Agent Notes
 
-- The top-level Epic tracks the MVP outcome and dependencies between feature Epics.
-- A feature Epic tracks one user value or cohesive domain flow.
-- An implementation Issue must represent one independently verifiable behavior that reasonably fits one branch and pull request.
-- Do not split a cohesive flow only because it spans multiple files.
-- If multiple Issues must edit the same shared file, create or finish the common foundation Issue first.
-- When an API is missing, order work as contract, backend, frontend integration, then integration validation.
-- A visual mock and its functional integration are not the same completion state.
-- Normal transfer, MEDIUM review, and HIGH review may be separate implementation or validation Issues when their completion criteria differ.
-- Do not hide an unimplemented expansion feature as an optional checkbox inside a required Issue.
-
-Each implementation Issue should state:
-
-- goal;
-- related requirement IDs;
-- implementation checklist;
-- prerequisites and follow-up dependencies;
-- owned files or allowed change area;
-- exclusions;
-- expected success, error, and empty states;
-- behavior-based completion criteria; and
-- minimum verification.
-
-## Known Contract and Implementation Gaps
-
-Record these as prerequisites until they are resolved:
-
-1. Kakao OAuth and logout do not yet have an OpenAPI contract.
-2. The current user response does not contain a phone number; profile UI must not invent one.
-3. Optional-consent API semantics differ from the current frontend's required-terms onboarding UI.
-4. The registered-person API returns one recipient account, while the current frontend presents multiple-account UI.
-5. Pattern description and step-instruction updates exist, but independent pre-start/step voice choices and server-provided reset defaults need contract verification or extension for FR-054 through FR-056 (#49). Product requirements do not establish new HTTP field names.
-6. Pre-start and step family-voice upload, playback metadata, replacement, and save-failure semantics need API/BE work (#58) before frontend integration (#59). Reuse existing step audio metadata; add a new Flyway migration only for missing persisted target choices or pre-start audio data. Do not edit applied migrations or model pre-start guidance as an executable step.
-7. Execution logging, step logging, analytics, and instruction suggestion do not have API contracts.
-8. Some OpenAPI pattern types are outside the MVP; template `available` values and frontend disabled states must agree.
-9. Current frontend FDS behavior based on new accounts or route deviation conflicts with the approved rules and must be replaced by server results.
-10. Current frontend routing and any parallel screen-state navigation must be consolidated under Vue Router.
+- These are plans, not completion evidence. Pre-event design does not authorize executing scenarios, migrations, integrations, or deployment.
+- Keep technical changes within the requested demo scope. Record contract/environment impact when changing the chosen stack.
+- Use mock PIN comparison data and file references; do not add production banking, guardian apps, ML models, or unnecessary infrastructure.
+- Define API fields and physical schemas during the event. Keep FE/BE behavior aligned with the contract.
+- The work order expresses dependencies, not fixed hours or staffing. Parallel team work can start after shared contracts are agreed.
+- Do not let optional pre-generation delay core flows. D entries are proposals, not extra approval gates.
+- Validate loading, empty, invalid, failed, and cancelled states; refetch saved data.
+- Verify agreement among transfer, balance, transaction, execution, and analytics.
+- Record actual-provider tests, substituted responses, and untested cases separately. Never claim real bank/MyData linkage.
+- Apply [related SC scenarios](validation-scenarios.md); report success only after execution.

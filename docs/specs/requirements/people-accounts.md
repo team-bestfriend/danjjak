@@ -1,56 +1,62 @@
-# People, Accounts, and Guardian Contact
+# 사람·계좌
 
-## Requirements
+[목차](../requirements.md)
 
-| ID | Requirement | Required behavior |
+## 요구사항
+
+| ID | 기능 | 완료 조건 |
 | --- | --- | --- |
-| FR-005 | Registered-person inquiry | Retrieve each saved person's name, relationship, and recipient account. |
-| FR-006 | Registered-person management | Create and update a registered person and recipient account. |
-| FR-007 | Mock-account inquiry | Retrieve owned accounts separately from registered people's recipient accounts. |
-| FR-008 | Default source account | Select the default owned account as the initial source account in a transfer. |
-| FR-009 | Guardian-contact management | Retrieve and update one guardian phone number per user. |
+| FR-005 | 사람 조회 | 이름·관계·등록 계좌 수·계좌 목록 표시 |
+| FR-006 | 사람·계좌 관리 | 사람 추가·수정, 기존 사람의 계좌 추가·수정 |
+| FR-007 | 계좌 구분 | 내 계좌와 받는 계좌를 별도 조회·선택 |
+| FR-008 | 기본 내 계좌 | 기본 계좌 우선 선택, 이번 송금에서 변경 가능 |
+| FR-009 | 보호자 연락처 | 사용자별 전화번호 한 개 조회·수정 |
 
-## Seed and Data Rules
+## 관계·입력
 
-- Initial seed data includes two owned accounts and registered son and daughter recipients with one recipient account each.
-- An owned account exposes an identifier, bank, masked account number, alias, balance, and default-account flag.
-- A recipient account does not expose or manage an owned balance or transfer PIN.
-- A registered-person card shows name, relationship, bank, masked account number, and selectable state.
-- Use the OpenAPI representation for ordinary account display. Full account input may be accepted for creation or update but must not be logged.
-- The current contract returns one recipient account per registered person. Extending the UI to manage multiple recipient accounts requires an OpenAPI change first.
-- Registered-person deletion is outside MVP scope. Do not expose an active delete action.
+| 대상 | 정보 | 규칙 |
+| --- | --- | --- |
+| 사용자 | 여러 내 계좌·등록 사람 | 내 계좌와 받는 계좌 구분 |
+| 등록 사람 | 이름·관계 | 최초 등록 시 계좌 한 개 포함 |
+| 받는 계좌 | 은행·계좌번호·선택적 별칭 | 사람별 여러 개, 계좌별 식별자 |
+| 송금 패턴 | 특정 받는 계좌 | 계좌 추가만으로 기존 연결 변경 없음 |
+| 내 계좌 | 잔액·모의 비밀번호 비교 자료·기본 여부 | 받는 계좌에 잔액·출금 비밀번호 부여 금지 |
 
-## Registered-person Create and Update
+| 입력 | 검증 |
+| --- | --- |
+| 이름·관계 | 필수, 각각 최대 50자·30자 |
+| 은행 | 목록에서 선택, 은행 코드 자동 결정 |
+| 계좌번호 | 하이픈 제외 숫자 8–20자리 |
+| 하이픈 | 숫자 묶음 사이 단일 하이픈만 허용 |
+| 별칭 | 선택, 최대 50자 |
+| 중복 | 같은 사람·은행·정규화 계좌번호는 중복 등록 불가 |
+| 보호자 번호 | 숫자·선택적 하이픈, 전화 전 표시·확인 |
 
-- Name, relationship, bank, and account number are required.
-- The frontend maps the selected bank to the contract's bank code; do not ask the user to type an internal bank code.
-- Validate supported account-number characters and length before submission without pretending to validate against a real bank.
-- After successful creation or update, refresh the person list and use the server-returned identifiers and display values.
-- On failure, keep safe entered values and do not add or change a local person as if the server succeeded.
-- An empty person list explains that no recipients are registered and provides a registration action when management is available.
+형식 검증만 수행. 실존 계좌·예금주 확인, 사람·계좌 삭제는 범위 제외.
 
-## Owned-account Behavior
+## 관리·선택 화면
 
-- Never mix owned accounts and recipient accounts in a selector without a clear role label.
-- The default owned account is initially selected for inquiry and transfer, but the user may choose another owned account.
-- A recipient account cannot be selected as a transfer source.
-- If no default account exists, use an explicit deterministic fallback from the returned owned-account order and record the data problem; do not treat a recipient account as the fallback.
-- If there is no owned account, transfer entry is blocked with a clear empty-state explanation.
+| 화면 | 표시·동작 |
+| --- | --- |
+| 사람 목록 | 이름·관계·‘등록 계좌 N개’ |
+| 사람 상세 | 해당 사람의 계좌 목록·추가·수정 |
+| 추가 버튼 | ‘사람 추가’, ‘계좌 추가’ 일반 버튼. 점선 장식 제거 |
+| 내 계좌 | 은행 로고/이름·별칭·가린 번호·잔액·기본 표시 |
+| 받는 계좌 | ‘민수님의 어느 계좌로 보낼까요?’ |
+| 선택 상태 | 체크 + ‘선택됨’ |
+| 계좌 한 개 | 정보 확인 후 ‘다음’. 자동 생략 없음 |
+| 계좌 여러 개 | 선택한 계좌로 최종 확인·송금 |
+| 보호자 미등록 | 연락처 등록 안내 |
 
-## Guardian-contact Behavior
+## Agent Notes
 
-- A user has at most one guardian phone number in the MVP.
-- When no contact exists, show an unregistered state and an action to add one.
-- Validate the supported phone-number format before saving.
-- After a successful update, later inquiry and call links use the same server-returned number.
-- A guardian call uses a `tel:` link after the user confirms the displayed number.
-- A desktop environment that cannot place a call must still display the number clearly.
-- The guardian phone number is not a Kakao recipient identifier and does not establish a guardian account or approval channel.
-
-## Completion Criteria
-
-- FR-005: Names, relationships, and accounts match the server response, and the empty state works.
-- FR-006: A create or update is visible after refetch with no frontend-only phantom record.
-- FR-007: UI and state never confuse owned accounts with recipient accounts.
-- FR-008: Transfer starts with the default owned account while still allowing another owned account to be chosen.
-- FR-009: A saved guardian number is returned by inquiry and used by the call action.
+- Use separate person/account identities; a transfer pattern links to one recipient account.
+- An account edit affects only that account. Preserve other accounts and pattern references.
+- Reuse the same number validation for registration and direct transfer.
+- Mask display numbers; expose input values only where editing requires them.
+- Persist mutations before reporting success. Prevent duplicate saves; retain safe input on failure.
+- A runtime source/recipient change must not silently update saved defaults or pattern links.
+- Without a default, select and explain the first available owned account. Without accounts, route to mock import.
+- A missing linked account requires pattern correction; never substitute another recipient.
+- A guardian phone number is neither a Kakao recipient ID nor transfer approval.
+- Acceptance: [SC-005, 010, 015, 017](validation-scenarios.md).

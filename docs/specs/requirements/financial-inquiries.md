@@ -1,48 +1,42 @@
-# Mock Financial Inquiries and Customer Center
+# 금융 조회
 
-## Requirements
+[목차](../requirements.md)
 
-| ID | Requirement | Required behavior |
+## 요구사항
+
+| ID | 기능 | 완료 조건 |
 | --- | --- | --- |
-| FR-032 | Financial inquiry | Retrieve mock balance, transaction history, pension deposits, maintenance fees, and utility payments. |
-| FR-033 | Transaction detail | Display direction/type, amount, counterparty, timestamp, and balance after the transaction. |
-| FR-034 | Customer-center call | Retrieve the support number from the server and initiate a call link. |
+| FR-032 | 모의 금융 조회 | 내 계좌의 잔액·거래·연금·관리비·공과금 조회 |
+| FR-033 | 거래 정보 | 입출금·금액·상대방·시각·거래 후 잔액 표시 |
+| FR-034 | 고객센터 | 제공된 번호 표시, 사용자 선택 시 전화 앱 연결 |
 
-## Account Selection
+**단축번호 → 실행 전 확인 → 시작 → 결과 확인 1단계**
 
-- Retrieve owned accounts and initially select the default account.
-- Allow the user to switch to another owned account and refetch the relevant inquiry.
-- Never present a registered person's recipient account as an inquiry source account.
-- If there are no owned accounts, show an explicit empty state and do not display seeded balance constants as live data.
+| 업무 | 표시·조작 |
+| --- | --- |
+| 잔액 | 최초 숨김, ‘잔액 보기/숨기기’ |
+| 거래내역 | 전체/입금/출금 필터, 최신순 |
+| 연금 | 연금 분류 입금 |
+| 관리비·공과금 | 해당 분류 거래 |
+| 내 계좌 변경 | 같은 결과 화면에서 재조회 |
+| 조회 기간 | 선택 계좌의 전체 저장 기간. ‘이번 달’ 고정 문구 금지 |
+| 금액 | 쉼표·원 단위, 상세 핵심 금액은 한글 병기 |
+| 고객센터 | 번호·‘전화 연결하기’, 컴퓨터에서도 번호 표시 |
 
-## Balance and Transaction History
+## 결과 상태
 
-- Display balance with a currency label and locale-appropriate thousands separators.
-- Present transaction history newest first unless the API explicitly defines another order.
-- Distinguish deposit and withdrawal using text or sign in addition to color.
-- Each row or detail view shows transaction type/direction, amount, counterparty or recipient, timestamp, and post-transaction balance.
-- A completed new transfer appears as an outgoing transaction after refetch and the displayed balance matches the server's updated balance.
-- When there are no transactions, state that no transactions exist and show the active period or category filter.
-- Never combine hardcoded preview transactions with server-returned live transactions in the same user history.
+| 상태 | 안내·완료 |
+| --- | --- |
+| 정상 자료 | 결과 표시 후 조회 완료 |
+| 정상 빈 결과 | 계좌·분류를 설명하고 조회 완료 가능 |
+| 계좌 없음 | 불러오기 안내, 완료 아님 |
+| 조회 실패 | 재시도, 완료 아님 |
+| 고객센터 | 전화 버튼 선택 시 패턴 완료. 실제 연결·상담 성공 의미 아님 |
 
-## Category Inquiries
+## Agent Notes
 
-- Pension, maintenance-fee, and utility screens use server transaction-category filters.
-- A category result identifies the selected account and category.
-- Category empty state does not imply that the account itself is missing.
-- Completing a category inquiry completes the linked pattern execution only after the result is successfully shown.
-- Card history, automatic transfers, deposit maturity, and exchange rates are not required MVP inquiries and must not appear as active completed features.
-
-## Customer-center Call
-
-- Retrieve the customer-center number from the server before displaying or using it.
-- Display the number and require a user action before opening a `tel:` link.
-- In a desktop environment that cannot place a call, keep the number readable and explain that call handling depends on the device.
-- Do not replace an active call control with a modal that only closes.
-- If contact retrieval fails, do not call a hardcoded number as if it came from the server; show retry or a documented demo fallback label.
-
-## Completion Criteria
-
-- FR-032: Every required inquiry screen displays server-backed mock data and handles account, category, and empty states.
-- FR-033: Seed transactions and newly completed transfers expose all required transaction detail fields.
-- FR-034: The call action uses the retrieved support number in an actual `tel:` link.
+- Query only owned accounts; switching accounts refetches that account's data without adding a template step.
+- Derive results from stored mock data, never fixed preview values. Refetch after transfer to show the new debit and balance.
+- Do not infer assistance or ability from balance visibility.
+- Use the returned support number; no invented fallback.
+- Amount formatting: [FR-059](mock-transfer.md). Acceptance: [SC-004, 010](validation-scenarios.md).

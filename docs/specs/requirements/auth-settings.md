@@ -1,68 +1,73 @@
-# Authentication, Consent, and Accessibility Settings
+# 인증·설정
 
-## Requirements
+[목차](../requirements.md)
 
-| ID | Requirement | Required behavior |
+## 요구사항
+
+| ID | 기능 | 완료 조건 |
 | --- | --- | --- |
-| FR-001 | Kakao login | A user can authenticate through Kakao OAuth. |
-| FR-002 | Seed-user association | On first login, the Kakao user identifier is associated with one unlinked seeded demo user. |
-| FR-003 | Current-user inquiry | The authenticated user's ID, name, consent-completion state, consent choices, and accessibility settings can be retrieved. |
-| FR-004 | Accessibility settings | Text size, guidance speed, and voice-guidance mode can be retrieved and changed. |
-| FR-053 | Optional consent | Usage-recording and guardian-sharing choices are independent; the user can complete the choice step even after declining both. |
+| FR-001 | 카카오 로그인 | 인증 성공·취소·실패 구분 |
+| FR-002 | 모의 사용자 연결 | 같은 카카오 사용자에 같은 모의 사용자 연결 |
+| FR-003 | 내 정보 | 이름·동의·접근성·계좌 준비 상태 조회 |
+| FR-004 | 접근성 | 글씨 크기·안내 속도·기본 음성 저장·적용 |
+| FR-053 | 선택 동의 | 이용 기록·보호자 알림을 독립 선택. 둘 다 거절 가능 |
+| FR-057 | 세션·로그아웃 | 새로고침 시 세션 확인, 로그아웃·만료 시 로그인 안내 |
+| FR-058 | 모의 계좌 불러오기 | 준비된 모의 본인 계좌 선택·추가 |
+| FR-060 | 서비스 이용방법 | 번호·음성·가족 안내·모의 금융·카톡 시연 설명 |
 
-## End-to-end Flow
+## 첫 이용
 
-1. An unauthenticated user views the service introduction and moves to Kakao login.
-2. After Kakao login succeeds, the server looks up the user by Kakao identifier.
-3. If there is no existing association, the server binds the identifier to one seeded user that has no Kakao identifier.
-4. The client retrieves the current user and checks whether consent choices have been completed.
-5. If incomplete, the user independently accepts or declines usage recording and guardian sharing, then submits the choices.
-6. After choice completion, the client applies the returned accessibility settings and opens shortcut home.
-7. A returning authenticated user with completed choices skips unnecessary registration and opens home.
+**소개 → 카카오 로그인 → 선택 동의 → 내 계좌 불러오기 → 홈**
 
-## Login Rules
+| 소개 메시지 | 설명 |
+| --- | --- |
+| 단축번호로 금융 업무 | 자주 하는 일을 번호로 찾아요. |
+| 가족이 준비한 안내 | 익숙한 목소리로 안내를 들어요. |
+| 이상 거래 확인 | 큰 금액이나 반복 송금은 한 번 더 확인해요. |
 
-- Do not provide phone-number login, SMS verification, password login, ordinary registration, or a login PIN.
-- The displayed name comes from seeded user data; do not require name entry as part of login.
-- The current-user contract has no phone number, so profile UI must not invent or hardcode one.
-- Keep the Kakao access token only in the server session for the current login and never persist it in an application table.
-- Distinguish OAuth cancellation from provider or server failure. Return to login and allow another attempt.
-- If OAuth start, callback, logout, or session behavior is missing from OpenAPI, define that contract before implementing the integration.
-- Disable the login control while login initiation is pending to prevent duplicate attempts.
+| 상황 | 처리 |
+| --- | --- |
+| 재로그인 | 완료한 단계 생략, 미완료 단계부터 진행 |
+| 로그인 취소·실패 | 재시도 제공, 임의 사용자·세션 생성 금지 |
+| 연결할 모의 사용자 없음 | 준비 필요 안내 |
+| 동의 저장 실패 | 선택값 유지·재시도 |
+| 로그아웃 | 세션 종료, 저장된 설정·금융 기록 유지 |
 
-## Seed-user Association Rules
+## 모의 계좌 불러오기
 
-- The association is stable: the same Kakao identifier must resolve to the same seeded user on later logins.
-- Never move an already-associated Kakao identifier to a different seeded user during ordinary login.
-- If no unlinked seeded user is available, return an explicit demo-capacity error instead of fabricating a new production-style registration flow.
-- Do not expose the Kakao identifier or token in ordinary UI, analytics events, or logs.
+1. ‘내 계좌를 불러올까요?’와 ‘실제 은행에 연결하지 않는 연습용 계좌예요.’ 표시.
+2. 후보의 은행·별칭·가린 계좌번호·준비 상태 확인 및 선택.
+3. ‘계좌 불러오기’ → 저장 성공 → 홈.
 
-## Consent Rules
+| 상태 | 동작 |
+| --- | --- |
+| 추가 계좌 | 설정 → 내 계좌 관리 → 계좌 불러오기 |
+| 재요청·재로그인 | 기존 계좌·잔액·거래·패턴 유지, 중복 추가 없음 |
+| 후보 없음 | ‘불러올 계좌가 없어요.’ |
+| 실패 | 오류 안내·재시도 |
+| 계좌 준비 전 | 금융 실행 제한, 설정·이용방법·로그아웃 허용 |
 
-- `usage recording` and `guardian sharing` are independent optional booleans.
-- The four combinations of accept/decline are all valid, including declining both.
-- Persist choice completion separately from the two choice values so a deliberate double-decline is not mistaken for an incomplete form.
-- When usage recording is declined, do not create new pattern-execution or step-action records.
-- When usage recording is declined or has no data, analysis UI states the real reason and must not present preview data as the user's history.
-- When guardian sharing is declined, do not run analysis-sharing or guidance-sharing behavior intended for a guardian.
-- The relationship between guardian-sharing consent and HIGH-risk Kakao demo notification must be explicit in the API contract; do not infer it in only one client or server layer.
-- A failed consent save keeps the user's choices visible as unsaved values and does not open home as if persistence succeeded.
+## 설정
 
-## Accessibility Rules
+| 항목 | 내용 |
+| --- | --- |
+| 내 정보 | 이름만 표시. ‘단짝 시연 사용자’ 삭제 |
+| 글씨 크기 | 작게 / 보통 / 크게, 미리보기 |
+| 안내 속도 | 느리게 / 보통 / 빠르게, 미리듣기 |
+| 기본 안내 음성 | AI 음성 / 가족 음성 |
+| 사람 및 계좌 관리 | 사람 추가·수정, 기존 사람의 계좌 추가·수정 |
+| 내 계좌 관리 | 본인 계좌 확인·모의 계좌 추가 |
+| 보호자 연락처 | 전화번호 조회·수정 |
+| 선택 동의 | 이용 기록·보호자 알림 재선택 |
+| 서비스 이용방법 | 홈에서 줄인 상세 설명 |
+| 로그아웃 | 세션 종료 |
 
-- Text size is one of `SMALL`, `NORMAL`, or `LARGE`.
-- Guidance speed is one of `SLOW`, `NORMAL`, or `FAST`.
-- Voice-guidance mode is one of `TTS` or `FAMILY` and is the default for guidance targets without an explicit choice.
-- Apply retrieved settings before or during initial home rendering so the UI does not remain in a conflicting default mode.
-- After a successful update, apply the returned values to the current screen immediately.
-- On save failure, restore the previous saved values or visibly mark the new values as unsaved.
-- A text-size change must not clip or overlap primary information and actions in the approved demo viewport.
-- Guidance speed controls the TTS request mapping, including draft previews. Resolve explicit pre-start or step choices before the global voice default, as defined in [Guidance and Voice](guidance-voice.md#playback-selection). Changing the global default does not overwrite saved target choices or recordings.
+## Agent Notes
 
-## Completion Criteria
-
-- FR-001: OAuth success, user cancellation, and provider/server failure are visibly distinguishable and retryable.
-- FR-002: Repeated login by the same Kakao user never selects another seeded user.
-- FR-003: Displayed user identity, consent state, and settings match the current-user response rather than hardcoded frontend data.
-- FR-004: Saving each setting survives refetch and changes actual UI or TTS behavior.
-- FR-053: All four consent combinations persist, and declining both still marks the choice step complete.
+- Persist consent completion separately from both optional values; false/false is valid.
+- Without usage consent, collect no new pattern/step behavior. Financial transactions remain separate.
+- Explain self-delivery in guardian consent and help; follow [notification rules](fds-guardian.md).
+- Keep tokens server-side; exclude them from UI, URLs, and logs. Prevent duplicate auth/settings submissions.
+- Global voice settings apply only to targets without an explicit override. Preserve recordings and explicit choices.
+- Preserve drafts on save failure; never report unsaved values as persisted. Do not request real banking credentials.
+- Acceptance: [SC-001, 002, 014, 016, 018](validation-scenarios.md).

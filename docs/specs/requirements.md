@@ -1,56 +1,52 @@
-# Danjjak MVP Requirements
+# 단짝 해커톤 기능명세서
 
-## Document Status
-
-| Field | Value |
+| 항목 | 내용 |
 | --- | --- |
-| Status | Draft for review |
-| Baseline date | 2026-09-04 |
-| Voice-editing clarification | 2026-09-06: FR-054 through FR-056 and expanded SC-011; pre-start and per-step voice choice, recording, and shared-script editing |
-| Audience | Product, frontend, backend, API, database, test, and coding agents |
-| Purpose | Define product behavior and acceptance criteria for Epic and implementation Issue planning |
-| Product boundary | Runnable hackathon MVP using deterministic mock financial data, not a production banking system |
+| 기준일 | 2026-09-07 |
+| 목적 | 본선 당일 개발할 기능·화면·구조·완료 조건 |
+| 범위 | 고령 사용자를 위한 모의 금융 서비스 |
+| 기준 화면 | iPhone 12 Pro Max 세로 |
+| 문서 언어 | 기능·화면·결정: 한국어 / Agent 작업 지침: 영어 |
+| 준비 단계 | 사전: 기획·설계·기술 검토 / 본선: 구현·연동·검증·배포 |
+| 상태 | 목표 명세. 구현 완료나 대회 반입 승인을 뜻하지 않음 |
 
-## Source Authority
+## 확정 사항
 
-- These requirement documents define product intent, user flows, business rules, scope, and behavior-based completion criteria.
-- `contracts/openapi.yaml` is authoritative for HTTP paths, methods, fields, schemas, and status codes.
-- Flyway migrations under `db/migration` are authoritative for tables, columns, constraints, and seed data.
-- The latest approved Figma design is the initial visual reference. Approved product behavior and current user instructions take precedence over stale Figma output.
-- A current explicit user decision takes precedence over these documents. Persist an accepted decision by updating the affected requirement and validation scenario.
-- When sources disagree, do not silently choose one. Align the requirement, OpenAPI contract, schema, and implementation in the same change, or record the conflict and dependency in the Issue.
+| 항목 | 결정 |
+| --- | --- |
+| 하단 탭 | 홈 / 단축번호 / 이용 분석 / 설정 |
+| 번호 음성 | 번호 인식 → 실행 전 확인창 → 시작하기 |
+| 카톡 시연 | 버튼: ‘보호자에게 카톡 보내기’ / 실제: 본인 계정 ‘나에게 보내기’ |
+| 받는 계좌 | 사람별 복수 계좌. 한 개여도 확인 단계 유지 |
+| 화면 | 업무 이름 우선, 큰 조작 영역, 쉬운 문구, 숫자·한글 금액 |
+| 음성 편집 | 패턴 수정 안에서 설명·단계별 문구와 음성 편집 |
+| 계좌 준비 | 로그인 후 모의 계좌 불러오기. 실제 은행·마이데이터 연동 제외 |
 
-## Reading Route
+## 문서 목록
 
-Read this index first, then read only the files required by the current task.
+| 문서 | 요구사항 |
+| --- | --- |
+| [제품 범위](requirements/product-scope.md) | 목적·역할·제외 범위 |
+| [공통 UX](requirements/shared-ux.md) | UX-001–014 |
+| [아키텍처](requirements/architecture.md) | 구성·책임·데이터 관계 |
+| [인증·설정](requirements/auth-settings.md) | FR-001–004, 053, 057–058, 060 |
+| [사람·계좌](requirements/people-accounts.md) | FR-005–009 |
+| [단축번호·패턴](requirements/shortcuts-patterns.md) | FR-010–017 |
+| [음성·단계 안내](requirements/guidance-voice.md) | FR-018–027, 054–056, 061 |
+| [모의 송금](requirements/mock-transfer.md) | FR-028–031, 059 |
+| [금융 조회](requirements/financial-inquiries.md) | FR-032–034 |
+| [이상거래·보호자 대응](requirements/fds-guardian.md) | FR-035–043 |
+| [이용 분석](requirements/usage-analysis.md) | FR-044–052 |
+| [개발 범위·순서](requirements/delivery-constraints.md) | NFR-001–012 |
+| [검증 시나리오](requirements/validation-scenarios.md) | SC-001–018 |
+| [수정사항·결정](requirements/design-decisions.md) | CH-01–34, D-01–05 |
 
-| Task area | Required document | Requirement IDs |
-| --- | --- | --- |
-| Product scope, roles, or terminology | [Product Scope](requirements/product-scope.md) | Product-wide |
-| Shared UI, routing, accessibility, loading, errors, or navigation | [Shared UX](requirements/shared-ux.md) | UX-001 through UX-014 |
-| Login, consent, current user, or accessibility settings | [Authentication and Settings](requirements/auth-settings.md) | FR-001 through FR-004, FR-053 |
-| People, owned accounts, recipient accounts, or guardian contact | [People and Accounts](requirements/people-accounts.md) | FR-005 through FR-009 |
-| Shortcut home, templates, pattern creation, editing, ordering, or execution start | [Shortcuts and Patterns](requirements/shortcuts-patterns.md) | FR-010 through FR-017 |
-| Step highlight, captions, TTS, family voice, recording, voice editors, shared scripts, or voice command | [Guidance and Voice](requirements/guidance-voice.md) | FR-018 through FR-027, FR-054 through FR-056 |
-| Balance, transactions, pension, fees, utilities, or customer-center calls | [Financial Inquiries](requirements/financial-inquiries.md) | FR-032 through FR-034 |
-| Registered-recipient or direct mock transfer | [Mock Transfer](requirements/mock-transfer.md) | FR-028 through FR-031 |
-| FDS, anomaly review, guardian notification, or guardian call | [FDS and Guardian Response](requirements/fds-guardian.md) | FR-035 through FR-043 |
-| Execution logging, metrics, difficult-step analysis, or wording improvement | [Usage Analysis](requirements/usage-analysis.md) | FR-044 through FR-052 |
-| API/DB boundaries, non-functional constraints, known gaps, or Issue design | [Delivery Constraints](requirements/delivery-constraints.md) | NFR-001 through NFR-012 |
-| End-to-end validation or cross-feature Issue planning | [Validation Scenarios](requirements/validation-scenarios.md) | SC-001 through SC-012 |
+## Agent Guide
 
-### Cross-cutting Tasks
-
-- For a user-visible feature, read its feature document and [Shared UX](requirements/shared-ux.md).
-- For an API, persistence, or integration change, also read [Delivery Constraints](requirements/delivery-constraints.md).
-- For an end-to-end test or whole-feature Epic, also read the matching scenarios in [Validation Scenarios](requirements/validation-scenarios.md).
-- Read all requirement files only for whole-MVP planning, a full requirement audit, or a cross-domain integration review.
-
-## Requirement Maintenance
-
-- Preserve existing requirement and scenario IDs. Add a new ID instead of renumbering unrelated entries.
-- Keep each rule and acceptance criterion in its owning feature document; link to it instead of copying it elsewhere.
-- Update affected validation scenarios when a business rule or user flow changes.
-- Update `contracts/openapi.yaml` when the HTTP contract changes.
-- Add a new Flyway migration when persisted data changes; never edit an applied shared migration.
-- Reference applicable requirement IDs in GitHub Epics, Issues, and pull requests.
+- Read this index → relevant feature spec → related CH/D decisions and SC scenarios.
+- Add shared UX for UI work; architecture and delivery constraints for BE/API/DB work. Follow cross-feature links where needed.
+- Priority: current user decisions → target specs → implementation references. A proposal, optional feature, or scenario is not completed work.
+- Preserve IDs and business rules. Keep each rule in its owning document; link instead of duplicating. Update affected scenarios when behavior changes.
+- Use Korean for product rules, UI copy, and human-facing design descriptions; English for agent workflow and implementation instructions. Do not duplicate both languages.
+- Pre-event work follows the design scope. Define concrete HTTP fields and physical schemas during the event.
+- For a new repository, copy this index with its requirements folder and route the new repository's AGENTS.md here.

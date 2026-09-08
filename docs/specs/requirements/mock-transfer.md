@@ -1,92 +1,85 @@
-# Mock Transfer
+# 모의 송금
 
-## Requirements
+[목차](../requirements.md)
 
-| ID | Requirement | Required behavior |
+## 요구사항
+
+| ID | 기능 | 완료 조건 |
 | --- | --- | --- |
-| FR-028 | Transfer input | Select a source account and recipient account, enter an amount, and review the full transfer. |
-| FR-029 | Direct transfer | Transfer to an unsaved recipient using name, bank, bank code, and account number. |
-| FR-030 | Transfer PIN | Enter the selected owned account's mock PIN before submitting a transfer. |
-| FR-031 | Atomic mock transfer | A normal transfer deducts balance and creates a transaction as one server transaction. |
+| FR-028 | 송금 정보 | 내 계좌·받는 계좌·금액 선택 후 전체 확인 |
+| FR-029 | 직접 송금 | 미등록 이름·은행·계좌번호를 단계별 입력 |
+| FR-030 | 본인 확인 | 선택한 내 계좌의 모의 비밀번호 4자리 확인 |
+| FR-031 | 모의 처리 | 잔액 차감·거래 생성을 함께 성공 또는 함께 취소 |
+| FR-059 | 금액 표시 | 쉼표·원 단위, 입력·확인·경고·완료에 한글 병기 |
 
-## Required Flow
+## 등록된 사람 송금
 
-```text
-Transfer start
-→ Source account
-→ Recipient method
-→ Registered recipient/account or direct-recipient input
-→ Amount
-→ Transfer review
-→ PIN
-→ Submit
-→ Normal completion or anomaly review
-```
+| 순서 | 화면 | 질문·행동 |
+| --- | --- | --- |
+| 1 | 보낼 계좌 | ‘어느 내 계좌에서 보낼까요?’ → 다음 |
+| 2 | 받는 사람 | ‘누구에게 보낼까요?’ → 다음 |
+| 3 | 받는 계좌 | 선택한 사람의 계좌 확인 → 다음 |
+| 4 | 보낼 금액 | ‘얼마를 보낼까요?’ → 다음 |
+| 5 | 최종 확인 | ‘이대로 보낼까요?’ → ‘50,000원 보내기’ |
+| 6 | 본인 확인 | 계좌 비밀번호 4자리 → 본인 확인 후 보내기 |
 
-## Shared Transfer State
+- 상단: ‘송금 1단계 · 보낼 계좌’처럼 순번·이름 병기.
+- 기본·연결 계좌가 있어도 확인 단계 유지. 계좌 한 개도 동일.
+- 최종 확인: 내 계좌·받는 사람·은행/계좌·금액·수수료 0원.
+- 금액 포함 버튼은 본인 확인으로 이동. ‘계좌 비밀번호를 확인한 뒤 보내요.’ 안내.
+- 실제 송금 요청은 비밀번호 입력 후 최종 제출 시 수행.
 
-- Direct transfer from home and transfer-pattern execution use the same transfer state model and server operation.
-- Starting a new transfer clears all prior recipient, amount, PIN, anomaly, transaction, and transient completion state.
-- Back navigation preserves safe non-sensitive values so the user can correct them.
-- Completion, cancellation, logout, or session loss clears the full transient transfer state.
-- Never restore a PIN after navigation reload or error.
+## 직접 입력: D-05 기본안
 
-## Source Account
+**내 계좌 → 이름 → 은행 → 계좌번호 → 받는 계좌 확인 → 금액 → 최종 확인 → 본인 확인**
 
-- Initially select the default owned account and show bank, masked number, alias, and current balance.
-- Allow another owned account to be selected before review.
-- A recipient account cannot become a source account.
-- If the selected account becomes missing or unavailable, block submission and return to account selection after refresh.
+| 항목 | 규칙 |
+| --- | --- |
+| 진입 | 홈 직접 송금 → 등록된 사람 또는 직접 입력 |
+| 단계 | 입력 화면 분리·연속 번호 필수, 상세 순서는 D-05 |
+| 이름 | 유효한 비공백 값, 최대 50자 |
+| 은행 | 목록 선택, 코드 직접 입력 없음 |
+| 계좌번호 | [공통 계좌 형식](people-accounts.md) |
+| 확인 | 이름·은행·계좌번호 함께 표시 |
+| 저장 | 연락처 자동 등록 없음 |
+| 분석 | 홈 직접 송금은 패턴 이용 횟수 제외 |
+| 반복 판정 | 완료된 직접 송금 거래도 포함 |
 
-## Registered Recipient
+## 금액
 
-- In direct-transfer entry, selecting a registered person selects that person's recipient account.
-- In a transfer pattern, preselect the person and account linked by the pattern.
-- If the linked account is missing or unavailable, stop and direct the user to repair the pattern recipient instead of silently choosing another recipient.
-- Show recipient name, relationship, bank, and masked account number during selection and review.
+| 숫자 | 표시 | 한글 |
+| --- | --- | --- |
+| 15000 | 15,000원 | 만 오천원 |
+| 50000 | 50,000원 | 오만원 |
+| 100000 | 100,000원 | 십만원 |
+| 1000000 | 1,000,000원 | 백만원 |
+| 10000000 | 10,000,000원 | 천만원 |
+| 100000000 | 100,000,000원 | 일억원 |
 
-## Direct Recipient
+- 0보다 큰 정수 원 단위. 빈 값·음수·소수·비숫자 제출 불가.
+- 쉼표는 표시용. 숫자와 한글은 같은 금액으로 즉시 갱신.
+- 잔액 초과: ‘잔액이 부족해요. 보낼 금액을 확인해 주세요.’
+- 목록·조회: 쉼표·원 단위. 송금 결정 화면: 한글 병기.
 
-- Require recipient name, bank, and account number. Map the selected bank to the request's bank code.
-- Validate supported characters and length without performing a real-bank account check.
-- Keep the same direct-recipient values through amount, review, and submission.
-- Do not automatically add the direct recipient or account to registered people after completion.
+## 결과·오류
 
-## Amount and Review
+| 결과 | 화면 | 데이터 |
+| --- | --- | --- |
+| 완료 | ‘김민수님에게 50,000원을 보냈어요.’, 한글 금액·잔액·홈으로 가기 | 차감 + 거래 한 건 |
+| 추가 확인 | [이상거래 화면](fds-guardian.md) | 결정 전 차감·완료 거래 없음 |
+| 비밀번호 오류 | ‘비밀번호가 맞지 않아요. 다시 입력해 주세요.’ 화면·음성 안내 | 비밀번호만 비움, 안전한 입력 유지 |
+| 잔액 부족 | 금액 수정 | 차감·거래 없음 |
+| 연결 실패·결과 미확인 | 확인 불가 안내 | 성공 추정·자동 재송금 없음 |
+| 진행 정보 소실 | 초기화 이유·처음부터 진행 | 비밀번호 복원 없음 |
 
-- Amount is an integer of at least KRW 1.
-- Do not submit zero, negative, nonnumeric, or contract-overflow values.
-- The UI may warn from the currently displayed balance, but the server makes the final insufficient-balance decision.
-- Review shows source account, recipient name, recipient bank/account, amount, and fee.
-- The user can return from review to correct source, recipient, or amount without losing unrelated safe input.
-- Review values and the eventual request must be identical.
+## Agent Notes
 
-## PIN and Submission
-
-- The PIN belongs to the selected mock owned account and is not a login PIN.
-- Do not persist the raw PIN, keep it longer than the active submission, or include it in logs, error messages, URLs, or analytics.
-- After PIN entry, send one transfer request and disable duplicate submission until a response or recoverable failure occurs.
-- Distinguish PIN mismatch, insufficient balance, missing account, invalid recipient, and invalid request.
-- After any rejected request, clear PIN. Recipient and amount may remain for correction when safe.
-
-## Server Response Handling
-
-- `COMPLETED`: store the returned transaction ID and updated balance in transient result state, then show completion.
-- `REQUIRES_REVIEW`: do not show completion; show the anomaly screen using returned anomaly ID, risk level, reasons, and recent-transfer count.
-- Request error: do not show completion; offer retry or correction based on the error.
-- Completion displays the confirmed recipient, amount, transaction ID, and server-returned post-transfer balance.
-- Refetched balance and transaction history must match the completed response.
-
-## Atomicity
-
-- On a normal transfer, balance deduction and outgoing-transaction creation succeed or fail together in one Spring transaction.
-- A PIN failure, balance failure, validation failure, or cancelled anomaly creates no completed transfer and changes no balance.
-- FDS evaluation occurs on the server immediately before committing the transfer result.
-- Do not connect to a real bank or payment provider.
-
-## Completion Criteria
-
-- FR-028: Source, recipient, amount, and review remain consistent through forward and backward navigation.
-- FR-029: The completed direct-recipient transaction contains the entered recipient data and does not change the registered-person list.
-- FR-030: Only the correct mock PIN permits processing, and no raw PIN is persisted or exposed.
-- FR-031: Successful balance and transaction mutations occur together; every failed path changes neither.
+- Validate source ownership, PIN, balance, and FDS on the server at submission; recheck balance when continuing an anomaly.
+- Keep selected source/recipient consistent across execution, submission, review, and result. Runtime choices must not alter saved defaults or pattern links.
+- Treat name/account validation as format checking, not bank ownership verification.
+- Mask PIN input; exclude it from storage, logs, analytics, and speech. Keep financial actions usable when audio fails.
+- Reject inconsistent numeric/word amounts; never interpret 100000000 as 십만원.
+- Clear prior transient state on completion, cancellation, and a new transfer. A result URL without verified data must not fabricate success.
+- Persist debit and transaction atomically. Coordinate the last visit and execution exactly once using [logging boundaries](usage-analysis.md).
+- A post-completion query/logging error must not trigger another transfer.
+- Acceptance: [SC-005–009, 015, 017–018](validation-scenarios.md).
