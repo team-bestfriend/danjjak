@@ -23,5 +23,6 @@ public final class UsageAnalysisDtos {
 
     public record StepAnalysisResponse(
             long patternId, long stepId, String stepCode, String stepName, int stepOrder,
-            long visitCount, long errorScore, BigDecimal averageDurationSeconds) {}
+            long visitCount, long errorScore, long retryCount, long backCount,
+            long wrongTouchCount, long routeDeviationCount, BigDecimal averageDurationSeconds) {}
 }

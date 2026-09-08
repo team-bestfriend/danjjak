@@ -9,6 +9,7 @@ import { bindRouter } from '../src/router/navigation.js';
 
 // 브라우저 의존성 없이 실제 화면의 렌더링과 버튼 동작을 검증한다.
 const source = await readFile(new URL('../src/views/AnalysisView.vue', import.meta.url), 'utf8');
+const routerSource = await readFile(new URL('../src/router/index.js', import.meta.url), 'utf8');
 const compiled = compileScript(parse(source).descriptor, { id: 'analysis-test', inlineTemplate: true });
 const code = ("import { h } from 'vue';\n" + compiled.content).replace(/import (\w+) from '([^']+\.vue)';/g,
   (_, name) => "const " + name + " = { setup: (_, { slots }) => () => h('div', null, slots.default?.()) };")
@@ -89,29 +90,68 @@ for (const [status, message, button, destination] of [
 }
 
 for (const duration of [null, 0, 12.5]) {
-  test('서버의 어려운 단계와 평균 시간 ' + duration + '을 그대로 표시한다', async () => {
-    const selected = { patternId: 71, stepId: 8, stepCode: 'AMOUNT', stepName: '금액 입력', stepOrder: 2, visitCount: 3, errorScore: 2, averageDurationSeconds: duration };
+  test('서버가 선택한 단계와 이용 기록을 쉽게 표시한다: ' + duration, async () => {
+    const selected = {
+      patternId: 71, stepId: 8, stepCode: 'AMOUNT', stepName: '금액 입력', stepOrder: 2,
+      visitCount: 3, errorScore: 4, retryCount: 2, backCount: 1, wrongTouchCount: 0,
+      routeDeviationCount: 1, averageDurationSeconds: duration,
+    };
     globalThis.fetch = async () => response({
       ...empty('AVAILABLE'),
       patterns: [{ patternId: 71, title: '시험 송금', completedCount: 4 }, { patternId: 72, title: '시험 잔액', completedCount: 0 }],
       steps: [{ ...selected, stepName: '클라이언트가 선택하면 안 되는 단계', errorScore: 999 }],
       difficultStep: selected,
     });
-    const text = content(await mount());
-    for (const expected of ['2026-09-01 ~ 2026-09-07', '시험 송금', '4회', '시험 잔액', '0회', '금액 입력', '3회', '2점', duration === null ? '측정 기록 없음' : duration + '초']) {
+    let target;
+    bindRouter({ push: (value) => { target = value; } });
+    const root = await mount();
+    const text = content(root);
+    for (const expected of ['2026-09-01 ~ 2026-09-07', '시험 송금', '시험 잔액', '금액 입력 단계', '다시 시도', '2회', '이전 단계로 이동', '진행 중 다른 화면으로 이동', '단계 방문', '3회']) {
       assert.ok(text.includes(expected), expected);
     }
+    assert.ok(!text.includes('다른 항목 선택'));
+    if (duration === null) assert.ok(!text.includes('평균 머문 시간'));
+    else assert.ok(text.includes('평균 머문 시간') && text.includes(duration + '초'));
+    assert.ok(!text.includes('4점'));
+    assert.ok(!text.includes('오류 행동 점수'));
     assert.ok(!text.includes('클라이언트가 선택하면 안 되는 단계'));
     assert.match(text, /금융 업무 실행\s+4\s+회/);
+    const action = flatten(root).find((item) => item.props.onClick && content(item).includes('이 단계 안내 문구 쉽게 바꾸기'));
+    action.props.onClick();
+    assert.equal(target.name, 'instruction-improvement');
   });
 }
 
 test('완료 횟수가 모두 0이고 어려운 단계가 null이어도 결과를 대체하지 않는다', async () => {
   globalThis.fetch = async () => response({ ...empty('AVAILABLE'), patterns: [{ patternId: 1, title: '취소된 업무', completedCount: 0 }] });
   const root = await mount();
-  assert.ok(content(root).includes('분석할 단계 방문 기록이 없어'));
+  assert.ok(content(root).includes('안내를 살펴볼 단계 기록이 아직 없어'));
   assert.ok(content(root).includes('0회'));
   assert.ok(!JSON.stringify(flatten(root).map((item) => item.props.style)).includes('NaN'));
+});
+
+test('행동 기록이 없으면 어려움이나 실수로 단정하지 않는다', async () => {
+  globalThis.fetch = async () => response({
+    ...empty('AVAILABLE'),
+    patterns: [{ patternId: 71, title: '시험 송금', completedCount: 1 }],
+    difficultStep: {
+      patternId: 71, stepId: 8, stepName: 'PIN 입력', visitCount: 1, errorScore: 0,
+      retryCount: 0, backCount: 0, wrongTouchCount: 0, routeDeviationCount: 0,
+      averageDurationSeconds: null,
+    },
+  });
+  const text = content(await mount());
+  assert.ok(text.includes('이 단계의 안내 문구를 한번 살펴보세요'));
+  for (const hidden of ['다시 시도', '이전 단계로 이동', '다른 항목 선택', '진행 중 다른 화면으로 이동', '평균 머문 시간']) {
+    assert.ok(!text.includes(hidden));
+  }
+  assert.ok(!text.includes('어려웠'));
+  assert.ok(!text.includes('실수'));
+});
+
+test('안내 문구 개선 화면 라우트가 등록되어 있다', () => {
+  assert.ok(routerSource.includes('import InstructionImprovementView from "../views/InstructionImprovementView.vue"'));
+  assert.match(routerSource, /path: "\/analysis\/improvement"[\s\S]*name: "instruction-improvement"[\s\S]*component: InstructionImprovementView/);
 });
 
 test('로딩, 서버 실패, 재시도 중 중복 요청 방지 및 성공 복구', async () => {
