@@ -394,7 +394,7 @@ test('본인 계좌와 등록 수취 계좌를 분리하고 기본 계좌를 선
   assert.equal(store.accountsByPerson[7][0].balance, undefined);
 });
 
-test('모의 본인 계좌의 불러옴 상태와 후보를 함께 조회한다', async () => {
+test('본인 계좌의 불러옴 상태와 후보를 함께 조회한다', async () => {
   const store = createStore();
   globalThis.fetch = async (url) => {
     assert.equal(url, '/api/accounts/import-options');
@@ -424,7 +424,7 @@ test('모의 본인 계좌의 불러옴 상태와 후보를 함께 조회한다'
   assert.equal(store.mockAccountImportOptions[1].masked, '123-****-002');
 });
 
-test('모의 계좌 불러오기 중복 요청을 막고 저장 결과를 다시 조회한다', async () => {
+test('계좌 불러오기 중복 요청을 막고 저장 결과를 다시 조회한다', async () => {
   const store = createStore();
   store.currentUser = {
     userId: 1,

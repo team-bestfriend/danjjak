@@ -15,7 +15,7 @@ const ERROR_MESSAGES = {
   INVALID_RECIPIENT: '받는 계좌 정보를 다시 확인해 주세요.',
   INVALID_REQUEST: '입력한 정보를 다시 확인해 주세요.',
   ACCOUNT_ALREADY_EXISTS: '이미 등록된 계좌입니다.',
-  ACCOUNT_IMPORT_OPTION_NOT_FOUND: '불러올 모의 계좌를 찾을 수 없습니다.',
+  ACCOUNT_IMPORT_OPTION_NOT_FOUND: '불러올 계좌를 찾을 수 없습니다.',
   REGISTERED_PERSON_NOT_FOUND: '등록된 사람을 찾을 수 없습니다.',
   ANOMALY_ALREADY_RESOLVED: '이미 처리된 이상거래입니다.',
   SESSION_REQUIRED: '로그인이 만료되었습니다. 카카오 로그인 후 다시 시도해 주세요.',
@@ -648,7 +648,7 @@ export const useAppStore = defineStore('app', () => {
         return true;
       } catch (error) {
         mockAccountImportOptions.value = [];
-        accountImportError.value = toMessage(error, '모의 계좌를 불러오지 못했습니다.');
+        accountImportError.value = toMessage(error, '계좌를 불러오지 못했습니다.');
         return false;
       } finally {
         accountImportLoading.value = false;
@@ -672,7 +672,7 @@ export const useAppStore = defineStore('app', () => {
       ]);
       return saved;
     } catch (error) {
-      accountImportError.value = toMessage(error, '선택한 모의 계좌를 불러오지 못했습니다.');
+      accountImportError.value = toMessage(error, '선택한 계좌를 불러오지 못했습니다.');
       throw error;
     } finally {
       accountImportSavingId.value = null;

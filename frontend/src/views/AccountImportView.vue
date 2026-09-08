@@ -10,14 +10,14 @@
 
     <main class="flex-1 overflow-y-auto px-5 pb-6 pt-7">
       <h1 class="text-[28px] font-bold leading-snug text-[#111827]">
-        {{ manageMode ? '내 모의 계좌를 관리해요' : '내 계좌를 불러올까요?' }}
+        {{ manageMode ? '내 계좌를 관리해요' : '내 계좌를 불러올까요?' }}
       </h1>
       <p class="mt-3 text-[16px] leading-relaxed text-[#6B7280]">
-        실제 은행에 연결하지 않는 연습용 계좌예요. 잔액과 거래내역도 모두 모의 자료입니다.
+        사용할 계좌를 선택해 주세요. 불러온 계좌의 잔액과 거래내역을 확인할 수 있어요.
       </p>
 
       <p v-if="store.accountImportLoading" class="mt-7 rounded-[18px] bg-white p-5 text-[#6B7280]" role="status">
-        모의 계좌를 불러오고 있어요…
+        계좌를 불러오고 있어요…
       </p>
 
       <div v-else-if="store.accountImportError && options.length === 0" class="mt-7 rounded-[18px] border border-[#FCA5A5] bg-[#FEF2F2] p-5">
@@ -35,7 +35,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <p class="text-[19px] font-bold text-[#111827]">{{ account.bankName }}</p>
-                  <p class="mt-1 text-[15px] text-[#6B7280]">{{ account.accountAlias || '내 모의 계좌' }}</p>
+                  <p class="mt-1 text-[15px] text-[#6B7280]">{{ account.accountAlias || '내 계좌' }}</p>
                   <p class="mt-1 font-mono text-[15px] text-[#6B7280]">{{ account.masked }}</p>
                 </div>
                 <span class="rounded-full bg-[#DCFCE7] px-3 py-1 text-[14px] font-bold text-[#166534]">불러옴</span>
@@ -68,7 +68,7 @@
                     <span v-if="selectedAccountId === account.accountId" class="text-[14px] font-bold text-[#92650A]">선택됨</span>
                     <span v-else class="text-[14px] text-[#6B7280]">불러오기 전</span>
                   </span>
-                  <span class="mt-1 block text-[15px] text-[#6B7280]">{{ account.accountAlias || '내 모의 계좌' }}</span>
+                  <span class="mt-1 block text-[15px] text-[#6B7280]">{{ account.accountAlias || '내 계좌' }}</span>
                   <span class="mt-1 block font-mono text-[15px] text-[#6B7280]">{{ account.masked }}</span>
                   <span class="mt-3 block text-[16px] font-bold text-[#374151]">잔액 {{ formatWon(account.balance) }}</span>
                 </span>
@@ -77,7 +77,7 @@
           </div>
           <div v-else class="mt-3 rounded-[18px] bg-white p-5 text-center">
             <p class="text-[18px] font-bold text-[#111827]">불러올 계좌가 없어요.</p>
-            <p class="mt-2 text-[15px] text-[#6B7280]">준비된 모의 계좌를 모두 불러왔어요.</p>
+            <p class="mt-2 text-[15px] text-[#6B7280]">준비된 계좌를 모두 불러왔어요.</p>
           </div>
         </section>
 
@@ -137,7 +137,7 @@ async function importSelected() {
     await store.importMockAccount(selectedAccountId.value);
     selectedAccountId.value = null;
     if (manageMode.value) {
-      savedMessage.value = '선택한 모의 계좌를 불러왔어요.';
+      savedMessage.value = '선택한 계좌를 불러왔어요.';
     } else {
       await router.replace({ name: 'home' });
     }

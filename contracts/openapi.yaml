@@ -335,7 +335,7 @@ paths:
     get:
       tags: [Accounts]
       operationId: getMockAccountImportOptions
-      summary: 모의 본인 계좌 불러오기 선택지 조회
+      summary: 본인 계좌 불러오기 선택지 조회
       responses:
         '200':
           description: 불러온 계좌와 아직 불러오지 않은 후보 목록
@@ -349,7 +349,7 @@ paths:
     post:
       tags: [Accounts]
       operationId: importMockAccount
-      summary: 선택한 모의 본인 계좌 불러오기
+      summary: 선택한 본인 계좌 불러오기
       description: 이미 불러온 계좌를 다시 요청해도 잔액과 기존 자료를 변경하지 않고 같은 결과를 반환한다.
       parameters:
         - $ref: '#/components/parameters/AccountId'
@@ -1576,7 +1576,7 @@ components:
           maxLength: 50
         accountReady:
           type: boolean
-          description: 사용 가능한 모의 본인 계좌가 한 개 이상이면 true
+          description: 사용 가능한 본인 계좌가 한 개 이상이면 true
         consents:
           $ref: '#/components/schemas/ConsentSettings'
         settings:
