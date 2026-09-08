@@ -3,7 +3,7 @@
     class="fixed inset-0 flex items-start justify-center overflow-hidden bg-[#E5E7EB]"
   >
     <div
-      class="relative flex flex-col flex-shrink-0 overflow-hidden bg-white"
+      class="app-shell relative flex flex-shrink-0 flex-col overflow-hidden bg-white"
       :style="appShellStyle"
     >
       <SplashScreen v-if="showSplash" @finished="showSplash = false" />
@@ -92,37 +92,54 @@ const activeStep = computed(
       (step) => step.screenCode === String(route.name),
     ) ?? null,
 );
+
 const voiceText = computed(() =>
   activeStep.value
     ? stepInstruction(activeStep.value)
     : (VOICE_TEXTS[String(route.name)] ?? null),
 );
+
 const guidanceReady = computed(
   () => !store.financeLoading && !store.inquiryLoading && !store.supportLoading,
 );
+
 const { notice: guidanceNotice, handleClick: handleGuidanceClick } =
   useStepGuidance(routeArea, activeStep, guidanceReady, () => {
-    if (store.currentStepVisit?.stepId === activeStep.value?.stepId)
+    if (store.currentStepVisit?.stepId === activeStep.value?.stepId) {
       store.recordPatternAction("wrongTouch");
+    }
   });
+
 const voiceSpeed = computed(
   () => store.currentUser?.settings?.voiceSpeed ?? "NORMAL",
 );
+
 const voiceMode = computed(
   () => store.currentUser?.settings?.guideVoiceType ?? "TTS",
 );
-const uiScale = computed(
+
+/*
+ * 화면 전체를 확대·축소하지 않고 글씨 크기에만 적용합니다.
+ * 이렇게 해야 LARGE 설정에서도 내부 레이아웃 폭이 좁아지지 않습니다.
+ */
+const textScale = computed(
   () =>
-    ({ SMALL: 0.94, NORMAL: 1, LARGE: 1.08 })[
-      store.currentUser?.settings?.fontSize ?? "NORMAL"
-    ] ?? 1,
+    ({
+      SMALL: 0.94,
+      NORMAL: 1,
+      LARGE: 1.08,
+    })[store.currentUser?.settings?.fontSize ?? "NORMAL"] ?? 1,
 );
+
+/*
+ * iPhone 12 Pro Max의 CSS viewport 폭인 428px을 기준으로 합니다.
+ * 428px보다 작은 기기에서는 화면 폭에 맞춰 자동으로 줄어듭니다.
+ */
 const appShellStyle = computed(() => ({
-  width: `calc(100vw / ${uiScale.value})`,
-  maxWidth: `${390 / uiScale.value}px`,
-  height: `${100 / uiScale.value}%`,
-  transform: `scale(${uiScale.value})`,
-  transformOrigin: "top center",
+  width: "100%",
+  maxWidth: "428px",
+  height: "100dvh",
+  "--text-scale": textScale.value,
 }));
 
 watch(
@@ -137,6 +154,7 @@ watch(
   () => store.currentUser?.settings?.fontSize,
   (fontSize) => {
     if (typeof document === "undefined") return;
+
     document.documentElement.dataset.fontSize = String(
       fontSize ?? "NORMAL",
     ).toLowerCase();
@@ -146,15 +164,19 @@ watch(
 
 function handleSessionExpired() {
   store.clearSession("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-  if (route.name !== "login") void router.replace({ name: "login" });
+
+  if (route.name !== "login") {
+    void router.replace({ name: "login" });
+  }
 }
 
-onMounted(() =>
-  window.addEventListener("danjjak:session-expired", handleSessionExpired),
-);
-onBeforeUnmount(() =>
-  window.removeEventListener("danjjak:session-expired", handleSessionExpired),
-);
+onMounted(() => {
+  window.addEventListener("danjjak:session-expired", handleSessionExpired);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("danjjak:session-expired", handleSessionExpired);
+});
 </script>
 
 <style>
@@ -163,15 +185,18 @@ onBeforeUnmount(() =>
     opacity 0.3s ease,
     transform 0.3s ease;
 }
+
 .vbar-leave-active {
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
 }
+
 .vbar-enter-from {
   opacity: 0;
   transform: translateY(16px);
 }
+
 .vbar-leave-to {
   opacity: 0;
   transform: translateY(16px);
