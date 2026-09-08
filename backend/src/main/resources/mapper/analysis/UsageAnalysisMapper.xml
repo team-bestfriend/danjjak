@@ -22,6 +22,10 @@
                ps.step_code, ps.step_name, ps.step_order, COUNT(*) AS visit_count,
                SUM(sel.retry_count + sel.back_count + sel.wrong_touch_count
                    + CASE WHEN sel.route_deviation THEN 1 ELSE 0 END) AS error_score,
+               SUM(sel.retry_count) AS retry_count,
+               SUM(sel.back_count) AS back_count,
+               SUM(sel.wrong_touch_count) AS wrong_touch_count,
+               SUM(CASE WHEN sel.route_deviation THEN 1 ELSE 0 END) AS route_deviation_count,
                AVG(CASE WHEN sel.ended_at IS NOT NULL
                    THEN TIMESTAMPDIFF(SECOND, sel.started_at, sel.ended_at) END) AS average_duration_seconds
         FROM financial_patterns fp

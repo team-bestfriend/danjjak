@@ -945,8 +945,9 @@ paths:
         실행 시작이나 방문 시각이 기간 밖이어도 해당 실행의 방문은 포함한다.
         ended_at이 없는 STARTED 실행은 완료 횟수와 단계 분석 모두에서 제외한다.
         비활성화 패턴의 기록도 포함하고 실행이 없는 패턴은 배열에 포함하지 않는다.
-        단계별 errorScore는 모든 방문의 retryCount + backCount + wrongTouchCount +
-        (routeDeviation이면 1) 합계다. 평균 소요시간은 ended_at이 있는 방문만 사용하며
+        단계별 retryCount, backCount, wrongTouchCount, routeDeviationCount는 모든 방문의 행동별 합계다.
+        errorScore는 기존과 같이 retryCount + backCount + wrongTouchCount + routeDeviationCount 합계다.
+        평균 소요시간은 ended_at이 있는 방문만 사용하며
         종료 방문이 없으면 null이다. 현재 시간으로 미종료 방문의 시간을 추정하지 않는다.
         difficultStep은 errorScore 내림차순, 평균 소요시간 내림차순(null은 마지막),
         stepOrder 오름차순, 모두 같으면 stepId 오름차순으로 결정한다.
@@ -1975,7 +1976,7 @@ components:
           minimum: 0
     StepAnalysis:
       type: object
-      required: [patternId, stepId, stepCode, stepName, stepOrder, visitCount, errorScore, averageDurationSeconds]
+      required: [patternId, stepId, stepCode, stepName, stepOrder, visitCount, errorScore, retryCount, backCount, wrongTouchCount, routeDeviationCount, averageDurationSeconds]
       properties:
         patternId:
           type: integer
@@ -1998,6 +1999,27 @@ components:
           type: integer
           format: int64
           minimum: 0
+          description: 어려운 단계 선정용 내부 합계 점수.
+        retryCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 모든 방문의 다시 시도 횟수 합계.
+        backCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 모든 방문의 이전 단계 이동 횟수 합계.
+        wrongTouchCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 모든 방문의 다른 항목 선택 횟수 합계.
+        routeDeviationCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 진행 중 다른 화면으로 이동한 방문 수.
         averageDurationSeconds:
           type: number
           minimum: 0

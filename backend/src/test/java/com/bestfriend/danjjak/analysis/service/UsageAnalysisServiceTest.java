@@ -92,6 +92,24 @@ class UsageAnalysisServiceTest {
     }
 
     @Test
+    void mapsIndividualActionCountsWithoutChangingErrorScore() {
+        withPatterns();
+        var step = step(11, 1, 10, "12");
+        step.setRetryCount(1);
+        step.setBackCount(2);
+        step.setWrongTouchCount(3);
+        step.setRouteDeviationCount(4);
+        when(mapper.findStepAnalysis(eq(7L), any(), any())).thenReturn(List.of(step));
+
+        var result = service.getUsageAnalysis(7L, from, to).difficultStep();
+        assertEquals(10, result.errorScore());
+        assertEquals(1, result.retryCount());
+        assertEquals(2, result.backCount());
+        assertEquals(3, result.wrongTouchCount());
+        assertEquals(4, result.routeDeviationCount());
+    }
+
+    @Test
     void noExecutionsReturnsExplicitEmptyState() {
         var result = service.getUsageAnalysis(7L, from, to);
         assertEquals(AnalysisStatus.NO_DATA, result.status());

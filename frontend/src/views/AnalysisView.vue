@@ -65,26 +65,43 @@
         <Card className="p-5 border-2 border-[#FFBC00]" style="background: #FFFDF5;">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-11 h-11 rounded-full bg-[#FFF3CC] flex items-center justify-center flex-shrink-0 text-[22px]">📊</div>
-            <div>
-              <h2 class="font-semibold text-[#111827] text-[17px]">이용 기록 살펴보기</h2>
-              <p class="font-semibold text-[17px] text-[#92650A]">기록에서 확인된 단계</p>
-            </div>
+            <h2 class="font-semibold text-[#111827] text-[19px]">이용 중 이런 기록이 있었어요</h2>
           </div>
           <template v-if="report.difficultStep">
-            <div class="bg-[#FFF3CC] border border-[#FFBC00] rounded-[18px] p-4 space-y-3">
-              <p class="font-normal text-[#374151] leading-relaxed text-[16px]">
-                <span class="font-semibold text-[#111827]">{{ difficultPatternTitle }}</span>의
-                <span class="font-semibold text-[#111827]">{{ report.difficultStep.stepName }}</span> 단계 기록이에요.
-              </p>
-              <dl class="text-[16px] text-[#374151] space-y-2">
-                <div class="flex justify-between gap-2"><dt>방문 횟수</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.visitCount }}회</dd></div>
-                <div class="flex justify-between gap-2"><dt>오류 행동 점수</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.errorScore }}점</dd></div>
-                <div class="flex justify-between gap-2"><dt>평균 소요 시간</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.averageDurationSeconds === null ? '측정 기록 없음' : report.difficultStep.averageDurationSeconds + '초' }}</dd></div>
+            <div class="bg-[#FFF3CC] border border-[#FFBC00] rounded-[18px] p-4">
+              <p class="text-[15px] text-[#6B5A26]">{{ difficultPatternTitle }}</p>
+              <h3 class="mt-1 font-bold text-[#111827] leading-relaxed text-[21px]">
+                {{ report.difficultStep.stepName }} 단계
+              </h3>
+
+              <dl v-if="hasObservedActions" class="mt-4 text-[16px] text-[#374151] space-y-3">
+                <div v-if="report.difficultStep.retryCount > 0" class="flex justify-between gap-3">
+                  <dt>다시 시도</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.retryCount }}회</dd>
+                </div>
+                <div v-if="report.difficultStep.backCount > 0" class="flex justify-between gap-3">
+                  <dt>이전 단계로 이동</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.backCount }}회</dd>
+                </div>
+                <div v-if="report.difficultStep.wrongTouchCount > 0" class="flex justify-between gap-3">
+                  <dt>다른 항목 선택</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.wrongTouchCount }}회</dd>
+                </div>
+                <div v-if="report.difficultStep.routeDeviationCount > 0" class="flex justify-between gap-3">
+                  <dt>진행 중 다른 화면으로 이동</dt><dd class="font-semibold text-[#111827]">{{ report.difficultStep.routeDeviationCount }}회</dd>
+                </div>
+              </dl>
+              <p v-else class="mt-4 text-[16px] text-[#374151] leading-relaxed">이 단계의 안내 문구를 한번 살펴보세요.</p>
+
+              <dl class="mt-4 pt-4 border-t border-[#E8C85F] text-[15px] text-[#6B5A26] space-y-2">
+                <div class="flex justify-between gap-3">
+                  <dt>단계 방문</dt><dd class="font-semibold text-[#374151]">{{ report.difficultStep.visitCount }}회</dd>
+                </div>
+                <div v-if="report.difficultStep.averageDurationSeconds !== null" class="flex justify-between gap-3">
+                  <dt>평균 머문 시간</dt><dd class="font-semibold text-[#374151]">{{ report.difficultStep.averageDurationSeconds }}초</dd>
+                </div>
               </dl>
             </div>
             <Btn class="mt-4" variant="secondary" @click="store.navigate('instruction-improvement', { query: period })">이 단계 안내 문구 쉽게 바꾸기</Btn>
           </template>
-          <p v-else class="text-[17px] text-[#4B5563]">분석할 단계 방문 기록이 없어 어려운 단계를 표시할 수 없어요.</p>
+          <p v-else class="text-[17px] text-[#4B5563]">안내를 살펴볼 단계 기록이 아직 없어요.</p>
         </Card>
       </template>
     </main>
@@ -126,6 +143,11 @@ const displayPatterns = computed(() => report.value?.patterns.map((pattern) => {
 const difficultPatternTitle = computed(() => report.value?.patterns.find(
   (pattern) => pattern.patternId === report.value?.difficultStep?.patternId,
 )?.title);
+const hasObservedActions = computed(() => {
+  const step = report.value?.difficultStep;
+  return Boolean(step && [step.retryCount, step.backCount, step.wrongTouchCount, step.routeDeviationCount]
+    .some((count) => count > 0));
+});
 
 async function loadReport() {
   if (loading.value) return;

@@ -14,6 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bestfriend.danjjak.analysis.mapper.UsageAnalysisMapper;
+import com.bestfriend.danjjak.analysis.model.PatternUsageRecord;
+import com.bestfriend.danjjak.analysis.model.StepAnalysisRecord;
 import com.bestfriend.danjjak.analysis.service.UsageAnalysisService;
 import com.bestfriend.danjjak.common.error.GlobalExceptionHandler;
 import com.bestfriend.danjjak.common.session.DemoSessionUserResolver;
@@ -22,6 +24,7 @@ import com.bestfriend.danjjak.user.model.UserSettingsRecord;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -83,6 +86,38 @@ class UsageAnalysisControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("CONSENT_REQUIRED")));
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void returnsIndividualActionCountsAndExistingErrorScore() throws Exception {
+        var pattern = new PatternUsageRecord();
+        pattern.setPatternId(1);
+        pattern.setPatternType("BALANCE_CHECK");
+        pattern.setTitle("잔액 확인");
+        pattern.setCompletedCount(1);
+        var step = new StepAnalysisRecord();
+        step.setPatternId(1);
+        step.setStepId(2);
+        step.setStepCode("ACCOUNT");
+        step.setStepName("계좌 선택");
+        step.setStepOrder(1);
+        step.setVisitCount(3);
+        step.setRetryCount(1);
+        step.setBackCount(2);
+        step.setWrongTouchCount(3);
+        step.setRouteDeviationCount(4);
+        step.setErrorScore(10);
+        when(mapper.findPatternUsage(eq(7L), any(), any())).thenReturn(List.of(pattern));
+        when(mapper.findStepAnalysis(eq(7L), any(), any())).thenReturn(List.of(step));
+
+        mvc.perform(get("/api/usage-analysis").session(session)
+                        .param("from", "2026-09-01").param("to", "2026-09-30"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"errorScore\":10")))
+                .andExpect(content().string(containsString("\"retryCount\":1")))
+                .andExpect(content().string(containsString("\"backCount\":2")))
+                .andExpect(content().string(containsString("\"wrongTouchCount\":3")))
+                .andExpect(content().string(containsString("\"routeDeviationCount\":4")));
     }
 
     @ParameterizedTest
