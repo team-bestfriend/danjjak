@@ -16,6 +16,7 @@ import OnboardingView from "../views/OnboardingView.vue";
 import PatternListView from "../views/PatternListView.vue";
 import PatternRegisterView from "../views/PatternRegisterView.vue";
 import SettingsView from "../views/SettingsView.vue";
+import ServiceGuideView from "../views/ServiceGuideView.vue";
 import StepVoiceEditView from "../views/StepVoiceEditView.vue";
 import TaskView from "../views/TaskView.vue";
 import TransferFlowView from "../views/TransferFlowView.vue";
@@ -190,6 +191,12 @@ const routes = [
     name: "settings",
     component: SettingsView,
     meta: consentMeta,
+  },
+  {
+    path: "/settings/guide",
+    name: "service-guide",
+    component: ServiceGuideView,
+    meta: protectedMeta,
   },
   {
     path: "/settings/people",

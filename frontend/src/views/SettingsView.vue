@@ -227,7 +227,7 @@ const guardianError = ref("");
 const guardianSaved = ref(false);
 
 const serviceItems = [
-  { label: "서비스 이용방법", icon: "📖", screen: null },
+  { label: "서비스 이용방법", icon: "📖", screen: "service-guide" },
   { label: "고객센터 연결", icon: "📞", screen: "task-6" },
   { label: "개인정보 처리방침", icon: "🔒", screen: null }
 ];

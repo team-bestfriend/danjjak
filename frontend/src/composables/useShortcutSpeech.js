@@ -16,7 +16,7 @@ export function useShortcutSpeech(getPatterns, onMatch) {
   const supported = typeof Recognition === 'function';
   const state = ref('idle');
   const message = ref(supported
-    ? '마이크로 원하는 단축번호를 찾아요. 예: “아들에게 돈 보내 줘”'
+    ? ''
     : '이 브라우저는 음성 인식을 지원하지 않아요. 화면에서 단축번호를 눌러 주세요.');
   let recognition = null;
   let timer = null;

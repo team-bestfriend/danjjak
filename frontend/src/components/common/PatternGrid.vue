@@ -1,5 +1,5 @@
 <template>
-  <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; height: 100%;">
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(min-content, 1fr) minmax(min-content, 1fr); gap: 12px; height: 100%;">
     <button
       v-for="(num, idx) in pageNums"
       :key="num"
@@ -31,11 +31,11 @@
       }"
     >
       <span
-        style="font-size: 54px; font-weight: 700; line-height: 1;"
+        style="font-size: calc(36px * var(--text-scale, 1)); font-weight: 600; line-height: 1;"
         :style="{ color: getPattern(num) ? 'rgba(255,255,255,0.85)' : '#D1D5DB' }"
       >{{ num }}</span>
       <span
-        style="font-size: 19px; font-weight: 600; word-break: keep-all; line-height: 1.3; text-align: center;"
+        style="font-size: 28px; font-weight: 700; max-width: 100%; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.3; text-align: center;"
         :style="{ color: getPattern(num) ? '#ffffff' : '#AEAEAE' }"
       >{{ getPattern(num) ? getPattern(num).label : '패턴 등록' }}</span>
       <span v-if="isVoiceMatch(num)" class="rounded-full bg-white px-2 py-1 text-[13px] font-bold text-[#111827]">✓ 음성으로 찾았어요</span>
