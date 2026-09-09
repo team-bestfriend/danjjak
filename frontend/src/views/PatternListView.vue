@@ -161,6 +161,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAppStore } from '../stores/appStore';
+import { typeLabel } from '../constants/patternTypes.js';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 import Card from '../components/common/Card.vue';
@@ -212,7 +213,7 @@ const detailAccountLabel = computed(() => [
 const detailRows = computed(() => [
   detailPerson.value ? { l: "받는 사람", v: `${detailPerson.value.emoji} ${detailPerson.value.name} (${detailPerson.value.relation})` } : null,
   detailAccountLabel.value ? { l: "받는 계좌", v: detailAccountLabel.value } : null,
-  { l: "업무 유형", v: pDetail.value.taskType },
+  { l: "이용 서비스", v: typeLabel(pDetail.value.patternType) },
   { l: "단축번호", v: `${pDetail.value.num}번` },
   { l: "최근 사용", v: "오늘" }
 ].filter(Boolean));

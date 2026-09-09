@@ -210,6 +210,7 @@ import { useAppStore } from '../stores/appStore';
 import { patternApi } from '../api/patternApi.js';
 import { saveGuidanceDraft, voiceLabel } from '../api/guidanceApi.js';
 import { apiUrl } from '../api/httpClient.js';
+import { typeLabel } from '../constants/patternTypes.js';
 
 const route = useRoute();
 const store = useAppStore();
@@ -292,23 +293,6 @@ const summaryRows = computed(() => [
   { label: '안내 단계', value: `${stepInstructions.value.length}단계` },
   ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: `${step.instructionText}\n${voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType)}` })),
 ]);
-
-const TYPE_LABELS = {
-  TRANSFER: '등록한 사람에게 송금',
-  PENSION_CHECK: '연금 입금 확인',
-  MANAGEMENT_FEE_CHECK: '관리비 확인',
-  BALANCE_CHECK: '잔액 확인',
-  TRANSACTION_HISTORY: '거래내역 조회',
-  CUSTOMER_CENTER: '고객센터 연결',
-  UTILITY_BILL_CHECK: '공과금 확인',
-  AUTO_TRANSFER_CHECK: '자동이체 확인',
-  CARD_HISTORY: '카드 이용내역',
-  DEPOSIT_MATURITY_CHECK: '예금 만기 확인',
-};
-
-function typeLabel(type) {
-  return TYPE_LABELS[type] ?? type;
-}
 
 function isUsed(number) {
   return store.patterns.some((pattern) => pattern.num === number && pattern.patternId !== persistedId.value);
