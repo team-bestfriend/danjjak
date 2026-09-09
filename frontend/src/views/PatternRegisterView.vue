@@ -204,6 +204,7 @@
         </Btn>
       </div>
     </template>
+    <DiscardChangesDialog v-if="discardDialog" v-bind="discardDialog" @resolve="resolveDiscard" />
   </div>
 </template>
 
@@ -211,6 +212,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { onBeforeRouteLeave, useRoute } from 'vue-router';
 import PatternVoiceEditor from '../components/common/PatternVoiceEditor.vue';
+import DiscardChangesDialog from '../components/common/DiscardChangesDialog.vue';
+import { useDiscardConfirmation } from '../composables/useDiscardConfirmation.js';
 import Btn from '../components/common/Btn.vue';
 import Card from '../components/common/Card.vue';
 import SafeArea from '../components/common/SafeArea.vue';
@@ -224,6 +227,7 @@ import { profileImageForPerson } from '../constants/profileImages.js';
 
 const route = useRoute();
 const store = useAppStore();
+const { discardDialog, confirmDiscard, resolveDiscard } = useDiscardConfirmation();
 const editing = computed(() => Number.isInteger(Number(route.query.edit)) && Number(route.query.edit) > 0);
 const stages = computed(() => editing.value
   ? ['details', 'voice', 'steps', 'confirm']
@@ -308,9 +312,13 @@ function isUsed(number) {
   return store.patterns.some((pattern) => pattern.num === number && pattern.patternId !== persistedId.value);
 }
 
-function selectTemplate(template) {
+async function selectTemplate(template) {
   if (!template.available || persistedId.value) return;
-  if (voiceDraftChanged.value && !window.confirm('음성 초안을 버리고 다른 업무를 선택할까요?')) return;
+  if (voiceDraftChanged.value && !await confirmDiscard({
+    title: '다른 업무를 선택할까요?',
+    description: '지금까지 작성한 음성 초안은 사라져요.',
+    confirmLabel: '업무 변경',
+  })) return;
   selectedType.value = template.patternType;
   title.value = template.defaultTitle;
   description.value = template.defaultDescription;
@@ -426,14 +434,24 @@ function acceptStep(draft) {
   voiceDirty.value = false;
 }
 
-function back() {
+async function back() {
   if (submitting.value) return;
-  if (voiceDirty.value && !window.confirm('편집 중인 문구와 녹음을 버리고 돌아갈까요?')) return;
+  if (voiceDirty.value && !await confirmDiscard({
+    title: '편집을 그만둘까요?',
+    description: '편집 중인 문구와 녹음은 사라져요.',
+    confirmLabel: '돌아가기',
+  })) return;
   voiceDirty.value = false;
   if (selectedStep.value) selectedStep.value = null;
   else if (stageIndex.value > 0) stageIndex.value--;
   else store.goBack();
 }
 
-onBeforeRouteLeave(() => saved.value || (!submitting.value && (!(voiceDirty.value || voiceDraftChanged.value || draftSignature.value !== initialSignature.value) || window.confirm('저장하지 않은 문구와 녹음을 버리고 이동할까요?'))));
+onBeforeRouteLeave(() => {
+  if (saved.value) return true;
+  if (submitting.value) return false;
+  if (loading.value) return true;
+  if (!(voiceDirty.value || voiceDraftChanged.value || draftSignature.value !== initialSignature.value)) return true;
+  return confirmDiscard();
+});
 </script>

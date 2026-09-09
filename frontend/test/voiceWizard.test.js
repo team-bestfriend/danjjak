@@ -13,6 +13,8 @@ const patternListSource = await readFile(new URL('../src/views/PatternListView.v
 const patternVoiceEditorSource = await readFile(new URL('../src/components/common/PatternVoiceEditor.vue', import.meta.url), 'utf8');
 const compiled = compileScript(parse(source).descriptor, { id: 'wizard-test' });
 const code = compiled.content.replace(/import (\w+) from '([^']+\.vue)';/g, (_, name) => `const ${name} = {};`)
+  // 편집 흐름 테스트에서는 이미지 표시 함수를 대체해 PNG 로딩을 피한다.
+  .replace(/import \{ profileImageForPerson \} from ["'][^"']+\/profileImages\.js["'];/g, 'const profileImageForPerson = () => null;')
   .replace(/from (['"])([^'"]+)\1/g, (_, quote, path) => 'from ' + JSON.stringify(path.startsWith('.')
     ? new URL('../src/views/' + path + (path.endsWith('.js') ? '' : '.js'), import.meta.url).href
     : import.meta.resolve(path)));
@@ -20,6 +22,66 @@ const { default: Wizard } = await import('data:text/javascript;base64,' + Buffer
 Wizard.render = () => null;
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {}, parentNode: () => null, nextSibling: () => null });
 const settle = async () => { await new Promise((resolve) => setImmediate(resolve)); await nextTick(); };
+
+for (const editing of [false, true]) {
+  test(`${editing ? '패턴 수정' : '업무 등록'} 이탈 모달은 취소 시 초안을 유지하고 확인·저장 후에만 이동한다`, async (t) => {
+    let state;
+    const view = { ...Wizard, setup(props, context) {
+      const bindings = Wizard.setup(props, context);
+      state = proxyRefs(bindings);
+      return bindings;
+    } };
+    const router = createRouter({ history: createMemoryHistory(), routes: [
+      { path: '/', name: 'home', component: { render: () => null } },
+      { path: '/edit', name: 'pattern-register', component: view },
+    ] });
+    const pinia = createPinia();
+    const store = useAppStore(pinia);
+    store.loadPatternTemplates = store.loadPatterns = store.loadFinancialData = async () => {};
+    store.loadPatternDetail = async () => ({ patternType: 'BALANCE_CHECK', title: '잔액 확인', description: '안내', steps: [] });
+    await router.push('/');
+    await router.push(editing ? '/edit?edit=7' : '/edit');
+    const app = renderer.createApp({ render: () => h(RouterView) }).use(router).use(pinia);
+    app.mount({});
+    t.after(() => app.unmount());
+    await settle();
+
+    state.title = '수정 중인 이름';
+    let leaving = router.push('/');
+    await settle();
+    assert.equal(router.currentRoute.value.name, 'pattern-register');
+    assert.ok(state.discardDialog);
+    state.resolveDiscard(false);
+    await leaving;
+    assert.equal(router.currentRoute.value.name, 'pattern-register');
+    assert.equal(state.title, '수정 중인 이름');
+    assert.equal(state.discardDialog, null);
+
+    state.submitting = true;
+    await router.push('/');
+    assert.equal(router.currentRoute.value.name, 'pattern-register');
+    assert.equal(state.discardDialog, null);
+    state.submitting = false;
+    leaving = router.push('/');
+    await settle();
+    state.resolveDiscard(true);
+    await leaving;
+    assert.equal(router.currentRoute.value.name, 'home');
+
+    await router.push(editing ? '/edit?edit=7' : '/edit');
+    await settle();
+    await router.push('/');
+    assert.equal(router.currentRoute.value.name, 'home');
+    await router.push(editing ? '/edit?edit=7' : '/edit');
+    await settle();
+    state.title = '저장된 이름';
+    state.saved = true;
+    state.submitting = true;
+    await router.push('/');
+    assert.equal(router.currentRoute.value.name, 'home');
+    assert.equal(state.discardDialog, null);
+  });
+}
 
 test('패턴 상세는 설명·단계 음성을 패턴 수정 흐름으로 통합한다', () => {
   assert.match(patternListSource, /@click="editDetailPattern">패턴 수정/);

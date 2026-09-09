@@ -41,6 +41,7 @@
         <p v-if="saveError" class="rounded-[16px] bg-[#FEF2F2] p-4 text-[#B91C1C]" role="alert">{{ saveError }}</p>
       </template>
     </main>
+    <DiscardChangesDialog v-if="discardDialog" v-bind="discardDialog" @resolve="resolveDiscard" />
   </div>
 </template>
 
@@ -51,12 +52,15 @@ import { patternApi } from '../api/patternApi.js';
 import { saveGuidanceDraft, voiceLabel } from '../api/guidanceApi.js';
 import { useAppStore } from '../stores/appStore.js';
 import PatternVoiceEditor from '../components/common/PatternVoiceEditor.vue';
+import DiscardChangesDialog from '../components/common/DiscardChangesDialog.vue';
+import { useDiscardConfirmation } from '../composables/useDiscardConfirmation.js';
 import Btn from '../components/common/Btn.vue';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 
 const props = defineProps({ perStep: Boolean });
 const store = useAppStore();
+const { discardDialog, confirmDiscard, resolveDiscard } = useDiscardConfirmation();
 const route = useRoute();
 const detail = ref(null);
 const template = ref(null);
@@ -102,7 +106,10 @@ async function initialize() {
 }
 
 function canLeave() {
-  return !saving.value && (!dirty.value || window.confirm('저장하지 않은 문구와 녹음을 버리고 이동할까요?'));
+  return !saving.value && (!dirty.value || confirmDiscard({
+    title: '편집을 그만둘까요?',
+    description: '저장하지 않은 문구와 녹음은 사라져요.',
+  }));
 }
 
 function openStep(step) {
