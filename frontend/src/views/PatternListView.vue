@@ -104,7 +104,16 @@
           :class="['flex items-center justify-between px-5 py-4', i < detailRows.length - 1 ? 'border-b border-[#F3F4F6]' : '']"
         >
           <span className="text-[#6B7280]" style="font-size: 15px;">{{ r.l }}</span>
-          <span className="font-bold text-[#111827] text-right" style="font-size: 16px;">{{ r.v }}</span>
+          <span className="flex items-center justify-end gap-2 text-right font-bold text-[#111827]" style="font-size: 16px;">
+            <img
+              v-if="r.imageSrc"
+              :src="r.imageSrc"
+              alt=""
+              className="h-8 w-8 rounded-full border border-[#FFBC00] object-cover"
+              aria-hidden="true"
+            />
+            <span>{{ r.v }}</span>
+          </span>
         </div>
       </Card>
 
@@ -161,6 +170,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAppStore } from '../stores/appStore';
+import { typeLabel } from '../constants/patternTypes.js';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 import Card from '../components/common/Card.vue';
@@ -168,6 +178,7 @@ import Btn from '../components/common/Btn.vue';
 import Ic from '../components/common/Ic.vue';
 import NavBar from '../components/common/NavBar.vue';
 import BottomSheet from '../components/common/BottomSheet.vue';
+import { profileImageForPerson } from '../constants/profileImages.js';
 
 const props = defineProps({
   viewMode: { type: String, required: true }
@@ -197,9 +208,9 @@ const detailPerson = computed(() => {
   if (person) return person;
   if (!pDetail.value.linkedAccount?.registeredPersonName) return null;
   return {
-    emoji: '👤',
     name: pDetail.value.linkedAccount?.registeredPersonName,
     relation: pDetail.value.linkedAccount?.relationship,
+    profileImageKey: pDetail.value.linkedAccount?.profileImageKey,
   };
 });
 const detailAccount = computed(() => (pDetail.value.taskType === 'transfer' ? pDetail.value.linkedAccount : null));
@@ -210,9 +221,13 @@ const detailAccountLabel = computed(() => [
 ].filter(Boolean).join(' · '));
 
 const detailRows = computed(() => [
-  detailPerson.value ? { l: "받는 사람", v: `${detailPerson.value.emoji} ${detailPerson.value.name} (${detailPerson.value.relation})` } : null,
+  detailPerson.value ? {
+    l: "받는 사람",
+    v: `${detailPerson.value.name} (${detailPerson.value.relation})`,
+    imageSrc: profileImageForPerson(detailPerson.value),
+  } : null,
   detailAccountLabel.value ? { l: "받는 계좌", v: detailAccountLabel.value } : null,
-  { l: "업무 유형", v: pDetail.value.taskType },
+  { l: "이용 서비스", v: typeLabel(pDetail.value.patternType) },
   { l: "단축번호", v: `${pDetail.value.num}번` },
   { l: "최근 사용", v: "오늘" }
 ].filter(Boolean));

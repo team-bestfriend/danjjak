@@ -116,8 +116,17 @@
               ]"
               @click="linkedBankAccountId = option.accountId"
             >
+              <span class="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-[#FFBC00] bg-white">
+                <img
+                  v-if="profileImageForPerson(option)"
+                  :src="profileImageForPerson(option)"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  aria-hidden="true"
+                />
+              </span>
               <span class="min-w-0 flex-1">
-                <span class="text-[18px] font-bold text-[#111827]">{{ option.personEmoji }} {{ option.personName }} · {{ option.personRelation }}</span>
+                <span class="text-[18px] font-bold text-[#111827]">{{ option.personName }} · {{ option.personRelation }}</span>
                 <span class="mt-1 block text-[14px] text-[#6B7280]">{{ option.bankName }} · {{ option.masked }}<template v-if="option.accountAlias"> · {{ option.accountAlias }}</template></span>
               </span>
               <span v-if="linkedBankAccountId === option.accountId" class="whitespace-nowrap text-[15px] font-bold text-[#92650A]">✓ 선택됨</span>
@@ -210,6 +219,8 @@ import { useAppStore } from '../stores/appStore';
 import { patternApi } from '../api/patternApi.js';
 import { saveGuidanceDraft, voiceLabel } from '../api/guidanceApi.js';
 import { apiUrl } from '../api/httpClient.js';
+import { typeLabel } from '../constants/patternTypes.js';
+import { profileImageForPerson } from '../constants/profileImages.js';
 
 const route = useRoute();
 const store = useAppStore();
@@ -258,7 +269,7 @@ const recipientAccountOptions = computed(() => store.people.flatMap((person) => 
     personId: person.id,
     personName: person.name,
     personRelation: person.relation,
-    personEmoji: person.emoji,
+    profileImageKey: person.profileImageKey,
   }))
 )));
 const selectedRecipientOption = computed(() => (
@@ -292,23 +303,6 @@ const summaryRows = computed(() => [
   { label: '안내 단계', value: `${stepInstructions.value.length}단계` },
   ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: `${step.instructionText}\n${voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType)}` })),
 ]);
-
-const TYPE_LABELS = {
-  TRANSFER: '등록한 사람에게 송금',
-  PENSION_CHECK: '연금 입금 확인',
-  MANAGEMENT_FEE_CHECK: '관리비 확인',
-  BALANCE_CHECK: '잔액 확인',
-  TRANSACTION_HISTORY: '거래내역 조회',
-  CUSTOMER_CENTER: '고객센터 연결',
-  UTILITY_BILL_CHECK: '공과금 확인',
-  AUTO_TRANSFER_CHECK: '자동이체 확인',
-  CARD_HISTORY: '카드 이용내역',
-  DEPOSIT_MATURITY_CHECK: '예금 만기 확인',
-};
-
-function typeLabel(type) {
-  return TYPE_LABELS[type] ?? type;
-}
 
 function isUsed(number) {
   return store.patterns.some((pattern) => pattern.num === number && pattern.patternId !== persistedId.value);

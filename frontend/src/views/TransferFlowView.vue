@@ -173,11 +173,7 @@
           @click="selectFamily"
           class="w-full rounded-[20px] bg-white border border-[#FFBC00] p-6 flex flex-col items-center gap-3 active:scale-[0.97] transition-all"
         >
-          <div
-            class="w-16 h-16 rounded-full bg-[#FFBC00] flex items-center justify-center text-[32px]"
-          >
-            👨‍👩‍👧
-          </div>
+          <img :src="familyImage" alt="" class="h-16 w-16 object-contain" />
           <p class="font-bold text-[#111827] text-[21px]">
             등록된 가족에게 보내기
           </p>
@@ -189,11 +185,7 @@
           @click="store.navigate('direct-newaccount')"
           class="w-full rounded-[20px] bg-white border border-[#E5E7EB] p-6 flex flex-col items-center gap-3 active:scale-[0.97] transition-all"
         >
-          <div
-            class="w-16 h-16 rounded-full bg-[#374151] flex items-center justify-center text-white"
-          >
-            <Ic name="Transfer" />
-          </div>
+          <img :src="piggyBankImage" alt="" class="h-16 w-16 object-contain" />
           <p class="font-bold text-[#111827] text-[21px]">새 계좌로 보내기</p>
           <p class="text-[#6B7280] text-center text-[15px]">
             계좌 번호를 직접 입력해서 보내요.
@@ -409,9 +401,16 @@
           <Card class="p-5">
             <div class="flex items-center gap-4">
               <div
-                class="w-14 h-14 rounded-full bg-[#FFF3CC] border border-[#FFBC00] flex items-center justify-center text-[28px]"
+                class="w-14 h-14 overflow-hidden rounded-full border border-[#FFBC00] bg-white flex items-center justify-center text-[28px]"
               >
-                {{ person.emoji }}
+                <img
+                  v-if="profileImageForPerson(person)"
+                  :src="profileImageForPerson(person)"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  aria-hidden="true"
+                />
+                <span v-else>{{ person.emoji }}</span>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-bold text-[#111827] text-[21px]">
@@ -935,6 +934,9 @@ import BankLogo from "../components/common/BankLogo.vue";
 import warningIcon from "../assets/icons/warning.png";
 import { formatWonWithKorean } from "../utils/money.js";
 import warningDanjjak from "../assets/danjjakee_warning.png";
+import familyImage from "../assets/family.png";
+import piggyBankImage from "../assets/piggy_bank.png";
+import { profileImageForPerson } from "../constants/profileImages.js";
 
 const props = defineProps({
   flowStep: { type: String, required: true },

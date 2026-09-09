@@ -333,12 +333,18 @@
             ]"
           >
             <div className="flex items-center gap-3">
-              <span style="font-size: 22px">{{ item.icon }}</span>
+              <img
+                :src="item.icon"
+                alt=""
+                className="w-10 h-10 object-contain flex-shrink-0"
+                aria-hidden="true"
+              />
               <span
-                className="font-normal text-[#111827]"
-                style="font-size: 18px"
-                >{{ item.label }}{{ item.screen ? "" : " (준비 중)" }}</span
+                className="font-semibold text-[#111827]"
+                style="font-size: 19px"
               >
+                {{ item.label }}{{ item.screen ? "" : " (준비 중)" }}
+              </span>
             </div>
             <Ic name="ChevR" />
           </button>
@@ -373,6 +379,9 @@ import SegControl from "../components/common/SegControl.vue";
 import oldAgeWoman from "../assets/icons/profile/old_age_woman.png";
 import piggyBank from "../assets/piggy_bank.png";
 import family from "../assets/family.png";
+import book from "../assets/book.png";
+import phone from "../assets/phone.png";
+import lock from "../assets/lock.png";
 
 const store = useAppStore();
 
@@ -417,9 +426,9 @@ const guardianError = ref("");
 const guardianSaved = ref(false);
 
 const serviceItems = [
-  { label: "서비스 이용방법", icon: "📖", screen: "service-guide" },
-  { label: "고객센터 연결", icon: "📞", screen: "task-6" },
-  { label: "개인정보 처리방침", icon: "🔒", screen: null },
+  { label: "서비스 이용방법", icon: book, screen: "service-guide" },
+  { label: "고객센터 연결", icon: phone, screen: "task-6" },
+  { label: "개인정보 처리방침", icon: lock, screen: null },
 ];
 
 onMounted(async () => {
