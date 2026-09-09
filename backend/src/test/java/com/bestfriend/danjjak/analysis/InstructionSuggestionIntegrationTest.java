@@ -64,7 +64,8 @@ class InstructionSuggestionIntegrationTest {
         assertTrue(suggestion.hasFamilyAudio());
         assertEquals(step.instructionText(), patterns.getPattern(1, pattern.patternId()).steps().get(0).instructionText());
 
-        var saved = suggestions.apply(1, pattern.patternId(), step.stepId(), new ApplySuggestionRequest(suggestion.currentText()));
+        var saved = suggestions.apply(1, pattern.patternId(), step.stepId(),
+                new ApplySuggestionRequest(suggestion.currentText(), suggestion.suggestedText()));
         assertEquals(suggestion.suggestedText(), saved.text());
         assertEquals("FAMILY", saved.voiceMode());
         assertTrue(saved.voiceScriptOutdated());
@@ -86,9 +87,11 @@ class InstructionSuggestionIntegrationTest {
     void changedComparisonAndInvalidStepDoNotOverwriteCurrentText() {
         var pattern = patterns.getPattern(1, patterns.getPatterns(1).get(0).patternId());
         var step = pattern.steps().get(0);
-        var error = assertThrows(ApiException.class, () -> suggestions.apply(1, pattern.patternId(), step.stepId(), new ApplySuggestionRequest("이전 문구")));
+        var error = assertThrows(ApiException.class, () -> suggestions.apply(1, pattern.patternId(), step.stepId(),
+                new ApplySuggestionRequest("이전 문구", "돈을 보낼 내 통장을 눌러 주세요.")));
         assertEquals("INSTRUCTION_CHANGED", error.getCode());
-        assertThrows(ApiException.class, () -> suggestions.apply(1, pattern.patternId(), Long.MAX_VALUE, new ApplySuggestionRequest(step.instructionText())));
+        assertThrows(ApiException.class, () -> suggestions.apply(1, pattern.patternId(), Long.MAX_VALUE,
+                new ApplySuggestionRequest(step.instructionText(), "돈을 보낼 내 통장을 눌러 주세요.")));
         assertEquals(step.instructionText(), patterns.getPattern(1, pattern.patternId()).steps().get(0).instructionText());
     }
 

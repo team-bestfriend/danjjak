@@ -591,7 +591,7 @@
     <SafeArea />
     <TopBar
       title="계좌 비밀번호 입력"
-      :onBack="store.goBack"
+      :onBack="goBackFromPin"
       :backDisabled="store.transferSubmitting"
       rightLabel="취소"
       :onRight="store.cancelTransfer"
@@ -599,24 +599,29 @@
     />
     <StepBar v-bind="stepBar('pin-entry')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
-      <p class="text-[#374151] text-center text-[17px]">
-        선택한 출금 계좌의 비밀번호 4자리를<br />직접 입력해 주세요.
-      </p>
+      <h2 class="font-bold text-[#111827] text-[26px]">
+        계좌 비밀번호를 입력해주세요.
+      </h2>
       <div
+        v-if="!store.transferError && !store.transferSubmitting"
         class="bg-[#FFFBEB] border border-[#FFBC00] rounded-2xl px-4 py-3 flex items-center gap-2 text-[#92650A]"
       >
         <Ic name="Shield" />
-        <p class="font-bold text-[15px]">
-          비밀번호는 저장하거나 기록하지 않아요.
-        </p>
+        <p class="font-bold text-[17px]">비밀번호는 저장되지 않아요.</p>
       </div>
-      <p
-        v-if="store.transferError"
-        class="rounded-xl bg-[#FEF2F2] p-3 text-[#991B1B]"
+      <div
+        v-else-if="store.transferError"
+        class="flex items-center gap-3 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-[#991B1B]"
         role="alert"
       >
-        {{ store.transferError }}
-      </p>
+        <img
+          :src="warningIcon"
+          alt=""
+          class="h-10 w-10 flex-shrink-0"
+          aria-hidden="true"
+        />
+        <p class="text-[18px] font-bold">계좌 비밀번호를 다시 입력해주세요.</p>
+      </div>
       <p
         v-if="store.transferSubmitting"
         class="text-center font-bold text-[#6B7280]"
@@ -904,6 +909,7 @@ import Ic from "../components/common/Ic.vue";
 import AmountKeypad from "../components/common/AmountKeypad.vue";
 import PinEntry from "../components/common/PinEntry.vue";
 import BankLogo from "../components/common/BankLogo.vue";
+import warningIcon from "../assets/icons/warning.png";
 
 const props = defineProps({
   flowStep: { type: String, required: true },
@@ -1134,6 +1140,11 @@ async function handlePinComplete(pin) {
       );
     }
   }
+}
+
+function goBackFromPin() {
+  store.transferError = '';
+  store.goBack();
 }
 
 function replaceTransferStep(step) {

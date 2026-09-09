@@ -50,6 +50,7 @@ import {
   useStepGuidance,
 } from "./composables/useStepGuidance.js";
 import SplashScreen from "./components/common/SplashScreen.vue";
+import { RESULT_INQUIRY_CATEGORIES } from "./features/inquiry/resultGuidance.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -66,24 +67,20 @@ const VOICE_TEXTS = {
   "guide-person": "보낼 사람 이름을 눌러 주세요.",
   "guide-account": "보낼 계좌를 눌러 선택해 주세요.",
   "amount-input": "보내실 금액을 입력해 주세요.",
-  "pin-entry": "비밀번호를 입력해 주세요.",
+  "pin-entry": "계좌 비밀번호를 입력해주세요.",
   "fraud-warning": "서버가 확인한 이상 거래 사유를 천천히 살펴보세요.",
   "final-confirm": "출금 계좌와 받는 분, 금액이 맞는지 확인해 주세요.",
   complete: "송금이 모두 완료됐어요. 정말 잘 하셨어요!",
   cancelled: "송금을 취소했어요. 잔액과 거래 내역은 바뀌지 않았어요.",
   "task-transfer":
     "아들 김민수님에게 송금하는 업무입니다. 시작하려면 시작하기를 눌러주세요.",
-  "task-2": "이번 달 연금 입금 내역이에요. 천천히 확인해 보세요.",
-  "task-3": "이번 달 관리비예요. 납부하려면 관리비 납부하기를 눌러 주세요.",
   "task-4": "내 계좌 잔액을 확인하는 화면이에요. 잔액 보기를 눌러 확인하세요.",
   "task-5": "거래 내역 화면이에요. 입금, 출금을 선택해서 확인할 수 있어요.",
   "task-6": "고객센터 화면이에요. 도움이 필요하면 전화 연결하기를 눌러 주세요.",
-  "task-8": "공과금 내역이에요. 전기, 수도, 가스 요금을 확인해 보세요.",
   "task-9": "자동이체 내역이에요. 매달 나가는 금액을 확인해 보세요.",
   "task-10": "카드 이용 내역이에요. 이번 달 쓴 금액을 확인해 보세요.",
   "task-11": "예금 만기 일정이에요. 만기일을 꼭 확인해 두세요.",
   "task-12": "오늘의 환율 정보예요. 천천히 살펴보세요.",
-  "pension-history": "연금 입금 내역이에요. 매달 들어온 금액을 확인해 보세요.",
 };
 
 const activeStep = computed(
@@ -93,11 +90,13 @@ const activeStep = computed(
     ) ?? null,
 );
 
-const voiceText = computed(() =>
-  activeStep.value
+const voiceText = computed(() => {
+  // 거래 결과 안내는 조회 화면에서 데이터가 준비된 뒤 TTS로 재생한다.
+  if (RESULT_INQUIRY_CATEGORIES[String(route.name)]) return null;
+  return activeStep.value
     ? stepInstruction(activeStep.value)
-    : (VOICE_TEXTS[String(route.name)] ?? null),
-);
+    : (VOICE_TEXTS[String(route.name)] ?? null);
+});
 
 const guidanceReady = computed(
   () => !store.financeLoading && !store.inquiryLoading && !store.supportLoading,

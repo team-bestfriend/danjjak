@@ -81,16 +81,17 @@ paths:
       tags: [Usage Analysis]
       operationId: applyInstructionSuggestion
       summary: 선택한 단계에 제안 문구 명시적으로 적용
-      description: 서버가 단계 코드로 제안을 계산해 같은 instructionText를 갱신한다. 음성 선택과 파일을 보존하며 기존 녹음과의 불일치를 표시한다. 비교한 현재 문구가 달라졌으면 409를 반환한다.
+      description: 사용자가 비교한 제안 문구를 같은 instructionText에 저장한다. 음성 선택과 파일을 보존하며 기존 녹음과의 불일치를 표시한다. 비교한 현재 문구가 달라졌으면 409를 반환한다.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [expectedText]
+              required: [expectedText, suggestedText]
               properties:
                 expectedText: { type: string, minLength: 1, maxLength: 500 }
+                suggestedText: { type: string, minLength: 1, maxLength: 500 }
       responses:
         '200':
           description: 적용 후 해당 단계의 안내 상태

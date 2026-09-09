@@ -49,7 +49,7 @@ test('조회만으로 적용하지 않고 명시적 성공 뒤 같은 단계의 
   assert.equal(state.suggestion.currentText, '이전 문구');
   await state.apply();
   assert.equal(calls[1].url, '/api/patterns/3/steps/20/instruction-suggestion');
-  assert.deepEqual(JSON.parse(calls[1].options.body), { expectedText: '이전 문구' });
+  assert.deepEqual(JSON.parse(calls[1].options.body), { expectedText: '이전 문구', suggestedText: '쉬운 문구' });
   assert.equal(state.suggestion.currentText, '쉬운 문구');
   assert.equal(state.suggestion.voiceScriptOutdated, true);
   assert.equal(state.applied, true);
@@ -65,6 +65,23 @@ test('적용 실패는 기존 문구와 제안을 유지하고 바뀐 문구 충
   assert.equal(state.suggestion.suggestedText, '쉬운 문구');
   assert.equal(state.applied, false);
   assert.equal(state.stale, true);
+});
+
+test('제안 재조회 중에도 현재 문구를 유지하고 조회 오류를 제안 영역 상태로 보관한다', async (t) => {
+  let callCount = 0;
+  let rejectReload;
+  const reload = new Promise((resolve, reject) => { rejectReload = reject; });
+  const { state } = await mount(t, async () => ++callCount === 1 ? response(fixture()) : reload);
+
+  const loading = state.load();
+  assert.equal(state.loading, true);
+  assert.equal(state.suggestion.currentText, '이전 문구');
+  rejectReload(new Error('연결 실패'));
+  await loading;
+
+  assert.equal(state.loading, false);
+  assert.equal(state.suggestion.currentText, '이전 문구');
+  assert.equal(state.loadError, '연결 실패');
 });
 
 for (const status of ['NO_DATA', 'CONSENT_DECLINED', 'CONSENT_REQUIRED']) {
