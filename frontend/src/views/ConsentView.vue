@@ -80,10 +80,10 @@ async function save() {
       route.query.edit === "1"
         ? "settings"
         : firstStartFlow
-          ? "guardian-setup"
+          ? "account-link-intro"
           : store.currentUser?.accountReady
             ? "home"
-            : "account-import";
+            : "account-link-intro";
 
     await router.replace({
       name: nextRoute,
