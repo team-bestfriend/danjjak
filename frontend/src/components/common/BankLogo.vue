@@ -6,9 +6,8 @@
     <img
       v-if="logoSrc"
       :src="logoSrc"
-      alt=""
+      :alt="`${bankName} 로고`"
       class="block h-full w-full object-contain"
-      aria-hidden="true"
     />
 
     <span
@@ -23,8 +22,11 @@
 
 <script setup>
 import { computed } from "vue";
+
 import kbBankLogo from "../../assets/kb-bank.png";
 import shinhanBankLogo from "../../assets/shinhan-bank.png";
+import wonBankLogo from "../../assets/won-bank.png";
+import hanaBankLogo from "../../assets/hana-bank.png";
 
 const props = defineProps({
   bankName: {
@@ -47,6 +49,18 @@ const logoSrc = computed(() => {
 
   if (normalizedName.includes("신한")) {
     return shinhanBankLogo;
+  }
+
+  if (
+    normalizedName.includes("우리") ||
+    normalizedName.includes("woori") ||
+    normalizedName.includes("won")
+  ) {
+    return wonBankLogo;
+  }
+
+  if (normalizedName.includes("하나") || normalizedName.includes("hana")) {
+    return hanaBankLogo;
   }
 
   return null;
