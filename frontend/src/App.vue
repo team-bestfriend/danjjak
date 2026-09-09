@@ -186,6 +186,7 @@ const appShellStyle = computed(() => ({
   width: "100%",
   maxWidth: "428px",
   height: "100dvh",
+  paddingBottom: "env(safe-area-inset-bottom)",
   "--text-scale": textScale.value,
 }));
 

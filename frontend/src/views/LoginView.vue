@@ -1,6 +1,7 @@
 <template>
-  <div class="login-view flex h-full flex-col bg-[#FAFAF8] px-6">
-    <main class="flex flex-col items-center pt-[32dvh]">
+  <div class="flex h-full min-h-0 flex-col bg-[#FAFAF8]">
+    <SafeArea />
+    <main class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8">
       <!-- 실제 단짝 PNG 로고 -->
       <img
         :src="danjjakLogo"
@@ -31,7 +32,7 @@
       </div>
     </main>
 
-    <div class="mt-auto pb-[25dvh]">
+    <div class="flex-shrink-0 px-6 pb-8 pt-4">
       <button
         type="button"
         class="block w-full overflow-hidden rounded-[12px] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
@@ -65,15 +66,8 @@
 <script setup>
 import danjjakLogo from "../assets/danjjak-logo.png";
 import kakaoLoginButton from "../assets/kakao_login_large_narrow.png";
+import SafeArea from "../components/common/SafeArea.vue";
 import { useAppStore } from "../stores/appStore";
 
 const store = useAppStore();
 </script>
-
-<style scoped>
-.login-view {
-  box-sizing: border-box;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-</style>
