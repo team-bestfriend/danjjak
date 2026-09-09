@@ -2,10 +2,12 @@ package com.bestfriend.danjjak.account;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.service.AccountService;
+import com.bestfriend.danjjak.common.error.ApiException;
 import com.bestfriend.danjjak.config.RootConfig;
 import java.math.BigDecimal;
 import java.util.Set;
@@ -108,5 +110,40 @@ class AccountDatabaseIntegrationTest {
                         .findFirst()
                         .orElseThrow()
                         .accountAlias());
+
+        accountService.deleteRecipientAccount(
+                1L, person.registeredPersonId(), addedAccountId);
+        var afterDelete = accountService.getRegisteredPersons(1L).stream()
+                .filter(item -> item.registeredPersonId() == person.registeredPersonId())
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(previousCount, afterDelete.accounts().size());
+    }
+
+    @Test
+    void rejectsDeletingPersonAndAccountLinkedToShortcut() {
+        var person = accountService.getRegisteredPersons(1L).stream()
+                .filter(item -> item.name().equals("김민수"))
+                .findFirst()
+                .orElseThrow();
+        long accountId = person.accounts().get(0).accountId();
+
+        ApiException accountError =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.deleteRecipientAccount(
+                                1L, person.registeredPersonId(), accountId));
+        ApiException personError =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.deleteRegisteredPerson(
+                                1L, person.registeredPersonId()));
+
+        assertEquals("RECIPIENT_ACCOUNT_IN_USE", accountError.getCode());
+        assertEquals("REGISTERED_PERSON_IN_USE", personError.getCode());
+        assertTrue(
+                accountService.getRegisteredPersons(1L).stream()
+                        .anyMatch(item -> item.registeredPersonId() == person.registeredPersonId()));
     }
 }

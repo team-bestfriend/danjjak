@@ -999,6 +999,126 @@ test('선택한 받는 계좌만 수정하고 다시 조회한다', async () => 
   assert.equal(store.accountsByPerson[2][0].nickname, '수정된 계좌');
 });
 
+test('등록된 사람 삭제 후 서버 목록을 다시 조회한다', async () => {
+  const store = createStore();
+  const requests = [];
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({ url, method: options.method ?? 'GET' });
+    if (url === '/api/registered-persons/2' && options.method === 'DELETE') {
+      return new Response(null, { status: 204 });
+    }
+    if (url === '/api/accounts') return jsonResponse([]);
+    if (url === '/api/registered-persons') return jsonResponse([]);
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  assert.equal(await store.deleteRegisteredPerson(2), true);
+  assert.equal(store.registeredPersonDeletingId, null);
+  assert.deepEqual(store.people, []);
+  assert.deepEqual(requests, [
+    { url: '/api/registered-persons/2', method: 'DELETE' },
+    { url: '/api/accounts', method: 'GET' },
+    { url: '/api/registered-persons', method: 'GET' },
+  ]);
+});
+
+test('등록된 사람 삭제 중에는 중복 요청을 보내지 않는다', async () => {
+  const store = createStore();
+  let resolveDelete;
+  let deleteRequestCount = 0;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/registered-persons/2' && options.method === 'DELETE') {
+      deleteRequestCount += 1;
+      return new Promise((resolve) => {
+        resolveDelete = () => resolve(new Response(null, { status: 204 }));
+      });
+    }
+    if (url === '/api/accounts') return jsonResponse([]);
+    if (url === '/api/registered-persons') return jsonResponse([]);
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  const firstDelete = store.deleteRegisteredPerson(2);
+  await Promise.resolve();
+  assert.equal(store.registeredPersonDeletingId, 2);
+  assert.equal(await store.deleteRegisteredPerson(3), false);
+  assert.equal(deleteRequestCount, 1);
+
+  resolveDelete();
+  assert.equal(await firstDelete, true);
+  assert.equal(store.registeredPersonDeletingId, null);
+});
+
+test('연결된 등록 인물 삭제가 거부되면 오류와 삭제 상태를 복구한다', async () => {
+  const store = createStore();
+  globalThis.fetch = async () => jsonResponse({
+    code: 'REGISTERED_PERSON_IN_USE',
+    message: '연결된 송금 패턴이나 거래내역이 있어 삭제할 수 없습니다.',
+  }, 409);
+
+  await assert.rejects(store.deleteRegisteredPerson(2), (error) => {
+    assert.equal(error.code, 'REGISTERED_PERSON_IN_USE');
+    assert.equal(error.message, '연결된 송금 패턴이나 거래내역이 있어 삭제할 수 없습니다.');
+    return true;
+  });
+  assert.equal(store.registeredPersonDeletingId, null);
+});
+
+test('선택한 받는 계좌 삭제 후 서버 목록을 다시 조회한다', async () => {
+  const store = createStore();
+  const requests = [];
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({ url, method: options.method ?? 'GET' });
+    if (url === '/api/registered-persons/2/accounts/9' && options.method === 'DELETE') {
+      return new Response(null, { status: 204 });
+    }
+    if (url === '/api/accounts') return jsonResponse([]);
+    if (url === '/api/registered-persons') {
+      return jsonResponse([{
+        registeredPersonId: 2,
+        name: '김지영',
+        relationship: '딸',
+        accounts: [],
+      }]);
+    }
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  assert.equal(await store.deleteRecipientAccount(2, 9), true);
+  assert.equal(store.recipientAccountDeletingId, null);
+  assert.deepEqual(store.accountsByPerson[2], []);
+  assert.deepEqual(requests, [
+    { url: '/api/registered-persons/2/accounts/9', method: 'DELETE' },
+    { url: '/api/accounts', method: 'GET' },
+    { url: '/api/registered-persons', method: 'GET' },
+  ]);
+});
+
+test('받는 계좌 삭제 중에는 다른 삭제 요청을 보내지 않는다', async () => {
+  const store = createStore();
+  let resolveDelete;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/registered-persons/2/accounts/9' && options.method === 'DELETE') {
+      return new Promise((resolve) => {
+        resolveDelete = () => resolve(new Response(null, { status: 204 }));
+      });
+    }
+    if (url === '/api/accounts') return jsonResponse([]);
+    if (url === '/api/registered-persons') return jsonResponse([]);
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  const firstDelete = store.deleteRecipientAccount(2, 9);
+  await Promise.resolve();
+  assert.equal(store.recipientAccountDeletingId, 9);
+  assert.equal(await store.deleteRegisteredPerson(2), false);
+  assert.equal(await store.deleteRecipientAccount(2, 10), false);
+
+  resolveDelete();
+  assert.equal(await firstDelete, true);
+  assert.equal(store.recipientAccountDeletingId, null);
+});
+
 test('카테고리 조회는 서버 필터 쿼리를 사용하고 잔액과 결과를 함께 반영한다', async () => {
   const store = createStore();
   const urls = [];

@@ -43,6 +43,9 @@ class AccountMapperBindingTest {
                         "insertRecipientAccount",
                         "updateRegisteredPerson",
                         "updateRecipientAccount",
+                        "countPatternsLinkedToRecipientAccount",
+                        "countPatternsLinkedToRegisteredPerson",
+                        "deleteRecipientAccount",
                         "deleteRecipientAccountsForPerson",
                         "deleteRegisteredPerson",
                         "findTransactions")

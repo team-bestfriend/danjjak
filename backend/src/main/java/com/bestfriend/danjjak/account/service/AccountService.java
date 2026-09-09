@@ -142,8 +142,37 @@ public class AccountService {
     }
 
     @Transactional
+    public void deleteRecipientAccount(
+            long userId, long registeredPersonId, long accountId) {
+        if (accountMapper.findRecipientAccount(userId, registeredPersonId, accountId) == null) {
+            throw new ApiException(
+                    HttpStatus.NOT_FOUND, "RECIPIENT_ACCOUNT_NOT_FOUND", "받는 계좌를 찾을 수 없습니다.");
+        }
+        if (accountMapper.countPatternsLinkedToRecipientAccount(userId, accountId) > 0) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "RECIPIENT_ACCOUNT_IN_USE",
+                    "단축번호에 연결된 계좌는 삭제할 수 없습니다.");
+        }
+        try {
+            accountMapper.deleteRecipientAccount(userId, registeredPersonId, accountId);
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "RECIPIENT_ACCOUNT_IN_USE",
+                    "연결된 기록이 있어 계좌를 삭제할 수 없습니다.");
+        }
+    }
+
+    @Transactional
     public void deleteRegisteredPerson(long userId, long registeredPersonId) {
         requireRegisteredPerson(userId, registeredPersonId);
+        if (accountMapper.countPatternsLinkedToRegisteredPerson(userId, registeredPersonId) > 0) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "REGISTERED_PERSON_IN_USE",
+                    "단축번호에 연결된 사람은 삭제할 수 없습니다.");
+        }
         try {
             accountMapper.deleteRecipientAccountsForPerson(userId, registeredPersonId);
             accountMapper.deleteRegisteredPerson(userId, registeredPersonId);

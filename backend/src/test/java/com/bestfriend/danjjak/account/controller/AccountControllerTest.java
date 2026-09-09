@@ -208,6 +208,14 @@ class AccountControllerTest {
     }
 
     @Test
+    void deletesSelectedRecipientAccount() throws Exception {
+        mockMvc.perform(delete("/api/registered-persons/10/accounts/21"))
+                .andExpect(status().isNoContent());
+
+        verify(accountService).deleteRecipientAccount(1L, 10L, 21L);
+    }
+
+    @Test
     void deletesRegisteredPerson() throws Exception {
         mockMvc.perform(delete("/api/registered-persons/10"))
                 .andExpect(status().isNoContent());

@@ -235,6 +235,44 @@ class AccountServiceTest {
     }
 
     @Test
+    void deletesSelectedRecipientAccount() {
+        when(accountMapper.findRecipientAccount(1L, 10L, 21L))
+                .thenReturn(registeredPersonRecord());
+
+        accountService.deleteRecipientAccount(1L, 10L, 21L);
+
+        verify(accountMapper).deleteRecipientAccount(1L, 10L, 21L);
+    }
+
+    @Test
+    void rejectsDeletingRecipientAccountOwnedByAnotherPerson() {
+        when(accountMapper.findRecipientAccount(1L, 10L, 99L)).thenReturn(null);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.deleteRecipientAccount(1L, 10L, 99L));
+
+        assertEquals("RECIPIENT_ACCOUNT_NOT_FOUND", exception.getCode());
+        verify(accountMapper, never()).deleteRecipientAccount(1L, 10L, 99L);
+    }
+
+    @Test
+    void rejectsDeletingRecipientAccountLinkedToPattern() {
+        when(accountMapper.findRecipientAccount(1L, 10L, 21L))
+                .thenReturn(registeredPersonRecord());
+        when(accountMapper.countPatternsLinkedToRecipientAccount(1L, 21L)).thenReturn(1);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.deleteRecipientAccount(1L, 10L, 21L));
+
+        assertEquals("RECIPIENT_ACCOUNT_IN_USE", exception.getCode());
+        verify(accountMapper, never()).deleteRecipientAccount(1L, 10L, 21L);
+    }
+
+    @Test
     void deletesRegisteredPersonAndRecipientAccounts() {
         RegisteredPersonAccountRecord current = registeredPersonRecord();
         when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(List.of(current));
@@ -243,6 +281,22 @@ class AccountServiceTest {
 
         verify(accountMapper).deleteRecipientAccountsForPerson(1L, 10L);
         verify(accountMapper).deleteRegisteredPerson(1L, 10L);
+    }
+
+    @Test
+    void rejectsDeletingRegisteredPersonLinkedToPattern() {
+        RegisteredPersonAccountRecord current = registeredPersonRecord();
+        when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(List.of(current));
+        when(accountMapper.countPatternsLinkedToRegisteredPerson(1L, 10L)).thenReturn(1);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.deleteRegisteredPerson(1L, 10L));
+
+        assertEquals("REGISTERED_PERSON_IN_USE", exception.getCode());
+        verify(accountMapper, never()).deleteRecipientAccountsForPerson(1L, 10L);
+        verify(accountMapper, never()).deleteRegisteredPerson(1L, 10L);
     }
 
     @Test

@@ -171,7 +171,7 @@ async function handleSave() {
   saving.value = true;
   formError.value = "";
   try {
-    const saved = await store.saveRegisteredPerson(
+    await store.saveRegisteredPerson(
       {
         name: name.value,
         relationship: relationship.value,
@@ -179,7 +179,7 @@ async function handleSave() {
       },
       props.existingPerson?.id ?? null,
     );
-    emit("saved", saved.registeredPersonId);
+    emit("saved");
   } catch (error) {
     formError.value =
       error instanceof ApiError

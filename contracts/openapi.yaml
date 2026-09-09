@@ -555,6 +555,21 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Registered People]
+      operationId: deleteRecipientAccount
+      summary: 기존 등록 인물의 받는 계좌 삭제
+      description: 단축번호에 연결되지 않은 받는 계좌를 삭제하며, 연결된 계좌는 409로 거부한다.
+      parameters:
+        - $ref: '#/components/parameters/RegisteredPersonId'
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '204':
+          description: 받는 계좌가 삭제됨
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /api/transfers:
     post:
       tags: [Transfers]

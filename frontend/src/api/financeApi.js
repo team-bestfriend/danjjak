@@ -31,6 +31,9 @@ export const accountApi = {
     method: 'PUT',
     body: JSON.stringify(payload),
   }),
+  deleteRecipientAccount: (registeredPersonId, accountId) => request(`/api/registered-persons/${registeredPersonId}/accounts/${accountId}`, {
+    method: 'DELETE',
+  }),
 };
 
 export const transferApi = {

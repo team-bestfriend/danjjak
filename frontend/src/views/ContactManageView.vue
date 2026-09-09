@@ -89,7 +89,7 @@
               </button>
               <button
                 type="button"
-                :disabled="store.registeredPersonDeletingId === person.id"
+                :disabled="isDeleting"
                 class="min-h-[48px] rounded-xl border border-[#FCA5A5] px-4 font-bold text-[#B91C1C] disabled:opacity-50"
                 @click="deletePerson(person)"
               >
@@ -127,13 +127,29 @@
                 </p>
               </div>
 
-              <button
-                type="button"
-                class="min-h-[48px] shrink-0 rounded-xl border border-[#D1D5DB] px-3 font-bold text-[#374151]"
-                @click="openAccountEdit(person.id, account.accountId)"
-              >
-                계좌 수정
-              </button>
+              <div class="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  :aria-label="`${account.bankName} 계좌 수정`"
+                  class="min-h-[48px] rounded-xl border border-[#D1D5DB] px-3 font-bold text-[#374151]"
+                  @click="openAccountEdit(person.id, account.accountId)"
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  :aria-label="`${account.bankName} 계좌 삭제`"
+                  :disabled="isDeleting || store.recipientAccountDeletingId === account.accountId"
+                  class="min-h-[48px] rounded-xl border border-[#FCA5A5] px-3 font-bold text-[#B91C1C] disabled:opacity-50"
+                  @click="deleteAccount(person, account)"
+                >
+                  {{
+                    store.recipientAccountDeletingId === account.accountId
+                      ? "삭제 중"
+                      : "삭제"
+                  }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -200,7 +216,7 @@
             <button
               type="button"
               class="min-h-[52px] flex-1 rounded-[14px] border border-[#D1D5DB] font-bold text-[#374151]"
-              :disabled="store.registeredPersonDeletingId !== null"
+              :disabled="isDeleting"
               @click="closeDeleteDialog"
             >
               취소
@@ -208,11 +224,11 @@
             <button
               type="button"
               class="min-h-[52px] flex-1 rounded-[14px] bg-[#EF4444] font-bold text-white disabled:opacity-50"
-              :disabled="store.registeredPersonDeletingId !== null"
-              @click="confirmDeletePerson"
+              :disabled="isDeleting"
+              @click="confirmDeleteTarget"
             >
               {{
-                store.registeredPersonDeletingId !== null
+                isDeleting
                   ? "삭제 중"
                   : "삭제"
               }}
@@ -247,6 +263,10 @@ import { profileImageForPerson } from "../constants/profileImages.js";
 const store = useAppStore();
 const collapsedPersonIds = ref(new Set());
 const deleteDialog = ref(null);
+const isDeleting = computed(() => (
+  store.registeredPersonDeletingId !== null
+  || store.recipientAccountDeletingId !== null
+));
 const formattedPeople = computed(() =>
   store.people.map((person) => ({
     ...person,
@@ -303,22 +323,38 @@ function toggleAccounts(personId) {
 function deletePerson(person) {
   deleteDialog.value = {
     type: "confirm",
+    target: "person",
     person,
     title: `${person.name}님을 삭제할까요?`,
-    message: "삭제하면 등록된 수취 계좌도 함께 삭제돼요.",
+    message: "등록된 계좌도 함께 삭제돼요. 단축번호에 연결된 사람은 삭제할 수 없어요.",
   };
 }
 
-async function confirmDeletePerson() {
+function deleteAccount(person, account) {
+  deleteDialog.value = {
+    type: "confirm",
+    target: "account",
+    person,
+    account,
+    title: "이 계좌를 삭제할까요?",
+    message: `${account.bankName} ${account.masked} 계좌를 삭제해요. 단축번호에 연결된 계좌는 삭제할 수 없어요.`,
+  };
+}
+
+async function confirmDeleteTarget() {
   if (deleteDialog.value?.type !== "confirm") return;
-  const person = deleteDialog.value.person;
+  const dialog = deleteDialog.value;
   try {
-    await store.deleteRegisteredPerson(person.id);
+    if (dialog.target === "account") {
+      await store.deleteRecipientAccount(dialog.person.id, dialog.account.accountId);
+    } else {
+      await store.deleteRegisteredPerson(dialog.person.id);
+    }
     deleteDialog.value = null;
   } catch (error) {
     deleteDialog.value = {
       type: "error",
-      title: "삭제할 수 없어요.",
+      title: dialog.target === "account" ? "계좌를 삭제할 수 없어요." : "삭제할 수 없어요.",
       message:
         error instanceof ApiError
           ? error.message
@@ -328,7 +364,7 @@ async function confirmDeletePerson() {
 }
 
 function closeDeleteDialog() {
-  if (store.registeredPersonDeletingId !== null) return;
+  if (isDeleting.value) return;
   deleteDialog.value = null;
 }
 </script>
