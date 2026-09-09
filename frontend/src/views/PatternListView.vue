@@ -111,8 +111,6 @@
       <!-- 액션 버튼 -->
       <div className="space-y-2 pt-1">
         <Btn variant="secondary" @click="editDetailPattern">패턴 수정</Btn>
-        <Btn variant="secondary" @click="store.navigate('voice-edit', { params: { patternId: pDetail.patternId } })">패턴 설명 음성 수정</Btn>
-        <Btn variant="secondary" @click="store.navigate('step-voice-list', { params: { patternId: pDetail.patternId } })">단계별 음성 안내 수정</Btn>
         <Btn variant="info" @click="openNumPickerForDetail">패턴 번호 수정</Btn>
         <Btn variant="danger" @click="openDeleteForDetail">패턴 삭제</Btn>
       </div>
