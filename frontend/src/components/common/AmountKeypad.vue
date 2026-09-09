@@ -1,6 +1,11 @@
 <template>
   <div className="space-y-4">
-    <Card className="p-5 text-center border-2 border-[#F5B800]">
+    <Card
+      :className="[
+        'p-5 text-center border-2 border-[#F5B800]',
+        highlightComplete && val === '0' ? 'step-guide-target' : '',
+      ].filter(Boolean).join(' ')"
+    >
       <p className="break-keep text-[40px] font-black leading-tight text-[#111827]">{{ formatWon(val) }}</p>
       <p className="mt-2 min-h-6 break-keep text-[17px] font-bold text-[#6B7280]">
         {{ val === '0' ? '금액을 입력해 주세요.' : formatWonByUnits(val) }}
@@ -31,7 +36,11 @@
         <template v-else>{{ k }}</template>
       </button>
     </div>
-    <Btn :disabled="val === '0'" @click="$emit('complete', val)">다음</Btn>
+    <Btn
+      :className="highlightComplete && val !== '0' ? 'step-guide-target' : ''"
+      :disabled="val === '0'"
+      @click="$emit('complete', val)"
+    >다음</Btn>
   </div>
 </template>
 
@@ -46,6 +55,7 @@ defineEmits(['complete']);
 
 const props = defineProps({
   initialValue: { type: [String, Number], default: '0' },
+  highlightComplete: { type: Boolean, default: false },
 });
 
 const initialAmount = Number(props.initialValue);
