@@ -12,7 +12,10 @@
         value === o.key ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280]'
       ]"
     >
-      {{ o.label }}
+      <span class="flex items-center justify-center gap-2">
+        <img v-if="o.icon" :src="o.icon" alt="" class="h-10 w-10 shrink-0 object-contain" aria-hidden="true" />
+        <span>{{ o.label }}</span>
+      </span>
     </button>
   </div>
 </template>
