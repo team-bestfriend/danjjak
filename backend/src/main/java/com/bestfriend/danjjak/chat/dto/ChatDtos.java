@@ -8,7 +8,7 @@ public final class ChatDtos {
 
     public enum Action {
         TRANSFER, BALANCE_CHECK, PENSION_CHECK, MANAGEMENT_FEE_CHECK,
-        UTILITY_BILL_CHECK, CUSTOMER_CENTER, APP_HELP, NONE
+        UTILITY_BILL_CHECK, CUSTOMER_CENTER, PATTERN, APP_HELP, NONE
     }
 
     public record ChatRequest(@NotBlank @Size(max = 500) String message) {}
