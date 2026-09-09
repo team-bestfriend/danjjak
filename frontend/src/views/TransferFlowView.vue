@@ -1208,9 +1208,11 @@ async function notifyGuardian() {
   }
 }
 
-function goToHistory() {
+async function goToHistory() {
   store.startTransfer();
-  store.navigate("task-5", { replace: true });
+  // 거래내역에서 뒤로 가면 끝난 송금 단계 대신 홈으로 돌아가도록 한다.
+  await store.navigate("home", { replace: true });
+  await store.navigate("task-5");
 }
 
 function finishToHome() {
