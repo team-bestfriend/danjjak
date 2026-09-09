@@ -45,6 +45,11 @@ const analysisResponse = (patterns = [], status = patterns.length ? 'AVAILABLE' 
   status, from: '2026-09-03', to: '2026-09-09', patterns, steps: [], difficultStep: null,
 }));
 
+test('조회 화면은 시연용 표현 없이 조회 기간을 안내한다', () => {
+  assert.doesNotMatch(taskViewSource, /시연용 거래 데이터/);
+  assert.match(taskViewSource, /조회 기간 · 전체 기간/);
+});
+
 async function mount(t, fetcher, usagePatterns = []) {
   discardChatConversation();
   const original = globalThis.fetch;

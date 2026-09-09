@@ -101,12 +101,12 @@
         </select>
       </label>
 
-      <!-- 시연 데이터 안내 -->
+      <!-- 조회 범위 안내 -->
       <div
         class="rounded-[16px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-[15px] text-[#92650A]"
       >
         <p class="font-bold">
-          시연용 거래 데이터 · 전체 기간{{
+          조회 기간 · 전체 기간{{
             taskConfig?.category ? ` · ${categoryLabel} 분류` : ""
           }}
         </p>
