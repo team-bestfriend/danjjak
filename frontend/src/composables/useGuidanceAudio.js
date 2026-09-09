@@ -13,8 +13,8 @@ export function useGuidanceAudio(text, { voiceMode = 'TTS', familyAudioUrl = '',
   const error = computed(() => useTts.value ? tts.error.value : '');
   const notice = computed(() => {
     if (toValue(voiceMode) !== 'FAMILY') return '';
-    if (!toValue(familyAudioUrl)) return '저장된 가족 음성이 없어 자동 음성으로 안내해요.';
-    if (failed.value) return '가족 음성을 재생하지 못해 자동 음성으로 안내해요.';
+    if (!toValue(familyAudioUrl)) return '저장된 가족 음성이 없어 AI 음성으로 안내해요.';
+    if (failed.value) return '가족 음성을 재생하지 못해 AI 음성으로 안내해요.';
     return '저장된 가족 음성으로 안내해요.';
   });
 

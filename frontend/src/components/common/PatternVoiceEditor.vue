@@ -5,11 +5,11 @@
       <p class="text-[16px] text-[#6B7280]">안내 문구와 음성을 확인해 주세요.</p>
       <button type="button" class="flex min-h-[96px] w-full items-center gap-4 rounded-[20px] border-2 border-[#FFBC00] bg-white p-5 text-left" @click="chooseMode('TTS')">
         <span class="text-[30px]" aria-hidden="true">🤖</span>
-        <span><strong class="block text-[20px]">TTS 자동 음성</strong><span class="text-[15px] text-[#6B7280]">안내 문구를 편집하고 미리 들어요.</span></span>
+        <span><strong class="block text-[20px]">AI 음성</strong><span class="text-[15px] text-[#6B7280]">안내 문구를 편집하고 미리 들어요.</span></span>
       </button>
       <button type="button" class="flex min-h-[96px] w-full items-center gap-4 rounded-[20px] border border-[#E5E7EB] bg-white p-5 text-left" @click="chooseMode('FAMILY')">
         <span class="text-[30px]" aria-hidden="true">🎙️</span>
-        <span><strong class="block text-[20px]">가족 음성 녹음</strong><span class="text-[15px] text-[#6B7280]">가족이 읽어 주는 안내를 녹음해요.</span></span>
+        <span><strong class="block text-[20px]">가족 음성</strong><span class="text-[15px] text-[#6B7280]">가족이 읽어 주는 안내를 녹음해요.</span></span>
       </button>
       <Btn variant="secondary" @click="chooseMode(null)">전체 음성 설정 따르기</Btn>
       <p class="text-[15px] text-[#6B7280]">현재 선택: {{ voiceLabel({ voiceMode: selectedMode, audioUrl }, defaultMode) }}</p>
@@ -18,7 +18,7 @@
 
     <template v-else>
       <div class="flex items-center justify-between gap-3">
-        <h2 class="text-[25px] font-bold text-[#111827]">{{ mode === 'tts' ? 'TTS 자동 음성' : '가족 음성 녹음' }}</h2>
+        <h2 class="text-[25px] font-bold text-[#111827]">{{ mode === 'tts' ? 'AI 음성' : '가족 음성 녹음' }}</h2>
         <button type="button" :disabled="busy" class="min-h-12 min-w-16 rounded-[12px] bg-[#FFF3CC] px-3 text-[17px] font-bold disabled:opacity-50" @click="editing = !editing">
           {{ editing ? '완료' : '편집' }}
         </button>
@@ -36,7 +36,7 @@
         <p class="whitespace-pre-wrap break-words text-[18px] leading-relaxed text-[#111827]">“{{ draft }}”</p>
         <button type="button" :disabled="!valid || busy || loading" class="flex min-h-12 items-center gap-3 text-[17px] font-bold text-[#2563EB] disabled:opacity-40" @click="preview">
           <span class="flex h-12 w-12 items-center justify-center rounded-full bg-[#DBEAFE]" aria-hidden="true">{{ playing ? '⏸' : '▶' }}</span>
-          {{ loading ? '음성을 불러오는 중…' : playing ? '일시 정지' : mode === 'family' ? '대본을 TTS로 미리 듣기' : '미리 듣기' }}
+          {{ loading ? '음성을 불러오는 중…' : playing ? '일시 정지' : mode === 'family' ? '안내 문구를 AI 음성으로 미리 듣기' : '미리 듣기' }}
         </button>
         <p v-if="error" class="text-[15px] text-[#B91C1C]" role="alert">{{ error }} 문구는 계속 편집하고 저장할 수 있어요.</p>
       </div>
@@ -47,13 +47,13 @@
         <p v-if="recordError" class="text-[15px] text-[#B91C1C]" role="alert">{{ recordError }}</p>
         <template v-if="previewUrl">
           <p class="text-[15px] font-bold">{{ recording ? '새 녹음 미리듣기 · 아직 저장 전' : '저장된 가족 음성' }}</p>
-          <audio ref="recordedAudio" :src="previewUrl" controls class="h-14 w-full" @play="stopPreview" @error="playbackError = '녹음을 재생하지 못했어요. 다시 녹음하거나 TTS를 선택해 주세요.'" />
+          <audio ref="recordedAudio" :src="previewUrl" controls class="h-14 w-full" @play="stopPreview" @error="playbackError = '녹음을 재생하지 못했어요. 다시 녹음하거나 AI 음성을 선택해 주세요.'" />
           <p v-if="playbackError" class="text-[15px] text-[#B91C1C]" role="alert">{{ playbackError }}</p>
         </template>
         <Btn v-if="recording" variant="secondary" :disabled="busy" @click="recording = null">새 녹음 취소 · 기존 녹음 유지</Btn>
-        <p v-if="!recording && !audioUrl" class="text-[15px] text-[#6B7280]">녹음 없이 저장하면 같은 문구를 TTS로 안내해요.</p>
+        <p v-if="!recording && !audioUrl" class="text-[15px] text-[#6B7280]">녹음 없이 저장하면 같은 문구를 AI 음성으로 안내해요.</p>
       </template>
-      <p v-if="mismatch" class="rounded-[16px] bg-[#FFF3CC] p-4 text-[15px] text-[#92650A]" role="status">문구가 바뀌었지만 녹음은 바뀌지 않았어요. 다시 녹음하거나 방식을 TTS로 바꿀 수 있어요. 저장된 이전 녹음을 그대로 사용하는 것도 가능해요.</p>
+      <p v-if="mismatch" class="rounded-[16px] bg-[#FFF3CC] p-4 text-[15px] text-[#92650A]" role="status">문구가 바뀌었지만 녹음은 바뀌지 않았어요. 다시 녹음하거나 방식을 AI 음성으로 바꿀 수 있어요. 저장된 이전 녹음을 그대로 사용하는 것도 가능해요.</p>
       <p v-if="invalidRecording" class="text-[15px] text-[#B91C1C]" role="alert">새 녹음 후 문구가 바뀌었어요. 다시 녹음하거나 새 녹음을 취소한 뒤 저장해 주세요.</p>
       <p class="text-[14px] text-[#6B7280]">{{ selectedMode ? '이 안내에만 선택한 음성을 사용해요.' : '전체 음성 설정을 따라요.' }}</p>
       <p v-if="dirty" class="text-[14px] text-[#92650A]" role="status">아직 저장하지 않은 변경이 있어요.</p>

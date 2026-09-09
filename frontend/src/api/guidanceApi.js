@@ -37,5 +37,5 @@ export async function saveGuidanceDraft(id, target, draft, onSaved = () => {}) {
 
 export function voiceLabel(draft, defaultMode = 'TTS') {
   const mode = draft?.voiceMode ?? defaultMode;
-  return `${draft?.voiceMode ? '' : '전체 설정 · '}${mode === 'FAMILY' ? '가족 음성' : 'TTS 자동 음성'}${draft?.recording ? ' · 새 녹음 저장 예정' : draft?.audioUrl ? ' · 저장된 녹음 있음' : mode === 'FAMILY' ? ' · 녹음 없으면 TTS' : ''}`;
+  return `${draft?.voiceMode ? '' : '전체 설정 · '}${mode === 'FAMILY' ? '가족 음성' : 'AI 음성'}${draft?.recording ? ' · 새 녹음 저장 예정' : draft?.audioUrl ? ' · 저장된 녹음 있음' : mode === 'FAMILY' ? ' · 녹음 없으면 AI 음성' : ''}`;
 }
