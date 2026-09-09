@@ -111,8 +111,6 @@
       <!-- 액션 버튼 -->
       <div className="space-y-2 pt-1">
         <Btn variant="secondary" @click="editDetailPattern">패턴 수정</Btn>
-        <Btn variant="secondary" @click="store.navigate('voice-edit', { params: { patternId: pDetail.patternId } })">패턴 설명 음성 수정</Btn>
-        <Btn variant="secondary" @click="store.navigate('step-voice-list', { params: { patternId: pDetail.patternId } })">단계별 음성 안내 수정</Btn>
         <Btn variant="info" @click="openNumPickerForDetail">패턴 번호 수정</Btn>
         <Btn variant="danger" @click="openDeleteForDetail">패턴 삭제</Btn>
       </div>
@@ -193,10 +191,27 @@ const sortedPatterns = computed(() => [...store.patterns].sort((a, b) => a.num -
 const ghostPat = computed(() => (drag.value ? store.patterns.find((p) => p.num === drag.value.sourceNum) : null));
 
 const pDetail = computed(() => store.activePattern || {});
-const detailPerson = computed(() => (pDetail.value.taskType === 'transfer' ? store.people.find((x) => x.id === pDetail.value.personId) : null));
+const detailPerson = computed(() => {
+  if (pDetail.value.taskType !== 'transfer') return null;
+  const person = store.people.find((item) => item.id === pDetail.value.personId);
+  if (person) return person;
+  if (!pDetail.value.linkedAccount?.registeredPersonName) return null;
+  return {
+    emoji: '👤',
+    name: pDetail.value.linkedAccount?.registeredPersonName,
+    relation: pDetail.value.linkedAccount?.relationship,
+  };
+});
+const detailAccount = computed(() => (pDetail.value.taskType === 'transfer' ? pDetail.value.linkedAccount : null));
+const detailAccountLabel = computed(() => [
+  detailAccount.value?.bankName,
+  detailAccount.value?.accountAlias,
+  detailAccount.value?.masked,
+].filter(Boolean).join(' · '));
 
 const detailRows = computed(() => [
   detailPerson.value ? { l: "받는 사람", v: `${detailPerson.value.emoji} ${detailPerson.value.name} (${detailPerson.value.relation})` } : null,
+  detailAccountLabel.value ? { l: "받는 계좌", v: detailAccountLabel.value } : null,
   { l: "업무 유형", v: pDetail.value.taskType },
   { l: "단축번호", v: `${pDetail.value.num}번` },
   { l: "최근 사용", v: "오늘" }

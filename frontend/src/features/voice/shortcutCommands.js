@@ -9,6 +9,11 @@ export const voiceCommandExamples = [
   '공과금 확인해 줘',
 ];
 
+const koreanShortcutNumbers = new Map([
+  ['일', 1], ['이', 2], ['삼', 3], ['사', 4], ['오', 5], ['육', 6],
+  ['칠', 7], ['팔', 8], ['구', 9], ['십', 10], ['십일', 11], ['십이', 12],
+]);
+
 function normalize(text) {
   return String(text ?? '').normalize('NFKC').toLowerCase().replace(/[\s.,!?。！？]/gu, '');
 }
@@ -26,8 +31,22 @@ const rules = [
   { patternType: 'UTILITY_BILL_CHECK', phrase: new RegExp(`^공과금(?:납부)?${inquiry}$`) },
 ];
 
+function parseShortcutNumber(command) {
+  const value = command.endsWith('번') ? command.slice(0, -1) : command;
+  if (/^(?:[1-9]|1[0-2])$/.test(value)) return Number(value);
+  return koreanShortcutNumbers.get(value) ?? null;
+}
+
 export function matchShortcutCommand(text, patterns) {
   const command = normalize(text);
+  const shortcutNumber = parseShortcutNumber(command);
+  if (shortcutNumber !== null) {
+    return patterns.filter((pattern) => (
+      pattern.num === shortcutNumber
+      && pattern.active !== false
+      && pattern.isActive !== false
+    ));
+  }
   const matchedRules = rules.filter((rule) => rule.phrase.test(command));
   // 제목이나 번호가 바뀌어도 서버의 업무 종류와 수취인 관계로 같은 대상을 찾는다.
   return patterns.filter((pattern) => (

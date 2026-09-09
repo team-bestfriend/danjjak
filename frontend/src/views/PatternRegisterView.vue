@@ -12,9 +12,22 @@
     </div>
 
     <template v-else>
-      <div class="border-b border-[#EEEEED] bg-white px-5 py-3">
-        <p class="text-[14px] font-bold text-[#92650A]">{{ stageIndex + 1 }} / {{ stages.length }}</p>
-        <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#F3F4F6]">
+      <div class="border-b border-[#EEEEED] bg-white px-5 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-[15px] font-bold text-[#92650A]">{{ editing ? '패턴 수정' : '패턴 등록' }}</p>
+            <p class="mt-1 text-[19px] font-bold text-[#111827]">{{ stageLabel }}</p>
+          </div>
+          <span class="shrink-0 rounded-full bg-[#FFF3CC] px-3 py-1 text-[15px] font-bold text-[#92650A]">{{ stageIndex + 1 }} / {{ stages.length }}단계</span>
+        </div>
+        <div
+          class="mt-3 h-2.5 overflow-hidden rounded-full bg-[#F3F4F6]"
+          role="progressbar"
+          :aria-label="`${stageLabel} 단계`"
+          :aria-valuenow="stageIndex + 1"
+          aria-valuemin="1"
+          :aria-valuemax="stages.length"
+        >
           <div class="h-full rounded-full bg-[#FFBC00] transition-all" :style="{ width: `${((stageIndex + 1) / stages.length) * 100}%` }" />
         </div>
       </div>
@@ -64,32 +77,50 @@
         </section>
 
         <section v-else-if="stage === 'details'" class="space-y-5">
-          <h1 class="text-[26px] font-bold text-[#111827]">시작 전에 보여줄 내용을 확인해요</h1>
+          <div>
+            <h1 class="text-[27px] font-bold leading-snug text-[#111827]">패턴 내용을 확인해 주세요</h1>
+            <p class="mt-2 text-[17px] leading-relaxed text-[#6B7280]">패턴 이름과 시작 전에 들려줄 설명을 바꿀 수 있어요.</p>
+          </div>
+
+          <div v-if="editing" class="rounded-[20px] border-2 border-[#FDE68A] bg-[#FFFBEB] p-5" aria-label="현재 금융 업무">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-[17px] font-bold text-[#6B7280]">현재 금융 업무</p>
+              <span class="shrink-0 rounded-full border border-[#FDE68A] bg-white px-3 py-1 text-[14px] font-bold text-[#92650A]">변경할 수 없음</span>
+            </div>
+            <p class="mt-2 text-[22px] font-bold text-[#111827]">{{ typeLabel(selectedType) }}</p>
+            <p class="mt-3 text-[16px] leading-relaxed text-[#4B5563]">업무를 바꾸면 단계와 안내도 달라져요. 다른 업무가 필요하면 새 패턴으로 등록해 주세요.</p>
+          </div>
 
           <label class="block space-y-2">
-            <span class="text-[17px] font-bold text-[#374151]">패턴 이름</span>
-            <input v-model.trim="title" maxlength="100" class="h-[60px] w-full rounded-[16px] border-2 border-[#E5E7EB] bg-white px-4 text-[18px] outline-none focus:border-[#FFBC00]" />
+            <span class="text-[18px] font-bold text-[#374151]">패턴 이름</span>
+            <input v-model.trim="title" maxlength="100" class="h-[60px] w-full rounded-[16px] border-2 border-[#E5E7EB] bg-white px-4 text-[19px] outline-none focus:border-[#FFBC00]" />
           </label>
           <label class="block space-y-2">
-            <span class="text-[17px] font-bold text-[#374151]">시작 전 설명</span>
-            <textarea v-model.trim="description" maxlength="500" rows="4" class="w-full resize-none rounded-[16px] border-2 border-[#E5E7EB] bg-white p-4 text-[16px] leading-relaxed outline-none focus:border-[#FFBC00]" />
+            <span class="text-[18px] font-bold text-[#374151]">시작 전 설명</span>
+            <textarea v-model.trim="description" maxlength="500" rows="4" class="w-full resize-none rounded-[16px] border-2 border-[#E5E7EB] bg-white p-4 text-[18px] leading-relaxed outline-none focus:border-[#FFBC00]" />
           </label>
 
           <div v-if="selectedType === 'TRANSFER'" class="space-y-3">
             <p class="text-[17px] font-bold text-[#374151]">받는 사람과 계좌</p>
+            <p v-if="recipientAccountOptions.length === 0" class="rounded-[16px] bg-[#F9FAFB] p-4 text-[15px] text-[#6B7280]">
+              등록된 받는 계좌가 없어요. 설정에서 사람 및 계좌를 먼저 등록해 주세요.
+            </p>
             <button
-              v-for="person in store.people"
-              :key="person.id"
+              v-for="option in recipientAccountOptions"
+              :key="option.accountId"
               type="button"
-              :disabled="!store.accountsByPerson[person.id]?.[0]"
+              :aria-pressed="linkedBankAccountId === option.accountId"
               :class="[
-                'w-full rounded-[16px] border-2 bg-white p-4 text-left disabled:opacity-40',
-                linkedBankAccountId === store.accountsByPerson[person.id]?.[0]?.accountId ? 'border-[#FFBC00]' : 'border-[#E5E7EB]',
+                'flex w-full items-center gap-3 rounded-[16px] border-2 bg-white p-4 text-left',
+                linkedBankAccountId === option.accountId ? 'border-[#FFBC00]' : 'border-[#E5E7EB]',
               ]"
-              @click="linkedBankAccountId = store.accountsByPerson[person.id][0].accountId"
+              @click="linkedBankAccountId = option.accountId"
             >
-              <span class="text-[18px] font-bold text-[#111827]">{{ person.emoji }} {{ person.name }} · {{ person.relation }}</span>
-              <span class="mt-1 block text-[14px] text-[#6B7280]">{{ store.accountsByPerson[person.id]?.[0]?.bankName }} · {{ store.accountsByPerson[person.id]?.[0]?.masked }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="text-[18px] font-bold text-[#111827]">{{ option.personEmoji }} {{ option.personName }} · {{ option.personRelation }}</span>
+                <span class="mt-1 block text-[14px] text-[#6B7280]">{{ option.bankName }} · {{ option.masked }}<template v-if="option.accountAlias"> · {{ option.accountAlias }}</template></span>
+              </span>
+              <span v-if="linkedBankAccountId === option.accountId" class="whitespace-nowrap text-[15px] font-bold text-[#92650A]">✓ 선택됨</span>
             </button>
           </div>
         </section>
@@ -106,7 +137,7 @@
           :audio-url="descriptionVoice.audioUrl"
           :voice-script-outdated="descriptionVoice.voiceScriptOutdated || Boolean(descriptionVoice.audioUrl && descriptionVoice.text !== description)"
           :recording-draft="descriptionVoice.recording"
-          action-label="이 음성으로 다음 · 마지막에 저장"
+          action-label="음성 저장 및 다음"
           @dirty="voiceDirty = $event"
           @confirm="acceptDescription"
           @cancel="voiceDirty = false; stageIndex--"
@@ -184,10 +215,18 @@ const route = useRoute();
 const store = useAppStore();
 const editing = computed(() => Number.isInteger(Number(route.query.edit)) && Number(route.query.edit) > 0);
 const stages = computed(() => editing.value
-  ? ['template', 'details', 'voice', 'steps', 'confirm']
+  ? ['details', 'voice', 'steps', 'confirm']
   : ['template', 'shortcut', 'details', 'voice', 'steps', 'confirm']);
 const stageIndex = ref(0);
 const stage = computed(() => stages.value[stageIndex.value]);
+const stageLabel = computed(() => ({
+  template: '금융 업무 선택',
+  shortcut: '단축번호 선택',
+  details: '기본 정보',
+  voice: '시작 안내 음성',
+  steps: '단계별 안내',
+  confirm: '최종 확인',
+})[stage.value] ?? '');
 const loading = ref(true);
 const loadError = ref('');
 const submitting = ref(false);
@@ -209,9 +248,27 @@ const voiceDirty = ref(false);
 const voiceDraftChanged = ref(false);
 
 const selectedTemplate = computed(() => store.patternTemplates.find((item) => item.patternType === selectedType.value));
-const selectedPerson = computed(() => store.people.find((person) => (
-  store.accountsByPerson[person.id]?.[0]?.accountId === linkedBankAccountId.value
+/*
+ * 한 사람에게 등록된 모든 받는 계좌를 계좌 단위로 펼쳐 보여 준다.
+ * 사람 단위로 첫 계좌만 노출하면 두 번째 계좌를 패턴에 연결할 수 없다.
+ */
+const recipientAccountOptions = computed(() => store.people.flatMap((person) => (
+  (store.accountsByPerson[person.id] ?? []).map((account) => ({
+    ...account,
+    personId: person.id,
+    personName: person.name,
+    personRelation: person.relation,
+    personEmoji: person.emoji,
+  }))
 )));
+const selectedRecipientOption = computed(() => (
+  recipientAccountOptions.value.find((option) => option.accountId === linkedBankAccountId.value) ?? null
+));
+const selectedPerson = computed(() => (
+  selectedRecipientOption.value
+    ? store.people.find((person) => person.id === selectedRecipientOption.value.personId) ?? null
+    : null
+));
 const canContinue = computed(() => {
   if (stage.value === 'template') return Boolean(selectedTemplate.value?.available);
   if (stage.value === 'shortcut') return Number.isInteger(shortcutNumber.value) && !isUsed(shortcutNumber.value);
@@ -231,6 +288,7 @@ const summaryRows = computed(() => [
   { label: '시작 전 설명', value: description.value },
   { label: '시작 안내 음성', value: voiceLabel(descriptionVoice.value, store.currentUser?.settings?.guideVoiceType) },
   ...(selectedPerson.value ? [{ label: '받는 사람', value: `${selectedPerson.value.name} · ${selectedPerson.value.relation}` }] : []),
+  ...(selectedRecipientOption.value ? [{ label: '받는 계좌', value: `${selectedRecipientOption.value.bankName} · ${selectedRecipientOption.value.masked}` }] : []),
   { label: '안내 단계', value: `${stepInstructions.value.length}단계` },
   ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: `${step.instructionText}\n${voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType)}` })),
 ]);

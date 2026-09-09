@@ -52,8 +52,13 @@ const PATTERN_TYPE_TO_TASK = {
 };
 
 function toUiPattern(pattern) {
-  const taskType = PATTERN_TYPE_TO_TASK[pattern.patternType] ?? "unknown";
-  const linked = pattern.linkedAccount;
+  const taskType = PATTERN_TYPE_TO_TASK[pattern.patternType] ?? 'unknown';
+  const linked = pattern.linkedAccount
+    ? {
+        ...pattern.linkedAccount,
+        masked: maskAccountNumber(pattern.linkedAccount.accountNumber),
+      }
+    : null;
   const accountSummary = linked
     ? [
         linked.registeredPersonName,
@@ -77,7 +82,7 @@ function toUiPattern(pattern) {
     patternType: pattern.patternType,
     personId: linked?.registeredPersonId ?? null,
     recipientAccountId: linked?.registeredPersonId ? linked.accountId : null,
-    linkedAccount: linked ?? null,
+    linkedAccount: linked,
     steps: pattern.steps ?? null,
   };
 }

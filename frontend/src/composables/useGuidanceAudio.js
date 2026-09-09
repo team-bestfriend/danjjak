@@ -6,6 +6,7 @@ export function useGuidanceAudio(text, { voiceMode = 'TTS', familyAudioUrl = '',
   const familyPlaying = ref(false);
   const familyLoading = ref(false);
   let audio;
+  let replayPending = false;
   const useTts = computed(() => toValue(voiceMode) !== 'FAMILY' || !toValue(familyAudioUrl) || failed.value);
   const tts = useTtsAudio(text, { speed, enabled: useTts, autoplay: true });
   const playing = computed(() => useTts.value ? tts.playing.value : familyPlaying.value);
@@ -13,8 +14,8 @@ export function useGuidanceAudio(text, { voiceMode = 'TTS', familyAudioUrl = '',
   const error = computed(() => useTts.value ? tts.error.value : '');
   const notice = computed(() => {
     if (toValue(voiceMode) !== 'FAMILY') return '';
-    if (!toValue(familyAudioUrl)) return '저장된 가족 음성이 없어 자동 음성으로 안내해요.';
-    if (failed.value) return '가족 음성을 재생하지 못해 자동 음성으로 안내해요.';
+    if (!toValue(familyAudioUrl)) return '저장된 가족 음성이 없어 AI 음성으로 안내해요.';
+    if (failed.value) return '가족 음성을 재생하지 못해 AI 음성으로 안내해요.';
     return '저장된 가족 음성으로 안내해요.';
   });
 
@@ -74,8 +75,16 @@ export function useGuidanceAudio(text, { voiceMode = 'TTS', familyAudioUrl = '',
     await playFamily();
   }
 
+  async function replayWhenIdle() {
+    // 연속 오조작으로 재생 중인 안내나 재생 시작 요청이 끊기지 않도록 한다.
+    if (playing.value || loading.value || replayPending) return;
+    replayPending = true;
+    try { await replay(); }
+    finally { replayPending = false; }
+  }
+
   watch([() => toValue(text), () => toValue(voiceMode), () => toValue(familyAudioUrl), () => toValue(speed)], load);
   onMounted(load);
   onUnmounted(release);
-  return { playing, loading, error, notice, toggle, replay };
+  return { playing, loading, error, notice, toggle, replay, replayWhenIdle };
 }

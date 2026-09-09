@@ -1260,3 +1260,159 @@ test('이전 패턴 단계로 이동하면 브라우저 방식과 무관하게 b
   assert.equal(updates[0].backCount, 1);
   assert.equal(updates.at(-1).completed, true);
 });
+
+test('단축번호 송금은 사람의 계좌가 여러 개여도 패턴에 연결한 계좌를 사용한다', async () => {
+  const store = createStore();
+  store.ownedAccounts = [{ accountId: 1, primary: true, balance: 50000000 }];
+  store.people = [{ id: 7, name: '김민수', relation: '아들' }];
+  store.accountsByPerson = {
+    7: [
+      { accountId: 3, bankCode: '020', bankName: '우리은행', masked: '100-****-001' },
+      { accountId: 4, bankCode: '081', bankName: '하나은행', masked: '355-****-002' },
+    ],
+  };
+
+  // 패턴에 연결한 계좌는 두 번째 계좌다.
+  store.startTransfer({ pattern: true, personId: 7, recipientAccountId: 4 });
+  store.selectedSourceAccountId = 1;
+  store.selectRecipientAccount(store.accountsByPerson[7][1]);
+  store.transferAmount = '10000';
+
+  assert.equal(store.selectedRecipientAccountId, 4);
+  assert.equal(store.selectedRecipientAccount.bankName, '하나은행');
+
+  let submittedBody;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/transfers') {
+      submittedBody = JSON.parse(options.body);
+      return jsonResponse({
+        status: 'COMPLETED',
+        riskLevel: 'NORMAL',
+        reasons: [],
+        recentTransferCount: 0,
+        anomalyEventId: null,
+        transactionId: 61,
+        balanceAfter: 49990000,
+      });
+    }
+    return mockRefreshResponses(url);
+  };
+
+  await store.submitTransfer('1234');
+
+  assert.equal(submittedBody.registeredRecipientAccountId, 4);
+});
+
+test('단축번호 실행 응답의 특정 받는 계좌를 실행 상태에 그대로 유지한다', async () => {
+  const store = createStore();
+  const detail = {
+    patternId: 1,
+    shortcutNumber: 1,
+    patternType: 'TRANSFER',
+    title: '아들에게 송금',
+    description: '김민수에게 송금합니다.',
+    linkedAccount: {
+      accountId: 4,
+      bankCode: '081',
+      bankName: '하나은행',
+      accountNumber: '355-910000-002',
+      accountAlias: '저축 계좌',
+      registeredPersonId: 7,
+      registeredPersonName: '김민수',
+      relationship: '아들',
+    },
+    steps: [{
+      stepId: 11,
+      stepOrder: 1,
+      stepCode: 'SELECT_SOURCE',
+      stepName: '보낼 계좌 선택',
+      instructionText: '보낼 계좌를 선택해 주세요.',
+      screenCode: 'transfer-source',
+    }],
+  };
+  globalThis.fetch = async (url) => {
+    if (url === '/api/accounts') {
+      return jsonResponse([{
+        accountId: 1,
+        bankCode: '088',
+        bankName: '신한은행',
+        accountNumber: '110-000-000001',
+        accountAlias: '생활비 통장',
+        balance: 50000000,
+        primary: true,
+      }]);
+    }
+    if (url === '/api/registered-persons') {
+      return jsonResponse([{
+        registeredPersonId: 7,
+        name: '김민수',
+        relationship: '아들',
+        accounts: [
+          { accountId: 3, bankCode: '020', bankName: '우리은행', accountNumber: '1002-000-000001', accountAlias: '생활비 계좌' },
+          { accountId: 4, bankCode: '081', bankName: '하나은행', accountNumber: '355-910000-002', accountAlias: '저축 계좌' },
+        ],
+      }]);
+    }
+    if (url === '/api/patterns/1/guidance') return jsonResponse([]);
+    if (url === '/api/patterns/1/executions') {
+      return jsonResponse({ loggingEnabled: false, executionId: null, startedAt: null, pattern: detail }, 201);
+    }
+    throw new Error(`예상하지 못한 요청: ${url}`);
+  };
+
+  await store.startPatternExecution({ patternId: 1, patternType: 'TRANSFER' });
+
+  assert.equal(store.activePattern.recipientAccountId, 4);
+  assert.equal(store.activePattern.linkedAccount.masked, '355-****-002');
+  assert.equal(store.selectedRecipientAccountId, 4);
+  assert.equal(store.selectedRecipientAccount.accountAlias, '저축 계좌');
+  assert.equal(store.selectedAccountMasked, '355-****-002');
+});
+
+test('받는 계좌가 여러 개면 사람만 골라서는 계좌가 정해지지 않는다', () => {
+  const store = createStore();
+  store.people = [{ id: 7, name: '김민수', relation: '아들' }];
+  store.accountsByPerson = {
+    7: [
+      { accountId: 3, bankCode: '020', bankName: '우리은행', masked: '100-****-001' },
+      { accountId: 4, bankCode: '081', bankName: '하나은행', masked: '355-****-002' },
+    ],
+  };
+  store.startTransfer();
+
+  store.selectPerson(7);
+
+  assert.equal(store.selectedRecipientAccountId, null);
+  assert.equal(store.selectedRecipientAccount, null);
+});
+
+test('패턴에 연결된 계좌는 같은 사람 확인 뒤에도 선택 상태를 유지한다', () => {
+  const store = createStore();
+  store.people = [{ id: 7, name: '김민수', relation: '아들' }];
+  store.accountsByPerson = {
+    7: [
+      { accountId: 3, bankCode: '020', bankName: '우리은행', masked: '100-****-001' },
+      { accountId: 4, bankCode: '081', bankName: '하나은행', masked: '355-****-002' },
+    ],
+  };
+  store.startTransfer({ pattern: true, personId: 7, recipientAccountId: 4 });
+
+  store.selectPerson(7);
+
+  assert.equal(store.selectedRecipientAccountId, 4);
+  assert.equal(store.selectedAccountMasked, '355-****-002');
+});
+
+test('받는 계좌가 하나뿐이면 미리 선택하되 계좌 정보는 그대로 유지한다', () => {
+  const store = createStore();
+  store.people = [{ id: 8, name: '김지영', relation: '딸' }];
+  store.accountsByPerson = {
+    8: [{ accountId: 5, bankCode: '081', bankName: '하나은행', masked: '355-****-002' }],
+  };
+  store.startTransfer();
+
+  store.selectPerson(8);
+
+  assert.equal(store.selectedRecipientAccountId, 5);
+  assert.equal(store.selectedAccountMasked, '355-****-002');
+});

@@ -14,7 +14,7 @@
       :onRight="store.cancelTransfer"
     />
 
-    <StepBar :current="1" :total="6" />
+    <StepBar v-bind="stepBar('transfer-source')" />
 
     <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-6 pt-4">
       <p class="text-[26px] font-bold text-[#111827]">
@@ -111,8 +111,8 @@
             </span>
           </div>
 
-          <p class="mt-4 text-[23px] font-black text-[#111827]">
-            {{ formatWon(account.balance) }}
+          <p class="mt-4 break-keep text-[23px] font-black leading-relaxed text-[#111827]">
+            잔액 {{ formatWonWithKorean(account.balance) }}
           </p>
         </button>
       </div>
@@ -165,7 +165,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="2" :total="6" />
+    <StepBar v-bind="stepBar('direct-transfer')" />
     <div class="flex-1 flex flex-col overflow-y-auto px-5 pt-8 pb-6 gap-5">
       <p class="font-bold text-[#111827] text-[28px]">누구에게 보내시겠어요?</p>
       <div class="rounded-[28px] p-2 flex flex-col gap-3 bg-white">
@@ -215,7 +215,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="3" :total="6" />
+    <StepBar v-bind="stepBar('direct-newaccount')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <p class="font-bold text-[#111827] text-[26px]">
         받는 계좌를 입력해 주세요.
@@ -358,7 +358,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="3" :total="6" />
+    <StepBar v-bind="stepBar('guide-person')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
         보낼 사람을 선택해 주세요.
@@ -447,7 +447,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="3" :total="6" />
+    <StepBar v-bind="stepBar('guide-account')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
         보낼 계좌를 선택해 주세요.
@@ -466,8 +466,12 @@
           "
           @click="handleSelectAccount(account)"
           class="w-full text-left"
+          :aria-pressed="store.selectedRecipientAccountId === account.accountId"
         >
-          <Card class="p-5">
+          <Card
+            className="p-5"
+            :highlighted="store.selectedRecipientAccountId === account.accountId"
+          >
             <div class="flex items-center gap-4">
               <div
                 class="w-12 h-12 rounded-[14px] flex items-center justify-center font-black bg-[#FFBC00] text-[#111827] text-[12px]"
@@ -476,13 +480,17 @@
               </div>
               <div class="flex-1">
                 <p class="font-bold text-[#111827] text-[18px]">
-                  {{ account.bankName }}
+                  {{ account.accountAlias || account.bankName }}
                 </p>
                 <p class="font-mono text-[#374151] text-[14px]">
-                  {{ account.masked }}
+                  {{ account.bankName }} · {{ account.masked }}
                 </p>
               </div>
-              <Ic name="ChevR" />
+              <span
+                v-if="store.selectedRecipientAccountId === account.accountId"
+                class="whitespace-nowrap font-bold text-[#92650A]"
+              >✓ 선택됨</span>
+              <Ic v-else name="ChevR" />
             </div>
           </Card>
         </button>
@@ -508,7 +516,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="4" :total="6" />
+    <StepBar v-bind="stepBar('amount-input')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-3">
       <p
         v-if="store.transferError"
@@ -539,7 +547,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="5" :total="6" />
+    <StepBar v-bind="stepBar('final-confirm')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <Card class="overflow-hidden">
         <div
@@ -589,7 +597,7 @@
       :onRight="store.cancelTransfer"
       :rightDisabled="store.transferSubmitting"
     />
-    <StepBar :current="6" :total="6" />
+    <StepBar v-bind="stepBar('pin-entry')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <h2 class="font-bold text-[#111827] text-[26px]">
         계좌 비밀번호를 입력해주세요.
@@ -630,62 +638,77 @@
     </div>
   </div>
 
-  <!-- 서버 FDS 경고 -->
+  <!-- 송금 전 확인과 가족 도움 요청 -->
   <div
     v-else-if="flowStep === 'fraud-warning'"
-    class="flex flex-col h-full bg-[#FAFAF8]"
+    class="flex flex-col h-full bg-[#FAFAF8] break-keep"
   >
     <SafeArea />
     <TopBar
-      title="잠깐, 확인이 필요해요"
+      title="송금 전 확인"
       rightLabel="취소"
       :onRight="cancelAnomaly"
       :rightDisabled="store.anomalyResolving"
     />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <template v-if="store.anomaly">
-        <div class="flex flex-col items-center gap-3 py-2">
-          <div
-            class="rounded-full bg-[#FFF0F0] border-2 border-[#FECACA] flex items-center justify-center text-[#EF4444] w-[72px] h-[72px]"
-          >
-            <Ic name="Warning" />
-          </div>
-          <span
-            class="rounded-full bg-[#7F1D1D] px-4 py-2 text-white font-black"
-            >{{ riskLabel }}</span
-          >
-          <p class="text-[#374151] text-center text-[17px]">
-            서버가 아래 이상 징후를 확인했어요.
-          </p>
-        </div>
-        <div
-          class="bg-[#FFF7ED] border border-[#FED7AA] rounded-[20px] p-4 space-y-3"
+        <section
+          aria-labelledby="fraud-warning-title"
+          class="rounded-[28px] border border-[#EF9A9A] bg-[#FDE8E7] px-4 py-6"
         >
-          <div
-            v-for="reason in fraudReasons"
-            :key="reason"
-            class="flex items-start gap-2"
-          >
-            <span
-              class="w-2 h-2 mt-2 rounded-full bg-[#F97316] flex-shrink-0"
+          <div class="flex flex-col items-center gap-4">
+            <img
+              :src="warningIcon"
+              alt=""
+              aria-hidden="true"
+              class="h-32 w-32 object-contain"
             />
-            <span class="text-[#9A3412] text-[16px]">{{ reason }}</span>
+            <span
+              class="rounded-full bg-[#7F1D1D] px-5 py-2 text-[20px] text-white font-black"
+              >{{ riskLabel }}</span
+            >
+            <h1
+              id="fraud-warning-title"
+              class="text-[#111827] text-center text-[26px] font-bold leading-snug"
+            >
+              돈을 보내기 전에<br />한 번 더 확인해 주세요.
+            </h1>
           </div>
-          <p class="border-t border-[#FED7AA] pt-3 text-[#9A3412] text-[15px]">
-            최근 10분간 완료된 송금 {{ store.anomaly.recentTransferCount }}건
-          </p>
+        </section>
+        <div class="relative pb-20">
+          <div class="fraud-reason-bubble relative mr-4 rounded-[24px] border border-[#FED7AA] bg-[#FFF7ED] p-5 space-y-3">
+            <h2 class="font-bold text-[#9A3412] text-[22px]">누군가 돈을 보내라고 했나요?</h2>
+            <p class="text-[#9A3412] text-[20px] leading-relaxed">
+              전화나 문자로 돈을 보내라고 하거나, 빨리 보내라고 재촉했다면 사기일 수 있어요.
+            </p>
+            <p class="font-bold text-[#9A3412] text-[20px] leading-relaxed">
+              잠깐 멈추고 가족과 함께 확인해 주세요.
+            </p>
+          </div>
+          <img
+            :src="warningDanjjak"
+            alt=""
+            aria-hidden="true"
+            class="absolute bottom-0 right-0 h-24 w-24 object-contain"
+          />
         </div>
         <Card class="p-5 space-y-2">
-          <p class="text-[#6B7280]">받는 분</p>
+          <section class="mb-4 border-b border-[#E5E7EB] pb-4 space-y-2">
+            <h2 class="font-bold text-[#374151] text-[18px]">이번 송금에서 확인할 점</h2>
+            <ul class="list-disc pl-5 space-y-2 text-[#4B5563] text-[18px] leading-relaxed">
+              <li v-for="reason in fraudReasons" :key="reason">{{ reason }}</li>
+            </ul>
+          </section>
+          <h2 class="font-bold text-[#374151] text-[20px]">받는 분과 보낼 금액</h2>
           <p class="font-bold text-[#111827] text-[20px]">
             {{ store.anomaly?.recipient?.name }}
           </p>
-          <p class="text-[#6B7280]">
+          <p class="text-[#6B7280] text-[18px] break-words">
             {{ store.anomaly?.recipient?.bankName }} ·
             {{ store.anomaly?.recipient?.masked }}
           </p>
-          <p class="font-black text-[#111827] text-[28px]">
-            {{ formatWon(store.anomaly?.amount) }}
+          <p class="break-keep font-black text-[#111827] text-[28px]">
+            {{ formatWonWithKorean(store.anomaly?.amount) }}
           </p>
         </Card>
         <p
@@ -695,30 +718,17 @@
         >
           {{ store.transferError }}
         </p>
-        <div
-          v-if="store.notificationResult"
-          class="rounded-2xl border border-[#93C5FD] bg-[#EFF6FF] p-4"
-        >
-          <p class="font-bold text-[#1E3A8A]">{{ notificationTitle }}</p>
-          <p class="text-[#1E40AF] mt-1">
-            {{ store.notificationResult.detail }}
-          </p>
-          <p
-            v-if="
-              store.notificationResult.result === 'SENT' &&
-              store.notificationResult.sentAt
-            "
-            class="text-[#1E40AF] mt-1"
-          >
-            발송 시각 {{ formatDate(store.notificationResult.sentAt) }}
-          </p>
-        </div>
-        <div class="space-y-3">
+        <section class="rounded-[20px] border border-[#E5E7EB] bg-white p-4 space-y-3">
+          <h2 class="font-bold text-[#111827] text-[20px]">걱정되면 가족과 확인해 보세요</h2>
           <Btn
             v-if="store.anomaly?.riskLevel === 'HIGH' && guardianShareAgreed"
             variant="danger"
+            style="background-color: #fde8e7; color: #7f1d1d;"
+            :class="{
+              'guardian-notification-glow': !store.notificationSending && !store.anomalyResolving && !store.notificationResult,
+            }"
             :disabled="
-              store.notificationSending || Boolean(store.notificationResult)
+              store.notificationSending || store.anomalyResolving || Boolean(store.notificationResult)
             "
             @click="notifyGuardian"
             >{{ notificationButtonLabel }}</Btn
@@ -727,21 +737,37 @@
             v-else-if="store.anomaly?.riskLevel === 'HIGH'"
             class="rounded-2xl border border-[#FCD34D] bg-[#FFFBEB] p-4 space-y-3"
           >
-            <p class="font-bold text-[#92400E]">
-              보호자 공유 동의가 꺼져 있어 카카오 알림을 보내지 않아요.
+            <p class="font-bold text-[#92400E] text-[18px]">
+              알림을 보내려면 먼저 가족에게 정보를 알려주는 데 동의해 주세요.
             </p>
             <Btn
               variant="secondary"
               @click="store.navigate('consent', { query: { edit: '1' } })"
             >
-              동의 설정 변경하기
+              동의 설정하기
             </Btn>
+          </div>
+          <div
+            v-if="store.notificationResult"
+            class="rounded-2xl bg-[#EFF6FF] p-4 text-[#1E3A8A] text-[18px]"
+            role="status"
+          >
+            <p class="font-bold">{{ notificationTitle }}</p>
+            <p v-if="store.notificationResult.result !== 'SENT'" class="mt-2">
+              도움이 필요하면 가족에게 전화해 주세요.
+            </p>
+            <p
+              v-if="store.notificationResult.result === 'SENT' && store.notificationResult.sentAt"
+              class="mt-2"
+            >
+              보낸 시간 {{ formatDate(store.notificationResult.sentAt) }}
+            </p>
           </div>
           <p
             v-if="store.supportLoading"
             class="rounded-2xl bg-white p-4 text-center text-[#6B7280]"
           >
-            보호자 번호를 불러오고 있어요…
+            가족 전화번호를 불러오고 있어요…
           </p>
           <div
             v-else-if="store.supportError"
@@ -755,42 +781,47 @@
           <a
             v-else-if="guardianPhone"
             :href="'tel:' + guardianPhone"
-            class="flex min-h-[56px] w-full items-center justify-center rounded-[18px] border-2 border-[#EF4444] font-bold text-[#B91C1C]"
-            >보호자에게 전화하기 · {{ guardianPhone }}</a
+            class="flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-[18px] border border-[#D1D5DB] px-3 py-3 text-[18px] font-bold text-[#374151]"
           >
+            <span>가족에게 전화하기</span>
+            <span>{{ guardianPhone }}</span>
+          </a>
           <div
             v-else
             class="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-3 text-center"
           >
             <p class="font-bold text-[#6B7280]">
-              보호자 번호가 등록되지 않았어요.
+              가족 전화번호가 등록되지 않았어요.
             </p>
             <Btn variant="secondary" @click="store.navigate('settings')"
-              >보호자 번호 등록하기</Btn
+              >가족 전화번호 등록하기</Btn
             >
           </div>
+        </section>
+        <section class="border-t border-[#E5E7EB] pt-5 space-y-3">
+          <h2 class="font-bold text-[#111827] text-[20px]">어떻게 하시겠어요?</h2>
           <Btn
             variant="secondary"
             :disabled="store.anomalyResolving"
             @click="recheckTransfer"
-            >거래 정보 다시 확인</Btn
+            >다시 확인하기</Btn
           >
           <Btn :disabled="store.anomalyResolving" @click="continueTransfer">
-            {{ store.anomalyResolving ? "처리 중…" : "확인 후 계속 송금" }}
+            {{ store.anomalyResolving ? "처리 중…" : "계속 보내기" }}
           </Btn>
-          <button
+          <Btn
+            variant="secondary"
             :disabled="store.anomalyResolving"
             @click="cancelAnomaly"
-            class="w-full min-h-[52px] text-center text-[#6B7280] font-bold disabled:opacity-50"
           >
-            송금 취소하기
-          </button>
-        </div>
+            보내지 않기
+          </Btn>
+        </section>
       </template>
       <template v-else>
         <div class="rounded-2xl bg-white p-5 text-center space-y-3">
           <p class="font-bold text-[#111827] text-[22px]">
-            확인할 이상거래 정보가 없어요.
+            확인할 송금 정보가 없어요.
           </p>
           <p class="text-[#6B7280]">
             새 송금을 시작하거나 거래내역을 확인해 주세요.
@@ -818,8 +849,8 @@
         <p class="text-[#374151] text-[18px]">
           {{ store.transferResult.recipientName }}님에게
         </p>
-        <p class="font-black text-[#111827] text-[32px]">
-          {{ formatWon(store.transferResult.amount) }}
+        <p class="break-keep font-black leading-relaxed text-[#111827] text-[32px]">
+          {{ formatWonWithKorean(store.transferResult.amount) }}
         </p>
       </div>
       <Card class="w-full p-5 space-y-2">
@@ -829,7 +860,7 @@
         </div>
         <div class="flex justify-between gap-4">
           <span class="text-[#6B7280]">송금 후 잔액</span
-          ><strong>{{ formatWon(store.transferResult.balanceAfter) }}</strong>
+          ><strong class="break-keep text-right">{{ formatWonWithKorean(store.transferResult.balanceAfter) }}</strong>
         </div>
       </Card>
       <div
@@ -894,6 +925,7 @@ import { directAccountPattern } from "../features/directRecipient.js";
 import SafeArea from "../components/common/SafeArea.vue";
 import TopBar from "../components/common/TopBar.vue";
 import StepBar from "../components/common/StepBar.vue";
+import { transferStepBar as stepBar } from "../features/transferSteps.js";
 import Card from "../components/common/Card.vue";
 import Btn from "../components/common/Btn.vue";
 import Ic from "../components/common/Ic.vue";
@@ -901,6 +933,8 @@ import AmountKeypad from "../components/common/AmountKeypad.vue";
 import PinEntry from "../components/common/PinEntry.vue";
 import BankLogo from "../components/common/BankLogo.vue";
 import warningIcon from "../assets/icons/warning.png";
+import { formatWonWithKorean } from "../utils/money.js";
+import warningDanjjak from "../assets/danjjakee_warning.png";
 
 const props = defineProps({
   flowStep: { type: String, required: true },
@@ -954,30 +988,29 @@ const guardianShareAgreed = computed(() =>
   Boolean(store.currentUser?.consents?.guardianShareAgreed),
 );
 const riskLabel = computed(() =>
-  store.anomaly?.riskLevel === "HIGH" ? "높은 위험" : "주의 필요",
+  store.anomaly?.riskLevel === "HIGH" ? "높은 주의" : "주의",
 );
 const notificationTitle = computed(() => {
   const titles = {
-    SENT: "카카오 알림을 실제로 보냈어요.",
-    MOCKED_NO_TOKEN: "토큰이 없어 Mock 알림으로 확인했어요.",
-    MOCKED_AFTER_ACTUAL_FAILURE: "실제 발송 실패 후 Mock 알림으로 대체했어요.",
+    SENT: "카카오톡 알림을 보냈어요.",
+    MOCKED_NO_TOKEN: "카카오톡 알림을 보내지 못했어요.",
+    MOCKED_AFTER_ACTUAL_FAILURE: "카카오톡 알림을 보내지 못했어요.",
   };
-  return titles[store.notificationResult?.result] ?? "알림 결과를 확인했어요.";
+  return titles[store.notificationResult?.result] ?? "알림을 보냈는지 확인하지 못했어요.";
 });
 const notificationButtonLabel = computed(() => {
-  if (store.notificationSending) return "알림 요청 중…";
-  if (store.notificationResult) return "알림 요청 완료";
-  return "카카오 나에게 알림 보내기";
+  if (store.notificationSending) return "알림을 보내고 있어요…";
+  return "가족에게 알림 보내기";
 });
 const fraudReasons = computed(() =>
   (store.anomaly?.reasons ?? [])
     .map((reason) => {
-      if (reason === "HIGH_AMOUNT") return "1천만원 이상의 큰 금액이에요.";
+      if (reason === "HIGH_AMOUNT") return "1,000만원 이상 보내려고 해요.";
       if (reason === "REPEATED_TRANSFER") {
         return (
-          "최근 10분 안에 완료된 송금이 " +
+          "최근 10분 동안 " +
           store.anomaly.recentTransferCount +
-          "건 있어요."
+          "번 보냈어요."
         );
       }
       return null;
@@ -989,6 +1022,7 @@ const reviewRows = computed(() => {
     ? store.directRecipient
     : {
         name: store.selectedPerson?.name,
+        accountAlias: store.selectedRecipientAccount?.accountAlias,
         bankName: store.selectedRecipientAccount?.bankName,
         masked: store.selectedRecipientAccount?.masked,
       };
@@ -1003,14 +1037,15 @@ const reviewRows = computed(() => {
     { label: "받는 사람", value: recipient?.name || "-" },
     {
       label: "받는 계좌",
-      value:
-        (recipient?.bankName || "-") +
-        " · " +
-        (recipient?.masked || store.selectedAccountMasked || "-"),
+      value: [
+        recipient?.accountAlias,
+        recipient?.bankName,
+        recipient?.masked || store.selectedAccountMasked,
+      ].filter(Boolean).join(" · ") || "-",
     },
     {
       label: "금액",
-      value: formatWon(Number(store.transferAmount)),
+      value: formatWonWithKorean(Number(store.transferAmount)),
       emphasis: true,
     },
     { label: "수수료", value: "0원" },
@@ -1034,10 +1069,6 @@ onMounted(async () => {
   }
   if (props.flowStep === "fraud-warning") await store.loadSupport();
 });
-
-function formatWon(value) {
-  return Number(value ?? 0).toLocaleString("ko-KR") + "원";
-}
 
 function formatDate(value) {
   if (!value) return "-";
@@ -1092,15 +1123,8 @@ function handleSelectFamilyPerson(personId) {
   store.transferError = "";
   store.isNewAccountFlow = false;
   store.selectPerson(personId);
-  const accounts = store.accountsByPerson[personId] ?? [];
-  // 저장된 계좌 선택 단계는 수취 계좌가 하나여도 건너뛰지 않는다.
-  const hasAccountStep =
-    store.isPatternTransfer &&
-    store.activePatternDetail?.steps?.some(
-      (step) => step.screenCode === "guide-account",
-    );
-  if (accounts.length === 1 && !hasAccountStep) store.navigate("amount-input");
-  else store.navigate("guide-account");
+  // 받는 계좌가 하나뿐이어도 확인 화면을 생략하지 않는다.
+  store.navigate("guide-account");
 }
 
 function handleSelectAccount(account) {
@@ -1193,3 +1217,32 @@ function finishToHome() {
   store.cancelTransfer();
 }
 </script>
+
+<style scoped>
+.guardian-notification-glow {
+  animation: guardian-notification-ring 1.5s ease-in-out infinite;
+  border-radius: 24px;
+}
+
+@keyframes guardian-notification-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.75), 0 0 0 4px rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.75), 0 0 0 10px rgba(220, 38, 38, 0), 0 0 22px 6px rgba(220, 38, 38, 0.35);
+  }
+}
+
+.fraud-reason-bubble::after {
+  content: "";
+  position: absolute;
+  right: 36px;
+  bottom: -10px;
+  width: 18px;
+  height: 18px;
+  background: #fff7ed;
+  border-right: 1px solid #fed7aa;
+  border-bottom: 1px solid #fed7aa;
+  transform: rotate(45deg);
+}
+</style>

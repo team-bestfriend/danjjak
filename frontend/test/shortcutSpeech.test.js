@@ -11,6 +11,29 @@ const patterns = [
     .map((patternType, index) => ({ patternId: 103 + index, num: 3 + index, label: patternType, patternType })),
 ];
 
+const koreanNumbers = ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십', '십일', '십이'];
+
+test('숫자와 한글 단축번호 1~12는 현재 번호의 패턴만 찾는다', () => {
+  const numberedPatterns = Array.from({ length: 12 }, (_, index) => ({
+    patternId: index + 1,
+    num: index + 1,
+    patternType: 'BALANCE_CHECK',
+  }));
+  for (let number = 1; number <= 12; number += 1) {
+    const expected = [number];
+    assert.deepEqual(matchShortcutCommand(String(number), numberedPatterns).map((pattern) => pattern.patternId), expected);
+    assert.deepEqual(matchShortcutCommand(`${number}번`, numberedPatterns).map((pattern) => pattern.patternId), expected);
+    assert.deepEqual(matchShortcutCommand(`${koreanNumbers[number - 1]} 번`, numberedPatterns).map((pattern) => pattern.patternId), expected);
+    assert.deepEqual(matchShortcutCommand(koreanNumbers[number - 1], numberedPatterns).map((pattern) => pattern.patternId), expected);
+  }
+});
+
+test('범위 밖 번호와 복합 번호 문장은 패턴을 임의 선택하지 않는다', () => {
+  for (const phrase of ['0번', '13번', '십삼 번', '-1번', '1번 말고 2번', '1번과 2번']) {
+    assert.deepEqual(matchShortcutCommand(phrase, patterns), []);
+  }
+});
+
 test('대표 문장 8개는 번호·제목과 무관하게 서버 업무와 연결 수취인을 찾는다', () => {
   voiceCommandExamples.forEach((phrase, index) => {
     assert.deepEqual(matchShortcutCommand(phrase, patterns).map((pattern) => pattern.patternId), [101 + index]);

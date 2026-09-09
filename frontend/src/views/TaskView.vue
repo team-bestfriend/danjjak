@@ -12,7 +12,7 @@
       </div>
       <div v-else-if="person" class="text-center">
         <p class="font-bold text-[#111827] text-[28px]">{{ person.emoji }} {{ person.name }}</p>
-        <p class="text-[#6B7280] mt-1 text-[16px]">{{ account?.bankName }} · {{ account?.masked }}</p>
+        <p class="text-[#6B7280] mt-1 text-[16px]">{{ [account?.accountAlias, account?.bankName, account?.masked].filter(Boolean).join(' · ') }}</p>
       </div>
       <div v-else class="w-full rounded-2xl bg-white p-5 text-center">
         <p class="font-bold text-[#111827]">연결된 수취인을 찾을 수 없어요.</p>
@@ -29,7 +29,7 @@
   <div v-else-if="isInquiryTask" class="flex flex-col h-full bg-[#FAFAF8]">
     <SafeArea />
     <TopBar :title="inquiryTitle" :onBack="leaveTask" />
-    <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
+    <div class="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <label v-if="store.ownedAccounts.length > 0" class="block space-y-2">
         <span class="font-bold text-[#374151]">조회할 본인 계좌</span>
         <select
@@ -112,6 +112,12 @@
         </Card>
       </template>
     </div>
+    <VoiceGuideBar
+      v-if="resultGuidance"
+      :text="resultGuidance"
+      :speed="store.currentUser?.settings?.voiceSpeed ?? 'NORMAL'"
+      voice-mode="TTS"
+    />
   </div>
 
   <!-- 고객센터 -->
@@ -167,6 +173,8 @@ import TopBar from '../components/common/TopBar.vue';
 import Card from '../components/common/Card.vue';
 import Btn from '../components/common/Btn.vue';
 import Ic from '../components/common/Ic.vue';
+import VoiceGuideBar from '../components/common/VoiceGuideBar.vue';
+import { inquiryResultText, RESULT_INQUIRY_CATEGORIES } from '../features/inquiry/resultGuidance.js';
 
 const props = defineProps({
   taskName: { type: String, required: true },
@@ -174,6 +182,7 @@ const props = defineProps({
 
 const store = useAppStore();
 const balanceVisible = ref(false);
+const preparingInquiry = ref(true);
 const historyFilter = ref('ALL');
 const historyFilters = [
   { key: 'ALL', label: '전체' },
@@ -192,6 +201,13 @@ const taskConfig = computed(() => ({
 const isInquiryTask = computed(() => Boolean(taskConfig.value));
 const inquiryTitle = computed(() => taskConfig.value?.title ?? '금융 조회');
 const categoryLabel = computed(() => ({ PENSION: '연금', MANAGEMENT_FEE: '관리비', UTILITY_BILL: '공과금' }[taskConfig.value?.category] ?? '전체'));
+const resultGuidance = computed(() => {
+  const category = RESULT_INQUIRY_CATEGORIES[props.taskName];
+  if (!category || preparingInquiry.value || store.financeLoading || store.inquiryLoading) return '';
+  if (store.financeError || store.inquiryError) return `${categoryLabel.value} 내역을 불러오지 못했어요. 다시 시도해 주세요.`;
+  if (store.ownedAccounts.length === 0) return '조회할 본인 계좌가 없어요. 계좌를 먼저 불러와 주세요.';
+  return inquiryResultText(category, store.inquiryTransactions);
+});
 const showAccountBalance = computed(() => ['task-4', 'task-5'].includes(props.taskName));
 const selectedInquiryAccount = computed(() => (
   store.ownedAccounts.find((owned) => owned.accountId === store.selectedInquiryAccountId) ?? null
@@ -219,7 +235,17 @@ const person = computed(() => (
   store.people.find((item) => item.id === (store.activePattern?.personId ?? store.selectedPersonId))
     ?? null
 ));
-const account = computed(() => store.accountsByPerson[person.value?.id]?.[0] ?? null);
+// 저장된 송금 패턴은 연결 계좌가 사라져도 다른 계좌로 임의 대체하지 않는다.
+const account = computed(() => {
+  const accounts = store.accountsByPerson[person.value?.id] ?? [];
+  const linkedAccountId = store.activePattern?.recipientAccountId ?? null;
+  if (store.activePattern?.patternType === 'TRANSFER') {
+    return linkedAccountId
+      ? accounts.find((item) => item.accountId === linkedAccountId) ?? null
+      : null;
+  }
+  return accounts[0] ?? null;
+});
 
 onMounted(async () => {
   if (props.taskName === 'task-6') {
@@ -239,14 +265,19 @@ watch(() => props.taskName, async () => {
 });
 
 async function prepareInquiry(force = false) {
-  const loaded = await store.loadFinancialData(force);
-  if (!loaded) return;
-  const accountId = store.selectedInquiryAccountId ?? store.defaultOwnedAccount?.accountId;
-  if (accountId) {
-    await store.loadInquiry(accountId, taskConfig.value?.category ?? null);
-    if (!store.inquiryError && store.activePatternDetail) {
-      await store.finishPatternExecution('COMPLETED');
+  preparingInquiry.value = true;
+  try {
+    const loaded = await store.loadFinancialData(force);
+    if (!loaded) return;
+    const accountId = store.selectedInquiryAccountId ?? store.defaultOwnedAccount?.accountId;
+    if (accountId) {
+      await store.loadInquiry(accountId, taskConfig.value?.category ?? null);
     }
+  } finally {
+    preparingInquiry.value = false;
+  }
+  if (store.ownedAccounts.length && !store.inquiryError && store.activePatternDetail) {
+    await store.finishPatternExecution('COMPLETED');
   }
 }
 
@@ -258,8 +289,13 @@ async function changeAccount(event) {
 async function beginPatternTransfer() {
   await store.loadFinancialData();
   if (!person.value || !account.value) return;
-  store.startTransfer({ pattern: true, personId: person.value.id });
-  store.selectPerson(person.value.id);
+  // 패턴에 저장된 받는 계좌를 송금 흐름으로 그대로 이어 준다.
+  store.startTransfer({
+    pattern: true,
+    personId: person.value.id,
+    recipientAccountId: account.value.accountId,
+  });
+  store.selectRecipientAccount(account.value);
   store.navigate('transfer-source');
 }
 
