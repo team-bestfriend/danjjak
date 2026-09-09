@@ -102,9 +102,6 @@
               ]"
               v-model:value="guideSpeed"
             />
-            <p class="mt-3 text-[15px] text-[#6B7280]">
-              AI 음성과 저장된 가족 음성 모두에 적용해요.
-            </p>
             <button
               type="button"
               class="mt-3 min-h-12 w-full rounded-[14px] bg-[#FFF3CC] px-3 text-[17px] font-bold text-[#92650A]"
@@ -119,9 +116,6 @@
                     : "이 속도로 AI 음성 들어보기"
               }}
             </button>
-            <p class="mt-2 text-[14px] text-[#6B7280]">
-              Marin · AI가 생성한 한국어 안내 음성이에요.
-            </p>
             <p
               v-if="previewError"
               class="mt-2 text-[15px] text-[#B91C1C]"

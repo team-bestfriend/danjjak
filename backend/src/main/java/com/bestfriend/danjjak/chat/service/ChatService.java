@@ -3,6 +3,7 @@ package com.bestfriend.danjjak.chat.service;
 import com.bestfriend.danjjak.chat.dto.ChatDtos.Action;
 import com.bestfriend.danjjak.chat.dto.ChatDtos.ChatResponse;
 import com.bestfriend.danjjak.chat.service.ChatIntentClient.ChatIntent;
+import com.bestfriend.danjjak.pattern.dto.PatternDtos.PatternSummaryResponse;
 import com.bestfriend.danjjak.pattern.service.PatternService;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,8 @@ public class ChatService {
     private static final Pattern PENSION = Pattern.compile(".*연금.*(?:확인|들어|입금).*");
     private static final Pattern MANAGEMENT_FEE = Pattern.compile(".*관리비.*(?:확인|내역|얼마).*");
     private static final Pattern UTILITY_BILL = Pattern.compile(".*공과금.*(?:확인|내역|얼마).*");
+    private static final Pattern SHORTCUT_COMMAND = Pattern.compile(
+            "^(?<number>1[0-2]|[1-9])\\s*번?(?:\\s*(?:실행(?:해|해\\s*줘|해줘|해\\s*주세요|해주세요)?|해\\s*줘|해줘|해\\s*주세요|해주세요))?[!?.~\\s]*$");
     private final ChatIntentClient client;
     private final PatternService patterns;
 
@@ -50,6 +53,10 @@ public class ChatService {
                     Action.NONE, null, false, false);
         }
         String trimmed = message.trim();
+        ChatResponse shortcutResponse = responseForShortcut(userId, trimmed);
+        if (shortcutResponse != null) {
+            return shortcutResponse;
+        }
         try {
             return responseFor(userId, client.classify(message));
         } catch (RuntimeException exception) {
@@ -65,6 +72,24 @@ public class ChatService {
                         Action.NONE, null, true, false);
             }
         }
+    }
+
+    private ChatResponse responseForShortcut(long userId, String message) {
+        var matcher = SHORTCUT_COMMAND.matcher(message);
+        if (!matcher.matches()) {
+            return null;
+        }
+        int shortcutNumber = Integer.parseInt(matcher.group("number"));
+        PatternSummaryResponse pattern = patterns.getPatterns(userId).stream()
+                .filter(candidate -> candidate.shortcutNumber() == shortcutNumber)
+                .findFirst()
+                .orElse(null);
+        if (pattern == null) {
+            return new ChatResponse(shortcutNumber + "번에 등록된 금융 업무가 없어요. 다른 번호를 말씀해 주세요.",
+                    Action.NONE, null, false, true);
+        }
+        return new ChatResponse(shortcutNumber + "번 " + pattern.title() + " 업무를 시작할까요?",
+                Action.PATTERN, pattern.patternId(), false, false);
     }
 
     private ChatResponse responseFor(long userId, ChatIntent intent) {

@@ -1,85 +1,166 @@
 <template>
-  <div ref="containerRef" className="flex flex-col h-full" style="background: #FAFAF8;">
+  <div
+    ref="containerRef"
+    className="relative flex flex-col h-full"
+    style="background: #fafaf8"
+  >
     <SafeArea />
 
     <!-- Header -->
-    <div className="px-5 bg-white border-b border-[#EEEEED] flex-shrink-0" style="padding-top: 18px; padding-bottom: 16px;">
+    <div
+      className="px-5 bg-white border-b border-[#EEEEED] flex-shrink-0"
+      style="padding-top: 18px; padding-bottom: 16px"
+    >
       <div className="flex items-center gap-2 mb-2">
         <DanjjakMark :size="20" />
-        <span className="font-semibold" style="color: #B8860B; font-size: 13px; letter-spacing: 0.02em;">단짝</span>
+        <span
+          className="font-semibold"
+          style="color: #b8860b; font-size: 13px; letter-spacing: 0.02em"
+          >단짝</span
+        >
       </div>
       <div className="flex items-center gap-2">
-        <p className="font-bold text-[#111827] leading-tight" style="font-size: 26px;">안녕하세요, {{ store.userName }}님</p>
-        <img :src="oldAgeWoman" alt="" aria-hidden="true" className="h-8 w-8 flex-shrink-0 object-contain" />
+        <p
+          className="font-bold text-[#111827] leading-tight"
+          style="font-size: 26px"
+        >
+          안녕하세요, {{ store.userName }}님
+        </p>
+        <img
+          :src="oldAgeWoman"
+          alt=""
+          aria-hidden="true"
+          className="h-8 w-8 flex-shrink-0 object-contain"
+        />
       </div>
-      <p className="font-normal text-[#6B7280] mt-1" style="font-size: 15px;">오늘도 안전한 금융 생활 되세요.</p>
+      <p className="font-normal text-[#6B7280] mt-1" style="font-size: 15px">
+        오늘도 안전한 금융 생활 되세요.
+      </p>
     </div>
 
     <div
       className="flex-1 flex flex-col px-4 overflow-y-auto"
-      style="padding-top: 12px; padding-bottom: 10px; gap: 10px;"
+      style="padding-top: 12px; padding-bottom: 10px; gap: 10px"
     >
       <!-- 직접 송금하기 — Primary CTA -->
       <button
         @click="beginDirectTransfer"
         className="w-full flex items-center justify-center gap-2.5 active:scale-[0.985] transition-transform flex-shrink-0"
-        style="height: 64px; border-radius: 18px; background: #FFBC00;"
+        style="height: 64px; border-radius: 18px; background: #ffbc00"
       >
-        <span style="font-size: 18px; color: #111827;">→</span>
-        <span style="font-size: 20px; font-weight: 600; color: #111827;">직접 송금하기</span>
+        <span style="font-size: 18px; color: #111827">→</span>
+        <span style="font-size: 20px; font-weight: 600; color: #111827"
+          >직접 송금하기</span
+        >
       </button>
 
       <!-- 말로 선택하기 -->
-      <div className="flex-shrink-0">
+      <div class="flex-shrink-0">
         <button
-          @click="toggleStt"
+          ref="voiceTutorialTarget"
           type="button"
-          :disabled="!speechSupported || store.patternLoading || store.patternOrderSaving"
           aria-describedby="voice-command-status"
-          :class="['w-full flex items-center justify-center gap-2.5 font-bold transition-all']"
+          :disabled="
+            tutorialActive ||
+            !speechSupported ||
+            store.patternLoading ||
+            store.patternOrderSaving
+          "
+          :class="[
+            'relative flex w-full items-center justify-center gap-2.5 font-bold transition-all',
+            {
+              'home-tutorial-target guide-glow': tutorialStep === 0,
+            },
+          ]"
           :style="
             sttState === 'listening'
               ? 'height:56px;border-radius:18px;background:#FEF2F2;border:1px solid #FCA5A5;color:#B91C1C;font-size:17px;font-weight:500;'
               : sttState === 'processing'
-              ? 'height:56px;border-radius:18px;background:#FFFBEB;border:1px solid #FFBC00;color:#92650A;font-size:17px;font-weight:500;'
-              : 'height:56px;border-radius:18px;background:#FFFFFF;border:1px solid #D1D5DB;color:#374151;font-size:17px;font-weight:500;'"
+                ? 'height:56px;border-radius:18px;background:#FFFBEB;border:1px solid #FFBC00;color:#92650A;font-size:17px;font-weight:500;'
+                : 'height:56px;border-radius:18px;background:#FFFFFF;border:1px solid #D1D5DB;color:#374151;font-size:17px;font-weight:500;'
+          "
+          @click="toggleStt"
         >
           <template v-if="sttState === 'listening'">
-            <div className="w-3 h-3 rounded-full bg-[#EF4444] animate-pulse" />
+            <div class="h-3 w-3 animate-pulse rounded-full bg-[#EF4444]" />
             <span>말하기 완료</span>
           </template>
+
           <template v-else-if="sttState === 'processing'">
-            <span className="animate-spin inline-block" aria-hidden="true">⟳</span>
+            <span class="inline-block animate-spin" aria-hidden="true">
+              ⟳
+            </span>
+
             <span>확인 중 · 취소하기</span>
           </template>
+
           <template v-else-if="sttState === 'starting'">
             <Ic name="Mic" />
+
             <span>마이크 준비 중 · 취소하기</span>
           </template>
+
           <template v-else>
             <Ic name="Mic" />
-            <span>{{ speechSupported ? '말로 선택하기' : '음성 인식 지원 안 됨' }}</span>
+
+            <span>
+              {{ speechSupported ? "말로 선택하기" : "음성 인식 지원 안 됨" }}
+            </span>
           </template>
         </button>
 
-        <p id="voice-command-status" :class="{ 'mt-2': sttMessage }" class="text-[15px] leading-relaxed text-[#374151]" role="status" aria-live="polite" aria-atomic="true">{{ sttMessage }}</p>
+        <p
+          id="voice-command-status"
+          :class="{ 'mt-2': sttMessage }"
+          class="text-[15px] leading-relaxed text-[#374151]"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {{ sttMessage }}
+        </p>
       </div>
 
       <!-- 내 단축번호 + 그리드 + 페이지 도트 -->
-      <div className="flex-1 flex flex-col" style="min-height: 360px; gap: 8px;">
+      <div
+        ref="shortcutTutorialTarget"
+        class="relative flex flex-1 flex-col"
+        :class="{
+          'home-tutorial-target guide-glow': tutorialStep === 1,
+        }"
+        style="min-height: 360px; gap: 8px"
+      >
         <div className="flex items-center flex-shrink-0">
-          <p className="font-semibold text-[#111827]" style="font-size: 16px;">내 단축번호</p>
+          <p className="font-semibold text-[#111827]" style="font-size: 16px">
+            내 단축번호
+          </p>
         </div>
 
-        <div className="flex-1" style="min-height: min-content; touch-action: none;"
-          @pointerdown.capture="beginSwipe" @pointermove.capture="moveSwipe"
-          @pointerup.capture="endSwipe" @pointercancel.capture="cancelSwipe" @click.capture="guardSwipeClick">
-          <div v-if="store.patternLoading && store.patterns.length === 0" className="flex h-full items-center justify-center rounded-[18px] bg-white text-[#6B7280]">
+        <div
+          className="flex-1"
+          style="min-height: min-content; touch-action: none"
+          @pointerdown.capture="beginSwipe"
+          @pointermove.capture="moveSwipe"
+          @pointerup.capture="endSwipe"
+          @pointercancel.capture="cancelSwipe"
+          @click.capture="guardSwipeClick"
+        >
+          <div
+            v-if="store.patternLoading && store.patterns.length === 0"
+            className="flex h-full items-center justify-center rounded-[18px] bg-white text-[#6B7280]"
+          >
             단축번호를 불러오고 있어요…
           </div>
-          <div v-else-if="store.patternError && store.patterns.length === 0" className="flex h-full flex-col items-center justify-center gap-3 rounded-[18px] bg-white px-5 text-center">
-            <p className="text-[#B91C1C]" role="alert">{{ store.patternError }}</p>
-            <Btn variant="secondary" @click="store.loadPatterns(true)">다시 시도</Btn>
+          <div
+            v-else-if="store.patternError && store.patterns.length === 0"
+            className="flex h-full flex-col items-center justify-center gap-3 rounded-[18px] bg-white px-5 text-center"
+          >
+            <p className="text-[#B91C1C]" role="alert">
+              {{ store.patternError }}
+            </p>
+            <Btn variant="secondary" @click="store.loadPatterns(true)"
+              >다시 시도</Btn
+            >
           </div>
           <PatternGrid
             v-else
@@ -108,14 +189,23 @@
           >
             <span
               class="block transition-all"
-              :style="store.homePage === p
-                ? 'width:28px;height:10px;border-radius:5px;background:#FFBC00;'
-                : 'width:10px;height:10px;border-radius:50%;background:#D1D5DB;'"
+              :style="
+                store.homePage === p
+                  ? 'width:28px;height:10px;border-radius:5px;background:#FFBC00;'
+                  : 'width:10px;height:10px;border-radius:50%;background:#D1D5DB;'
+              "
             />
           </button>
         </div>
       </div>
     </div>
+
+    <HomeTutorialOverlay
+      v-if="tutorialActive"
+      :step-index="tutorialStep"
+      :target="activeTutorialTarget"
+      @next="handleTutorialNext"
+    />
 
     <NavBar active="home" :onSelect="store.navTo" />
 
@@ -124,7 +214,7 @@
       v-if="focusedPat"
       ref="focusDialog"
       className="absolute inset-0 z-40 flex items-center justify-center"
-      style="background: rgba(0, 0, 0, 0.60)"
+      style="background: rgba(0, 0, 0, 0.6)"
       role="dialog"
       aria-modal="true"
       :aria-label="`${focusedPat.label} 실행 전 확인`"
@@ -152,38 +242,101 @@
         height: '136px',
         backgroundColor: ghostPat.color,
         transform: 'scale(1.08)',
-        opacity: 0.93
+        opacity: 0.93,
       }"
     >
-      <span className="text-[32px] font-black text-white leading-none">{{ ghostPat.num }}</span>
-      <span className="text-[11px] font-bold text-white text-center px-2 leading-tight">{{ ghostPat.label }}</span>
+      <span className="text-[32px] font-black text-white leading-none">{{
+        ghostPat.num
+      }}</span>
+      <span
+        className="text-[11px] font-bold text-white text-center px-2 leading-tight"
+        >{{ ghostPat.label }}</span
+      >
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useAppStore } from '../stores/appStore';
-import SafeArea from '../components/common/SafeArea.vue';
-import DanjjakMark from '../components/common/DanjjakMark.vue';
-import Btn from '../components/common/Btn.vue';
-import Ic from '../components/common/Ic.vue';
-import NavBar from '../components/common/NavBar.vue';
-import PatternGrid from '../components/common/PatternGrid.vue';
-import FocusModeCard from '../components/common/FocusModeCard.vue';
-import oldAgeWoman from '../assets/icons/profile/old_age_woman.png';
-import { useShortcutSpeech } from '../composables/useShortcutSpeech.js';
-import { swipePage } from '../features/shortcutSwipe.js';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useAppStore } from "../stores/appStore";
+import SafeArea from "../components/common/SafeArea.vue";
+import DanjjakMark from "../components/common/DanjjakMark.vue";
+import Btn from "../components/common/Btn.vue";
+import Ic from "../components/common/Ic.vue";
+import NavBar from "../components/common/NavBar.vue";
+import PatternGrid from "../components/common/PatternGrid.vue";
+import FocusModeCard from "../components/common/FocusModeCard.vue";
+import oldAgeWoman from "../assets/icons/profile/old_age_woman.png";
+import { useShortcutSpeech } from "../composables/useShortcutSpeech.js";
+import { swipePage } from "../features/shortcutSwipe.js";
+import HomeTutorialOverlay from "../components/common/HomeTutorialOverlay.vue";
+
+import {
+  completeHomeTutorial,
+  shouldShowHomeTutorial,
+} from "../features/homeTutorial.js";
 
 const store = useAppStore();
+const voiceTutorialTarget = ref(null);
+const shortcutTutorialTarget = ref(null);
+const chatTutorialTarget = ref(null);
+
+const tutorialStep = ref(-1);
+
+const tutorialTargets = computed(() => [
+  voiceTutorialTarget.value,
+  shortcutTutorialTarget.value,
+  chatTutorialTarget.value,
+]);
+
+const activeTutorialTarget = computed(() => {
+  return tutorialTargets.value[tutorialStep.value] ?? null;
+});
+
+const tutorialActive = computed(() => {
+  return tutorialStep.value >= 0;
+});
+
+function handleTutorialNext() {
+  if (tutorialStep.value < 2) {
+    tutorialStep.value += 1;
+    return;
+  }
+
+  completeHomeTutorial();
+  tutorialStep.value = -1;
+}
+
+function updateChatTutorialHighlight(step) {
+  const chatButton = chatTutorialTarget.value;
+  const chatLayer = chatButton?.parentElement;
+
+  if (!chatButton || !chatLayer) return;
+
+  const isChatStep = step === 2;
+
+  chatButton.classList.toggle("guide-glow", isChatStep);
+  chatButton.style.pointerEvents = isChatStep ? "none" : "";
+  chatLayer.style.zIndex = isChatStep ? "60" : "20";
+}
+
+watch(tutorialStep, updateChatTutorialHighlight);
 
 const highlightedPatternId = ref(null);
-const highlightedPattern = computed(() => store.patterns.find((pattern) => pattern.patternId === highlightedPatternId.value));
-let voiceConfirmationRequestId = 0;
-const { supported: speechSupported, state: sttState, message: sttMessage, start: startSpeech, stop: stopSpeech, cancel: cancelSpeech } = useShortcutSpeech(
-  () => store.patterns,
-  openVoicePatternConfirmation,
+const highlightedPattern = computed(() =>
+  store.patterns.find(
+    (pattern) => pattern.patternId === highlightedPatternId.value,
+  ),
 );
+let voiceConfirmationRequestId = 0;
+const {
+  supported: speechSupported,
+  state: sttState,
+  message: sttMessage,
+  start: startSpeech,
+  stop: stopSpeech,
+  cancel: cancelSpeech,
+} = useShortcutSpeech(() => store.patterns, openVoicePatternConfirmation);
 const focusedPat = ref(null);
 const focusDialog = ref(null);
 let previouslyFocused = null;
@@ -204,17 +357,25 @@ const pageNums = computed(() => {
   if (store.homePage === 2) return [5, 6, 7, 8];
   return [9, 10, 11, 12];
 });
-const ghostPat = computed(() => (drag.value ? store.patterns.find((p) => p.num === drag.value.sourceNum) : null));
+const ghostPat = computed(() =>
+  drag.value
+    ? store.patterns.find((p) => p.num === drag.value.sourceNum)
+    : null,
+);
 
-watch(() => store.patterns, () => {
-  if (sttState.value !== 'idle' || highlightedPatternId.value !== null) resetSpeech();
-});
+watch(
+  () => store.patterns,
+  () => {
+    if (sttState.value !== "idle" || highlightedPatternId.value !== null)
+      resetSpeech();
+  },
+);
 
 watch(focusedPat, async (pattern) => {
   if (pattern) {
     previouslyFocused = document.activeElement;
     await nextTick();
-    focusDialog.value?.querySelector('button')?.focus();
+    focusDialog.value?.querySelector("button")?.focus();
     return;
   }
   previouslyFocused?.focus?.();
@@ -222,7 +383,9 @@ watch(focusedPat, async (pattern) => {
 });
 
 function trapDialogFocus(event) {
-  const buttons = [...(focusDialog.value?.querySelectorAll('button:not([disabled])') ?? [])];
+  const buttons = [
+    ...(focusDialog.value?.querySelectorAll("button:not([disabled])") ?? []),
+  ];
   if (buttons.length === 0) {
     event.preventDefault();
     focusDialog.value?.focus();
@@ -240,8 +403,8 @@ function trapDialogFocus(event) {
 }
 
 function toggleStt() {
-  if (sttState.value === 'listening') stopSpeech();
-  else if (sttState.value !== 'idle') resetSpeech();
+  if (sttState.value === "listening") stopSpeech();
+  else if (sttState.value !== "idle") resetSpeech();
   else {
     highlightedPatternId.value = null;
     startSpeech();
@@ -271,12 +434,13 @@ async function openVoicePatternConfirmation(pattern) {
   highlightedPatternId.value = pattern.patternId;
   store.homePage = Math.ceil(pattern.num / 4);
   await nextTick();
-  const isCurrent = () => (
-    voiceConfirmationRequestId === requestId
-    && highlightedPatternId.value === pattern.patternId
-  );
+  const isCurrent = () =>
+    voiceConfirmationRequestId === requestId &&
+    highlightedPatternId.value === pattern.patternId;
   if (!isCurrent()) return;
-  containerRef.value?.querySelector(`[data-slot-num="${pattern.num}"]`)?.scrollIntoView({ block: 'nearest' });
+  containerRef.value
+    ?.querySelector(`[data-slot-num="${pattern.num}"]`)
+    ?.scrollIntoView({ block: "nearest" });
   await openPatternConfirmation(pattern, isCurrent);
 }
 
@@ -302,25 +466,45 @@ function checkEdge(clientX) {
   const r = containerRef.value?.getBoundingClientRect();
   if (!r) return;
   if (clientX > r.right - EDGE_PX && store.homePage < 3) {
-    if (!edgeTimer) edgeTimer = setTimeout(() => { store.homePage = Math.min(store.homePage + 1, 3); edgeTimer = null; }, 500);
+    if (!edgeTimer)
+      edgeTimer = setTimeout(() => {
+        store.homePage = Math.min(store.homePage + 1, 3);
+        edgeTimer = null;
+      }, 500);
   } else if (clientX < r.left + EDGE_PX && store.homePage > 1) {
-    if (!edgeTimer) edgeTimer = setTimeout(() => { store.homePage = Math.max(store.homePage - 1, 1); edgeTimer = null; }, 500);
+    if (!edgeTimer)
+      edgeTimer = setTimeout(() => {
+        store.homePage = Math.max(store.homePage - 1, 1);
+        edgeTimer = null;
+      }, 500);
   } else {
-    if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null; }
+    if (edgeTimer) {
+      clearTimeout(edgeTimer);
+      edgeTimer = null;
+    }
   }
 }
 
 // Document-level drag handlers — reliable across the whole screen regardless of pointer position
 function onDocPointerMove(e) {
   if (!drag.value) return;
-  const x = e.clientX, y = e.clientY;
-  drag.value = { ...drag.value, ghostX: x, ghostY: y, targetNum: findSlotAtPoint(x, y) };
+  const x = e.clientX,
+    y = e.clientY;
+  drag.value = {
+    ...drag.value,
+    ghostX: x,
+    ghostY: y,
+    targetNum: findSlotAtPoint(x, y),
+  };
   checkEdge(x);
 }
 
 function onDocPointerUp() {
   removeDocListeners();
-  if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null; }
+  if (edgeTimer) {
+    clearTimeout(edgeTimer);
+    edgeTimer = null;
+  }
   if (drag.value) {
     const { sourceNum, targetNum } = drag.value;
     const didReorder = targetNum !== null && targetNum !== sourceNum;
@@ -332,21 +516,26 @@ function onDocPointerUp() {
 
 function onDocPointerCancel() {
   removeDocListeners();
-  if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null; }
+  if (edgeTimer) {
+    clearTimeout(edgeTimer);
+    edgeTimer = null;
+  }
   drag.value = null;
   justDropped.value = false;
 }
 
 function removeDocListeners() {
-  document.removeEventListener('pointermove', onDocPointerMove);
-  document.removeEventListener('pointerup', onDocPointerUp);
-  document.removeEventListener('pointercancel', onDocPointerCancel);
+  document.removeEventListener("pointermove", onDocPointerMove);
+  document.removeEventListener("pointerup", onDocPointerUp);
+  document.removeEventListener("pointercancel", onDocPointerCancel);
 }
 
 function handlePointerDown(num, e) {
-  if (store.patternOrderSaving || e.isPrimary === false || e.button !== 0) return;
+  if (store.patternOrderSaving || e.isPrimary === false || e.button !== 0)
+    return;
   if (!store.patterns.find((p) => p.num === num)) return;
-  const x = e.clientX, y = e.clientY;
+  const x = e.clientX,
+    y = e.clientY;
   startPos.value = { x, y };
 
   longPressTimer = setTimeout(() => {
@@ -354,9 +543,11 @@ function handlePointerDown(num, e) {
     resetSpeech();
     drag.value = { sourceNum: num, ghostX: x, ghostY: y, targetNum: null };
     // Track drag at document level so events fire regardless of pointer position
-    document.addEventListener('pointermove', onDocPointerMove, { passive: true });
-    document.addEventListener('pointerup', onDocPointerUp);
-    document.addEventListener('pointercancel', onDocPointerCancel);
+    document.addEventListener("pointermove", onDocPointerMove, {
+      passive: true,
+    });
+    document.addEventListener("pointerup", onDocPointerUp);
+    document.addEventListener("pointercancel", onDocPointerCancel);
   }, LONG_PRESS_MS);
 }
 
@@ -372,17 +563,26 @@ function handlePointerMove(e) {
 }
 
 function handlePointerUp() {
-  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
   // Drag cleanup handled by document-level listener
 }
 
 function handlePointerCancel() {
-  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
   // Drag cleanup handled by document-level listener
 }
 
 async function handleCardClick(num, pat) {
-  if (justDropped.value) { justDropped.value = false; return; }
+  if (justDropped.value) {
+    justDropped.value = false;
+    return;
+  }
   if (drag.value) return;
   if (store.patternLoading) return;
   resetSpeech();
@@ -396,7 +596,7 @@ async function handleCardClick(num, pat) {
 function beginDirectTransfer() {
   resetSpeech();
   store.startTransfer();
-  store.navigate('transfer-source');
+  store.navigate("transfer-source");
 }
 
 async function startFocusedPattern() {
@@ -412,17 +612,38 @@ async function startFocusedPattern() {
   }
 }
 
-onMounted(() => { void store.loadPatterns(); });
+onMounted(async () => {
+  void store.loadPatterns();
+
+  await nextTick();
+  chatTutorialTarget.value = document.querySelector(".chat-fab");
+
+  if (shouldShowHomeTutorial()) {
+    tutorialStep.value = 0;
+  }
+});
 
 let swipe = null;
 let suppressClick = false;
 function beginSwipe(event) {
-  if (event.isPrimary === false || event.button !== 0 || store.patternOrderSaving || drag.value) return;
+  if (
+    event.isPrimary === false ||
+    event.button !== 0 ||
+    store.patternOrderSaving ||
+    drag.value
+  )
+    return;
   suppressClick = false;
   justDropped.value = false;
-  const scrollArea = event.currentTarget.closest('.overflow-y-auto');
-  swipe = { id: event.pointerId, x: event.clientX, y: event.clientY, vertical: false,
-    scrollArea, scrollTop: scrollArea?.scrollTop ?? 0 };
+  const scrollArea = event.currentTarget.closest(".overflow-y-auto");
+  swipe = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    vertical: false,
+    scrollArea,
+    scrollTop: scrollArea?.scrollTop ?? 0,
+  };
 }
 function moveSwipe(event) {
   if (!swipe || event.pointerId !== swipe.id) return;
@@ -435,7 +656,7 @@ function moveSwipe(event) {
   suppressClick = true;
   event.currentTarget.setPointerCapture?.(event.pointerId);
   // 카드의 길게 누르기와 세로 스크롤을 함께 지원한다. 가로 이동만 페이지를 바꾼다.
-  if (swipe.vertical && event.pointerType === 'touch' && swipe.scrollArea) {
+  if (swipe.vertical && event.pointerType === "touch" && swipe.scrollArea) {
     swipe.scrollArea.scrollTop = swipe.scrollTop - dy;
   }
 }
@@ -445,7 +666,8 @@ function endSwipe(event) {
   const dx = event.clientX - swipe.x;
   const dy = event.clientY - swipe.y;
   if (drag.value || Math.hypot(dx, dy) > MOVE_THRESHOLD) suppressClick = true;
-  if (!swipe.vertical) store.homePage = swipePage(store.homePage, dx, dy, Boolean(drag.value));
+  if (!swipe.vertical)
+    store.homePage = swipePage(store.homePage, dx, dy, Boolean(drag.value));
   swipe = null;
 }
 function cancelSwipe() {
@@ -467,6 +689,7 @@ function guardSwipeClick(event) {
 }
 
 onUnmounted(() => {
+  updateChatTutorialHighlight(-1);
   voiceConfirmationRequestId += 1;
   if (longPressTimer) clearTimeout(longPressTimer);
   if (edgeTimer) clearTimeout(edgeTimer);
@@ -474,3 +697,10 @@ onUnmounted(() => {
   previouslyFocused?.focus?.();
 });
 </script>
+
+<style scoped>
+.home-tutorial-target {
+  z-index: 60 !important;
+  pointer-events: none;
+}
+</style>

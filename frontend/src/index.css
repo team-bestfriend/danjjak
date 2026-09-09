@@ -18,6 +18,8 @@ body {
 .overflow-y-auto,
 .overflow-y-scroll,
 [class*="overflow-y"] {
+  min-height: 0;
+  scroll-padding-block: 1rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -25,6 +27,11 @@ body {
 .overflow-y-scroll::-webkit-scrollbar,
 [class*="overflow-y"]::-webkit-scrollbar {
   display: none;
+}
+
+/* 상태 표시줄이 있는 기기에서도 상단 조작 영역이 가려지지 않게 합니다. */
+.safe-area-top {
+  height: max(36px, env(safe-area-inset-top));
 }
 
 @keyframes pulse-glow {

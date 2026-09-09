@@ -15,7 +15,7 @@
 
     <!-- 슬라이드 내용 -->
     <main
-      class="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center"
+      class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-4 text-center"
     >
       <!-- 첫 번째 화면 -->
       <template v-if="currentPage === 0">
@@ -134,7 +134,7 @@
     </main>
 
     <!-- 페이지 표시와 버튼 -->
-    <div class="px-5 pb-8">
+    <div class="flex-shrink-0 px-5 pb-8">
       <div
         class="mb-6 flex items-center justify-center gap-3"
         aria-label="소개 화면 진행 상태"

@@ -37,7 +37,7 @@ paths:
       tags: [Chat]
       operationId: sendChatMessage
       summary: 자연어로 원하는 단짝 업무 찾기
-      description: 대화 기록을 저장하지 않는다. AI는 짧은 안내와 업무를 분류하며 금융 업무를 실행하지 않는다. 송금 대상은 기존 화면에서 선택한다. 조회 patternId는 현재 사용자의 활성 패턴에서 선택하며 없으면 null이다. AI 오류는 200 응답의 NONE과 retryable로 안내한다.
+      description: 대화 기록을 저장하지 않는다. AI는 짧은 안내와 업무를 분류하며 금융 업무를 실행하지 않는다. 1~12 단축번호 명령은 현재 사용자의 활성 패턴을 찾아 patternId를 반환한다. 송금 대상은 기존 화면에서 선택한다. 조회 patternId는 현재 사용자의 활성 패턴에서 선택하며 없으면 null이다. AI 오류는 200 응답의 NONE과 retryable로 안내한다.
       requestBody:
         required: true
         content:
@@ -1187,13 +1187,13 @@ components:
           description: 쉽고 짧은 한국어 안내. 금융 상담과 실제 조회 결과는 포함하지 않는다.
         action:
           type: string
-          enum: [TRANSFER, BALANCE_CHECK, PENSION_CHECK, MANAGEMENT_FEE_CHECK, UTILITY_BILL_CHECK, CUSTOMER_CENTER, APP_HELP, NONE]
+          enum: [TRANSFER, BALANCE_CHECK, PENSION_CHECK, MANAGEMENT_FEE_CHECK, UTILITY_BILL_CHECK, CUSTOMER_CENTER, PATTERN, APP_HELP, NONE]
         patternId:
           type: integer
           format: int64
           minimum: 1
           nullable: true
-          description: 현재 사용자의 조회·고객센터 패턴 ID. 송금·사용 안내·미지원 또는 일치 패턴이 없으면 null.
+          description: 현재 사용자의 조회·고객센터 또는 단축번호와 일치한 활성 패턴 ID. 일치 패턴이 없으면 null.
         retryable:
           type: boolean
           description: AI 오류 또는 시간 초과일 때 true. 사용자 선택으로만 재시도한다.

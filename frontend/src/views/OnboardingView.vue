@@ -2,8 +2,8 @@
   <div class="flex h-full flex-col bg-[#FAFAF8]">
     <SafeArea />
 
-    <main class="flex min-h-0 flex-1 flex-col items-center px-6 text-center">
-      <div class="flex flex-1 flex-col items-center justify-center">
+    <main class="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-6 py-4 text-center">
+      <div class="flex min-h-full flex-col items-center justify-center">
         <!-- 앱 로고 -->
         <img
           src="../assets/danjjak-logo.png"
@@ -29,7 +29,7 @@
     </main>
 
     <!-- 하단 버튼 -->
-    <div class="space-y-3 px-6 pb-10">
+    <div class="flex-shrink-0 space-y-3 px-6 pb-10">
       <button
         type="button"
         class="h-[66px] w-full rounded-[20px] bg-[#FFBC00] text-[21px] font-bold text-[#111827] transition active:scale-[0.98]"

@@ -89,7 +89,7 @@ for (const [status, message, button, destination] of [
   });
 }
 
-for (const duration of [null, 0, 12.5]) {
+for (const [duration, displayedDuration] of [[null, null], [0, 0], [12.56, 12.6]]) {
   test('서버가 선택한 단계와 이용 기록을 쉽게 표시한다: ' + duration, async () => {
     const selected = {
       patternId: 71, stepId: 8, stepCode: 'AMOUNT', stepName: '금액 입력', stepOrder: 2,
@@ -111,7 +111,7 @@ for (const duration of [null, 0, 12.5]) {
     }
     assert.ok(!text.includes('다른 항목 선택'));
     if (duration === null) assert.ok(!text.includes('평균 머문 시간'));
-    else assert.ok(text.includes('평균 머문 시간') && text.includes(duration + '초'));
+    else assert.ok(text.includes('평균 머문 시간') && text.includes(displayedDuration + '초'));
     assert.ok(!text.includes('4점'));
     assert.ok(!text.includes('오류 행동 점수'));
     assert.ok(!text.includes('클라이언트가 선택하면 안 되는 단계'));
@@ -149,12 +149,14 @@ test('행동 기록이 없으면 어려움이나 실수로 단정하지 않는�
     ...empty('AVAILABLE'),
     patterns: [{ patternId: 71, title: '시험 송금', completedCount: 1 }],
     difficultStep: {
-      patternId: 71, stepId: 8, stepName: 'PIN 입력', visitCount: 1, errorScore: 0,
+      patternId: 71, stepId: 8, stepCode: 'ENTER_PIN', stepName: 'PIN 입력', visitCount: 1, errorScore: 0,
       retryCount: 0, backCount: 0, wrongTouchCount: 0, routeDeviationCount: 0,
       averageDurationSeconds: null,
     },
   });
   const text = content(await mount());
+  assert.ok(text.includes('비밀번호 입력 단계'));
+  assert.ok(!text.includes('PIN 입력 단계'));
   assert.ok(text.includes('이 단계의 안내 문구를 한번 살펴보세요'));
   for (const hidden of ['다시 시도', '이전 단계로 이동', '다른 항목 선택', '진행 중 다른 화면으로 이동', '평균 머문 시간']) {
     assert.ok(!text.includes(hidden));

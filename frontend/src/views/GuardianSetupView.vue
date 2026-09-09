@@ -86,7 +86,7 @@
 
       <button
         type="button"
-        class="h-[58px] w-full rounded-[18px] text-[18px] font-medium text-[#9CA3AF] transition active:bg-[#F3F4F6]"
+        class="h-[58px] w-full rounded-[18px] text-[18px] font-medium text-[#9CA3AF] transition active:bg-[#F3F4F6] disabled:opacity-50"
         :disabled="store.guardianSaving"
         @click="skipGuardian"
       >
@@ -101,6 +101,8 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import warningImage from "../assets/icons/warning.png";
 import { useAppStore } from "../stores/appStore";
+import { finishFirstStartFlow } from "../features/onboardingFlow.js";
+import { markHomeTutorialPending } from "../features/homeTutorial.js";
 
 const router = useRouter();
 const store = useAppStore();
@@ -128,6 +130,7 @@ function formatPhoneNumber(value) {
 
 function handlePhoneInput(event) {
   phoneNumber.value = formatPhoneNumber(event.target.value);
+
   errorMessage.value = "";
 }
 
@@ -135,23 +138,34 @@ function getNextRoute() {
   return store.currentUser?.accountReady ? "home" : "account-import";
 }
 
-function finishFirstStartFlow() {
-  sessionStorage.removeItem("danjjakPrivacyConsent");
+/*
+ * 최초 시작 흐름을 종료하고
+ * 다음 홈 진입 시 튜토리얼이 나오도록 예약합니다.
+ */
+function finishGuardianSetup() {
+  markHomeTutorialPending();
+  finishFirstStartFlow();
+}
+
+async function moveToNextScreen() {
+  await router.replace({
+    name: getNextRoute(),
+  });
 }
 
 async function saveGuardian() {
-  if (!canSave.value || store.guardianSaving) return;
+  if (!canSave.value || store.guardianSaving) {
+    return;
+  }
 
   errorMessage.value = "";
 
   try {
     await store.saveGuardian(phoneNumber.value);
 
-    finishFirstStartFlow();
+    finishGuardianSetup();
 
-    await router.replace({
-      name: getNextRoute(),
-    });
+    await moveToNextScreen();
   } catch (error) {
     errorMessage.value =
       error?.message ??
@@ -160,13 +174,13 @@ async function saveGuardian() {
 }
 
 async function skipGuardian() {
-  if (store.guardianSaving) return;
+  if (store.guardianSaving) {
+    return;
+  }
 
-  finishFirstStartFlow();
+  finishGuardianSetup();
 
-  await router.replace({
-    name: getNextRoute(),
-  });
+  await moveToNextScreen();
 }
 </script>
 

@@ -71,7 +71,7 @@
             <div class="bg-[#FFF3CC] border border-[#FFBC00] rounded-[18px] p-4">
               <p class="text-[15px] text-[#6B5A26]">{{ difficultPatternTitle }}</p>
               <h3 class="mt-1 font-bold text-[#111827] leading-relaxed text-[21px]">
-                {{ report.difficultStep.stepName }} 단계
+                {{ difficultStepName }} 단계
               </h3>
 
               <dl v-if="hasObservedActions" class="mt-4 text-[16px] text-[#374151] space-y-3">
@@ -95,7 +95,7 @@
                   <dt>단계 방문</dt><dd class="font-semibold text-[#374151]">{{ report.difficultStep.visitCount }}회</dd>
                 </div>
                 <div v-if="report.difficultStep.averageDurationSeconds !== null" class="flex justify-between gap-3">
-                  <dt>평균 머문 시간</dt><dd class="font-semibold text-[#374151]">{{ report.difficultStep.averageDurationSeconds }}초</dd>
+                  <dt>평균 머문 시간</dt><dd class="font-semibold text-[#374151]">{{ roundedAverageDuration }}초</dd>
                 </div>
               </dl>
             </div>
@@ -143,6 +143,13 @@ const displayPatterns = computed(() => report.value?.patterns.map((pattern) => {
 const difficultPatternTitle = computed(() => report.value?.patterns.find(
   (pattern) => pattern.patternId === report.value?.difficultStep?.patternId,
 )?.title);
+const difficultStepName = computed(() => report.value?.difficultStep?.stepCode === 'ENTER_PIN'
+  ? '비밀번호 입력'
+  : report.value?.difficultStep?.stepName);
+const roundedAverageDuration = computed(() => {
+  const seconds = report.value?.difficultStep?.averageDurationSeconds;
+  return seconds == null ? null : Math.round(seconds * 10) / 10;
+});
 const hasObservedActions = computed(() => {
   const step = report.value?.difficultStep;
   return Boolean(step && [step.retryCount, step.backCount, step.wrongTouchCount, step.routeDeviationCount]

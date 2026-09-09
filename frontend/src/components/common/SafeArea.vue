@@ -1,3 +1,3 @@
 <template>
-  <div className="h-9 bg-white flex-shrink-0" />
+  <div class="safe-area-top flex-shrink-0 bg-white" aria-hidden="true" />
 </template>
