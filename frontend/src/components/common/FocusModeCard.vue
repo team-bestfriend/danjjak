@@ -18,7 +18,7 @@
 
     <div class="space-y-4 p-5">
       <div>
-        <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · {{ voiceMode === 'FAMILY' ? '가족 음성' : '자동 TTS' }}</p>
+        <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · {{ voiceMode === 'FAMILY' ? '가족 음성' : 'AI 음성' }}</p>
         <div class="flex items-start gap-3">
           <button
             type="button"

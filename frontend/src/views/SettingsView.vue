@@ -18,7 +18,6 @@
           <div className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0" style="background: #FFF3CC; border: 2px solid #FFBC00; font-size: 32px;">👵</div>
           <div className="flex-1">
             <p className="font-bold text-[#111827]" style="font-size: 23px;">{{ store.userName }}</p>
-            <p className="text-[#6B7280] mt-0.5" style="font-size: 15px;">단짝 시연 사용자</p>
           </div>
         </div>
       </Card>
@@ -52,8 +51,8 @@
               :options="[{ key: 'slow', label: '느리게' }, { key: 'normal', label: '보통' }, { key: 'fast', label: '빠르게' }]"
               v-model:value="guideSpeed"
             />
-            <p class="mt-3 text-[15px] text-[#6B7280]">자동 음성과 저장된 가족 음성 모두에 적용해요.</p>
-            <button type="button" class="mt-3 min-h-12 w-full rounded-[14px] bg-[#FFF3CC] px-3 text-[17px] font-bold text-[#92650A]" :disabled="previewLoading" @click="previewVoice">{{ previewLoading ? '음성 준비 중…' : previewPlaying ? '미리듣기 멈추기' : '이 속도로 자동 음성 들어보기' }}</button>
+            <p class="mt-3 text-[15px] text-[#6B7280]">AI 음성과 저장된 가족 음성 모두에 적용해요.</p>
+            <button type="button" class="mt-3 min-h-12 w-full rounded-[14px] bg-[#FFF3CC] px-3 text-[17px] font-bold text-[#92650A]" :disabled="previewLoading" @click="previewVoice">{{ previewLoading ? '음성 준비 중…' : previewPlaying ? '미리듣기 멈추기' : '이 속도로 AI 음성 들어보기' }}</button>
             <p class="mt-2 text-[14px] text-[#6B7280]">Marin · AI가 생성한 한국어 안내 음성이에요.</p>
             <p v-if="previewError" class="mt-2 text-[15px] text-[#B91C1C]" role="alert">{{ previewError }} 설정은 계속 저장할 수 있어요.</p>
           </div>
@@ -62,11 +61,11 @@
             <SegControl
               label="기본 음성 안내 방식"
               :disabled="settingsSaving"
-              :options="[{ key: 'tts', label: '자동 음성(TTS)' }, { key: 'family', label: '가족 음성' }]"
+              :options="[{ key: 'tts', label: 'AI 음성' }, { key: 'family', label: '가족 음성' }]"
               v-model:value="voiceMode"
             />
             <p className="text-[#9CA3AF] mt-2 px-1" style="font-size: 13px;">
-              {{ voiceMode === 'tts' ? '현재 안내 문구를 자동 음성으로 읽어요.' : '저장된 가족 녹음이 없거나 재생되지 않으면 같은 문구를 자동 음성으로 읽어요.' }} 패턴에서 따로 선택한 음성은 유지돼요.
+              {{ voiceMode === 'tts' ? '현재 안내 문구를 AI 음성으로 읽어요.' : '저장된 가족 녹음이 없거나 재생되지 않으면 같은 문구를 AI 음성으로 읽어요.' }} 패턴에서 따로 선택한 음성은 유지돼요.
             </p>
           </div>
           <button

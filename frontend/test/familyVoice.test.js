@@ -132,6 +132,6 @@ test('가족 음성은 선택 속도로 재생하고 실패 시 같은 자막의
   audios[0].onerror();
   await settle();
   assert.deepEqual(requests, [{ text: '현재 안내', speed: 'FAST' }]);
-  assert.match(audio.notice.value, /재생하지 못해/);
+  assert.equal(audio.notice.value, '가족 음성을 재생하지 못해 AI 음성으로 안내해요.');
   assert.equal(audios[0].paused, true);
 });
