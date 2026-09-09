@@ -15,6 +15,38 @@ class ChatServiceTest {
     private final PatternService patterns = mock(PatternService.class);
 
     @Test
+    void shortcutCommandUsesCurrentActiveShortcutWithoutCallingProvider() {
+        ChatIntentClient client = mock(ChatIntentClient.class);
+        when(patterns.getPatterns(7)).thenReturn(List.of(
+                new PatternSummaryResponse(91, 2, PatternType.TRANSFER, "딸에게 송금하기", "", null)));
+
+        for (String message : List.of("2", "2번", "2번 실행해줘", "2 번 실행해 주세요")) {
+            var reply = new ChatService(client, patterns).reply(7, message);
+            assertEquals(Action.PATTERN, reply.action());
+            assertEquals(91L, reply.patternId());
+            assertTrue(reply.message().contains("2번 딸에게 송금하기"));
+            assertFalse(reply.retryable());
+            assertFalse(reply.showRecommendations());
+        }
+        verifyNoInteractions(client);
+        verify(patterns, times(4)).getPatterns(7);
+    }
+
+    @Test
+    void emptyShortcutDoesNotExecutePattern() {
+        ChatIntentClient client = mock(ChatIntentClient.class);
+        when(patterns.getPatterns(7)).thenReturn(List.of());
+
+        var empty = new ChatService(client, patterns).reply(7, "12번 실행해줘");
+
+        assertEquals(Action.NONE, empty.action());
+        assertNull(empty.patternId());
+        assertTrue(empty.message().contains("등록된 금융 업무가 없어요"));
+        assertTrue(empty.showRecommendations());
+        verifyNoInteractions(client);
+    }
+
+    @Test
     void transferUsesExistingFlowWithoutGuessingRecipient() {
         ChatService service = new ChatService(message -> {
             assertEquals("아들에게 돈 보내고 싶어", message);
