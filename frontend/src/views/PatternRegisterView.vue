@@ -12,9 +12,22 @@
     </div>
 
     <template v-else>
-      <div class="border-b border-[#EEEEED] bg-white px-5 py-3">
-        <p class="text-[14px] font-bold text-[#92650A]">{{ stageIndex + 1 }} / {{ stages.length }}</p>
-        <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#F3F4F6]">
+      <div class="border-b border-[#EEEEED] bg-white px-5 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-[15px] font-bold text-[#92650A]">{{ editing ? '패턴 수정' : '패턴 등록' }}</p>
+            <p class="mt-1 text-[19px] font-bold text-[#111827]">{{ stageLabel }}</p>
+          </div>
+          <span class="shrink-0 rounded-full bg-[#FFF3CC] px-3 py-1 text-[15px] font-bold text-[#92650A]">{{ stageIndex + 1 }} / {{ stages.length }}단계</span>
+        </div>
+        <div
+          class="mt-3 h-2.5 overflow-hidden rounded-full bg-[#F3F4F6]"
+          role="progressbar"
+          :aria-label="`${stageLabel} 단계`"
+          :aria-valuenow="stageIndex + 1"
+          aria-valuemin="1"
+          :aria-valuemax="stages.length"
+        >
           <div class="h-full rounded-full bg-[#FFBC00] transition-all" :style="{ width: `${((stageIndex + 1) / stages.length) * 100}%` }" />
         </div>
       </div>
@@ -64,15 +77,27 @@
         </section>
 
         <section v-else-if="stage === 'details'" class="space-y-5">
-          <h1 class="text-[26px] font-bold text-[#111827]">시작 전에 보여줄 내용을 확인해요</h1>
+          <div>
+            <h1 class="text-[27px] font-bold leading-snug text-[#111827]">패턴 내용을 확인해 주세요</h1>
+            <p class="mt-2 text-[17px] leading-relaxed text-[#6B7280]">패턴 이름과 시작 전에 들려줄 설명을 바꿀 수 있어요.</p>
+          </div>
+
+          <div v-if="editing" class="rounded-[20px] border-2 border-[#FDE68A] bg-[#FFFBEB] p-5" aria-label="현재 금융 업무">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-[17px] font-bold text-[#6B7280]">현재 금융 업무</p>
+              <span class="shrink-0 rounded-full border border-[#FDE68A] bg-white px-3 py-1 text-[14px] font-bold text-[#92650A]">변경할 수 없음</span>
+            </div>
+            <p class="mt-2 text-[22px] font-bold text-[#111827]">{{ typeLabel(selectedType) }}</p>
+            <p class="mt-3 text-[16px] leading-relaxed text-[#4B5563]">업무를 바꾸면 단계와 안내도 달라져요. 다른 업무가 필요하면 새 패턴으로 등록해 주세요.</p>
+          </div>
 
           <label class="block space-y-2">
-            <span class="text-[17px] font-bold text-[#374151]">패턴 이름</span>
-            <input v-model.trim="title" maxlength="100" class="h-[60px] w-full rounded-[16px] border-2 border-[#E5E7EB] bg-white px-4 text-[18px] outline-none focus:border-[#FFBC00]" />
+            <span class="text-[18px] font-bold text-[#374151]">패턴 이름</span>
+            <input v-model.trim="title" maxlength="100" class="h-[60px] w-full rounded-[16px] border-2 border-[#E5E7EB] bg-white px-4 text-[19px] outline-none focus:border-[#FFBC00]" />
           </label>
           <label class="block space-y-2">
-            <span class="text-[17px] font-bold text-[#374151]">시작 전 설명</span>
-            <textarea v-model.trim="description" maxlength="500" rows="4" class="w-full resize-none rounded-[16px] border-2 border-[#E5E7EB] bg-white p-4 text-[16px] leading-relaxed outline-none focus:border-[#FFBC00]" />
+            <span class="text-[18px] font-bold text-[#374151]">시작 전 설명</span>
+            <textarea v-model.trim="description" maxlength="500" rows="4" class="w-full resize-none rounded-[16px] border-2 border-[#E5E7EB] bg-white p-4 text-[18px] leading-relaxed outline-none focus:border-[#FFBC00]" />
           </label>
 
           <div v-if="selectedType === 'TRANSFER'" class="space-y-3">
@@ -112,7 +137,7 @@
           :audio-url="descriptionVoice.audioUrl"
           :voice-script-outdated="descriptionVoice.voiceScriptOutdated || Boolean(descriptionVoice.audioUrl && descriptionVoice.text !== description)"
           :recording-draft="descriptionVoice.recording"
-          action-label="이 음성으로 다음 · 마지막에 저장"
+          action-label="음성 저장 및 다음"
           @dirty="voiceDirty = $event"
           @confirm="acceptDescription"
           @cancel="voiceDirty = false; stageIndex--"
@@ -190,10 +215,18 @@ const route = useRoute();
 const store = useAppStore();
 const editing = computed(() => Number.isInteger(Number(route.query.edit)) && Number(route.query.edit) > 0);
 const stages = computed(() => editing.value
-  ? ['template', 'details', 'voice', 'steps', 'confirm']
+  ? ['details', 'voice', 'steps', 'confirm']
   : ['template', 'shortcut', 'details', 'voice', 'steps', 'confirm']);
 const stageIndex = ref(0);
 const stage = computed(() => stages.value[stageIndex.value]);
+const stageLabel = computed(() => ({
+  template: '금융 업무 선택',
+  shortcut: '단축번호 선택',
+  details: '기본 정보',
+  voice: '시작 안내 음성',
+  steps: '단계별 안내',
+  confirm: '최종 확인',
+})[stage.value] ?? '');
 const loading = ref(true);
 const loadError = ref('');
 const submitting = ref(false);

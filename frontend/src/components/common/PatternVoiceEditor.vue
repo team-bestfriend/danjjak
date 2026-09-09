@@ -55,7 +55,7 @@
       </template>
       <p v-if="mismatch" class="rounded-[16px] bg-[#FFF3CC] p-4 text-[15px] text-[#92650A]" role="status">문구가 바뀌었지만 녹음은 바뀌지 않았어요. 다시 녹음하거나 방식을 AI 음성으로 바꿀 수 있어요. 저장된 이전 녹음을 그대로 사용하는 것도 가능해요.</p>
       <p v-if="invalidRecording" class="text-[15px] text-[#B91C1C]" role="alert">새 녹음 후 문구가 바뀌었어요. 다시 녹음하거나 새 녹음을 취소한 뒤 저장해 주세요.</p>
-      <p class="text-[14px] text-[#6B7280]">{{ selectedMode ? '이 안내에만 선택한 음성을 사용해요.' : '전체 음성 설정을 따라요.' }}</p>
+      <p v-if="!selectedMode" class="text-[14px] text-[#6B7280]">전체 음성 설정을 따라요.</p>
       <p v-if="dirty" class="text-[14px] text-[#92650A]" role="status">아직 저장하지 않은 변경이 있어요.</p>
       <Btn :disabled="!valid || busy || invalidRecording" @click="confirm">{{ saving ? '저장 중…' : actionLabel }}</Btn>
       <Btn variant="secondary" :disabled="busy" @click="changeMode">방식 변경</Btn>
