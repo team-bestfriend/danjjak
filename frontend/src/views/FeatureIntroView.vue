@@ -53,20 +53,32 @@
           class="w-[260px] rounded-[26px] border border-[#E5E7EB] bg-white p-5 shadow-[0_6px_15px_rgba(17,24,39,0.10)]"
         >
           <div class="h-[46px] rounded-[14px] bg-[#F3F4F6]" />
+
           <div class="mt-4 h-[46px] rounded-[14px] bg-[#F3F4F6]" />
 
           <div
-            class="mt-4 flex h-[58px] items-center gap-3 rounded-[16px] border-[4px] border-[#FFBC00] bg-[#FFF9E8] px-4 shadow-[0_0_0_3px_rgba(255,188,0,0.25)]"
+            class="mt-4 flex h-[58px] items-center gap-3 rounded-[16px] border-[4px] border-[#FFBC00] bg-[#FFF9E8] px-3 shadow-[0_0_0_3px_rgba(255,188,0,0.25)]"
           >
             <span
-              class="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFBC00] text-[14px] font-bold text-[#111827]"
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FFBC00] text-[14px] font-bold text-[#111827]"
             >
               ✓
             </span>
 
-            <span class="text-[16px] font-bold text-[#111827]">
-              👨 김민수 (아들)
-            </span>
+            <div class="flex min-w-0 items-center gap-2">
+              <img
+                :src="adultManImage"
+                alt=""
+                class="h-8 w-8 shrink-0 rounded-full object-cover"
+                aria-hidden="true"
+              />
+
+              <span
+                class="whitespace-nowrap text-[16px] font-bold text-[#111827]"
+              >
+                김민수 (아들)
+              </span>
+            </div>
           </div>
         </div>
 
@@ -78,12 +90,17 @@
         </h1>
       </template>
 
-      <!-- 세 번째 화면 -->
+      <!-- 세 번째 화면: 마이크 이미지 -->
       <template v-else-if="currentPage === 2">
         <div
           class="flex h-[150px] w-[150px] items-center justify-center rounded-full border-[4px] border-[#B7D7FF] bg-[#EFF6FF]"
         >
-          <span class="text-[72px]" aria-hidden="true">🎙️</span>
+          <img
+            :src="micImage"
+            alt=""
+            class="h-[118px] w-[118px] object-contain"
+            aria-hidden="true"
+          />
         </div>
 
         <h1
@@ -94,19 +111,17 @@
         </h1>
       </template>
 
-      <!-- 네 번째 화면 -->
+      <!-- 네 번째 화면: 경고 이미지 -->
       <template v-else>
         <div
-          class="relative flex h-[150px] w-[150px] items-center justify-center rounded-full border-[4px] border-[#FFC7CA] bg-[#FFF1F2]"
+          class="flex h-[150px] w-[150px] items-center justify-center rounded-full border-[4px] border-[#FFC7CA] bg-[#FFF1F2]"
         >
-          <span class="text-[72px]" aria-hidden="true">🥷</span>
-
-          <span
-            class="absolute -bottom-1 -right-1 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-white bg-[#20C768] text-[24px]"
+          <img
+            :src="warningImage"
+            alt=""
+            class="h-[128px] w-[128px] object-contain"
             aria-hidden="true"
-          >
-            🛡️
-          </span>
+          />
         </div>
 
         <h1
@@ -158,6 +173,9 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import DanjjakMark from "../components/common/DanjjakMark.vue";
 import SafeArea from "../components/common/SafeArea.vue";
+import micImage from "../assets/icons/mic.png";
+import warningImage from "../assets/icons/warning.png";
+import adultManImage from "../assets/icons/profile/adult_man.png";
 
 const router = useRouter();
 
@@ -174,6 +192,6 @@ function goNext() {
 }
 
 function goToLogin() {
-  router.push({ name: "login" });
+  router.push({ name: "privacy-consent" });
 }
 </script>

@@ -56,10 +56,30 @@ import SafeArea from "../components/common/SafeArea.vue";
 const router = useRouter();
 
 function goToIntro() {
-  router.push({ name: "feature-intro" });
+  /*
+   * 처음 시작하기 흐름임을 로그인 이후까지 유지합니다.
+   */
+  sessionStorage.setItem(
+    "danjjakPrivacyConsent",
+    JSON.stringify({
+      flowStarted: true,
+      startedAt: new Date().toISOString(),
+    }),
+  );
+
+  router.push({
+    name: "feature-intro",
+  });
 }
 
 function goToLogin() {
-  router.push({ name: "login" });
+  /*
+   * 다시 이용하기에서는 최초 설정 화면을 보여주지 않습니다.
+   */
+  sessionStorage.removeItem("danjjakPrivacyConsent");
+
+  router.push({
+    name: "login",
+  });
 }
 </script>
