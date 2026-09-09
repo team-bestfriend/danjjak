@@ -116,8 +116,17 @@
               ]"
               @click="linkedBankAccountId = option.accountId"
             >
+              <span class="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-[#FFBC00] bg-white">
+                <img
+                  v-if="profileImageForPerson(option)"
+                  :src="profileImageForPerson(option)"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  aria-hidden="true"
+                />
+              </span>
               <span class="min-w-0 flex-1">
-                <span class="text-[18px] font-bold text-[#111827]">{{ option.personEmoji }} {{ option.personName }} · {{ option.personRelation }}</span>
+                <span class="text-[18px] font-bold text-[#111827]">{{ option.personName }} · {{ option.personRelation }}</span>
                 <span class="mt-1 block text-[14px] text-[#6B7280]">{{ option.bankName }} · {{ option.masked }}<template v-if="option.accountAlias"> · {{ option.accountAlias }}</template></span>
               </span>
               <span v-if="linkedBankAccountId === option.accountId" class="whitespace-nowrap text-[15px] font-bold text-[#92650A]">✓ 선택됨</span>
@@ -211,6 +220,7 @@ import { patternApi } from '../api/patternApi.js';
 import { saveGuidanceDraft, voiceLabel } from '../api/guidanceApi.js';
 import { apiUrl } from '../api/httpClient.js';
 import { typeLabel } from '../constants/patternTypes.js';
+import { profileImageForPerson } from '../constants/profileImages.js';
 
 const route = useRoute();
 const store = useAppStore();
@@ -259,7 +269,7 @@ const recipientAccountOptions = computed(() => store.people.flatMap((person) => 
     personId: person.id,
     personName: person.name,
     personRelation: person.relation,
-    personEmoji: person.emoji,
+    profileImageKey: person.profileImageKey,
   }))
 )));
 const selectedRecipientOption = computed(() => (

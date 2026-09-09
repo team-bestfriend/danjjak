@@ -7,6 +7,7 @@ public class RegisteredPersonCommand {
     private Long accountId;
     private String name;
     private String relationship;
+    private String profileImageKey;
     private String bankCode;
     private String bankName;
     private String accountNumber;
@@ -82,5 +83,13 @@ public class RegisteredPersonCommand {
 
     public void setAccountAlias(String accountAlias) {
         this.accountAlias = accountAlias;
+    }
+
+    public String getProfileImageKey() {
+        return profileImageKey;
+    }
+
+    public void setProfileImageKey(String profileImageKey) {
+        this.profileImageKey = profileImageKey;
     }
 }

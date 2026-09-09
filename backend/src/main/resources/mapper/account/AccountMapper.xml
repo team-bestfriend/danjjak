@@ -99,13 +99,14 @@
         SELECT rp.registered_person_id,
                rp.name,
                rp.relationship,
+               rp.profile_image_key,
                ba.bank_account_id AS account_id,
                ba.bank_code,
                ba.bank_name,
                ba.account_number,
                ba.account_alias
         FROM registered_persons rp
-        JOIN bank_accounts ba
+        LEFT JOIN bank_accounts ba
           ON ba.registered_person_id = rp.registered_person_id
          AND ba.user_id = rp.user_id
         WHERE rp.user_id = #{userId}
@@ -117,13 +118,14 @@
         SELECT rp.registered_person_id,
                rp.name,
                rp.relationship,
+               rp.profile_image_key,
                ba.bank_account_id AS account_id,
                ba.bank_code,
                ba.bank_name,
                ba.account_number,
                ba.account_alias
         FROM registered_persons rp
-        JOIN bank_accounts ba
+        LEFT JOIN bank_accounts ba
           ON ba.registered_person_id = rp.registered_person_id
          AND ba.user_id = rp.user_id
         WHERE rp.user_id = #{userId}
@@ -136,6 +138,7 @@
         SELECT rp.registered_person_id,
                rp.name,
                rp.relationship,
+               rp.profile_image_key,
                ba.bank_account_id AS account_id,
                ba.bank_code,
                ba.bank_name,
@@ -166,8 +169,8 @@
             useGeneratedKeys="true"
             keyProperty="registeredPersonId"
             keyColumn="registered_person_id">
-        INSERT INTO registered_persons (user_id, name, relationship)
-        VALUES (#{userId}, #{name}, #{relationship})
+        INSERT INTO registered_persons (user_id, name, relationship, profile_image_key)
+        VALUES (#{userId}, #{name}, #{relationship}, #{profileImageKey})
     </insert>
 
     <insert id="insertRecipientAccount"
@@ -200,7 +203,8 @@
     <update id="updateRegisteredPerson">
         UPDATE registered_persons
         SET name = #{name},
-            relationship = #{relationship}
+            relationship = #{relationship},
+            profile_image_key = #{profileImageKey}
         WHERE registered_person_id = #{registeredPersonId}
           AND user_id = #{userId}
     </update>
@@ -215,6 +219,18 @@
           AND user_id = #{userId}
           AND registered_person_id = #{registeredPersonId}
     </update>
+
+    <delete id="deleteRecipientAccountsForPerson">
+        DELETE FROM bank_accounts
+        WHERE user_id = #{userId}
+          AND registered_person_id = #{registeredPersonId}
+    </delete>
+
+    <delete id="deleteRegisteredPerson">
+        DELETE FROM registered_persons
+        WHERE user_id = #{userId}
+          AND registered_person_id = #{registeredPersonId}
+    </delete>
 
     <select id="findTransactions"
             resultType="com.bestfriend.danjjak.account.model.TransactionRecord">

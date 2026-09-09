@@ -36,8 +36,15 @@
       </div>
 
       <div v-else-if="person" class="text-center">
+        <img
+          v-if="profileImageForPerson(person)"
+          :src="profileImageForPerson(person)"
+          alt=""
+          class="mx-auto mb-3 h-20 w-20 rounded-full border border-[#FFBC00] object-cover"
+          aria-hidden="true"
+        />
         <p class="text-[28px] font-bold text-[#111827]">
-          {{ person.emoji }} {{ person.name }}
+          {{ person.name }}
         </p>
 
         <p class="mt-1 text-[16px] text-[#6B7280]">
@@ -407,6 +414,7 @@ import {
   inquiryResultText,
   RESULT_INQUIRY_CATEGORIES,
 } from "../features/inquiry/resultGuidance.js";
+import { profileImageForPerson } from "../constants/profileImages.js";
 
 const props = defineProps({
   taskName: {
