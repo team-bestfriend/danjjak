@@ -877,10 +877,17 @@
         </p>
       </div>
       <Card class="w-full p-5 space-y-2">
-
-        <div class="flex justify-between gap-3">
-          <span class="shrink-0 whitespace-nowrap text-[#6B7280]">송금 후 잔액</span
-          ><strong class="whitespace-nowrap text-right">{{ formatWonWithKorean(store.transferResult.balanceAfter) }}</strong>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <span class="shrink-0 text-[#6B7280]">송금 후 잔액</span>
+          <div class="ml-auto min-w-0 max-w-full text-right">
+            <strong class="block break-words">{{ formatWon(store.transferResult.balanceAfter) }}</strong>
+            <p
+              v-if="formatWonByUnits(store.transferResult.balanceAfter)"
+              class="mt-1 break-keep text-[16px] font-semibold text-[#6B7280]"
+            >
+              {{ formatWonByUnits(store.transferResult.balanceAfter) }}
+            </p>
+          </div>
         </div>
       </Card>
       <div
