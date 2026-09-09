@@ -108,17 +108,6 @@
             </span>
           </template>
         </button>
-
-        <p
-          id="voice-command-status"
-          :class="{ 'mt-2': sttMessage }"
-          class="text-[15px] leading-relaxed text-[#374151]"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {{ sttMessage }}
-        </p>
       </div>
 
       <!-- 내 단축번호 + 그리드 + 페이지 도트 -->
@@ -205,6 +194,12 @@
       :step-index="tutorialStep"
       :target="activeTutorialTarget"
       @next="handleTutorialNext"
+    />
+
+    <slot
+      name="home-assistant"
+      :message="sttMessage"
+      :hidden="Boolean(focusedPat)"
     />
 
     <NavBar active="home" :onSelect="store.navTo" />

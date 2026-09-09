@@ -14,40 +14,30 @@
         class="min-h-0 flex-1 overflow-hidden"
         @click.capture="handleGuidanceClick"
       >
-        <RouterView />
+        <RouterView v-slot="{ Component }">
+          <component :is="Component">
+            <template #home-assistant="{ message, hidden }">
+              <DanjjakAssistant
+                v-show="!showSplash"
+                :style="{
+                  position: 'absolute', right: '20px', bottom: '90px',
+                  visibility: hidden ? 'hidden' : undefined,
+                }"
+                :voice-message="message"
+                :auto-hint="autoChatHintVisible"
+                @open-chat="openChat"
+              />
+            </template>
+          </component>
+        </RouterView>
       </div>
 
       <div
-        v-if="showChatFab(String(route.name)) && !showSplash"
+        v-if="route.name !== 'home' && showChatFab(String(route.name)) && !showSplash"
         class="absolute right-5 h-16 w-16"
         style="bottom: 90px; z-index: 20;"
       >
-        <Transition name="chat-hint">
-          <div
-            v-if="showChatHint"
-            class="chat-hint absolute right-[84px] top-1/2 w-max -translate-y-1/2 whitespace-nowrap rounded-[18px] border-2 border-[#F1C232] bg-[#FFFDF5] px-3 py-2.5 text-[15px] font-semibold leading-none text-[#4B3A08] shadow-lg"
-            role="status"
-          >
-            <span class="chat-hint-full">궁금한 게 있으면 저한테 물어보세요!</span>
-            <span class="chat-hint-compact">단짝이에게 물어보세요!</span>
-          </div>
-        </Transition>
-
-        <button
-          class="chat-fab flex h-16 w-16 items-center justify-center rounded-full bg-[#FFCA3A] text-[#111827] shadow-lg"
-          aria-label="단짝에게 물어보기"
-          @mouseenter="fabHovered = true"
-          @mouseleave="fabHovered = false"
-          @focus="fabFocused = true"
-          @blur="fabFocused = false"
-          @click="openChat"
-        >
-          <img
-            :src="chatIcon"
-            alt=""
-            class="h-[52px] w-[52px] rounded-full object-contain"
-          />
-        </button>
+        <DanjjakAssistant @open-chat="openChat" />
       </div>
 
       <VoiceGuideBar
@@ -85,7 +75,7 @@ import {
   useStepGuidance,
 } from "./composables/useStepGuidance.js";
 import { showChatFab } from './features/chat/chatActions.js';
-import chatIcon from './assets/danjjakee.png';
+import DanjjakAssistant from "./components/common/DanjjakAssistant.vue";
 import SplashScreen from "./components/common/SplashScreen.vue";
 import { RESULT_INQUIRY_CATEGORIES } from "./features/inquiry/resultGuidance.js";
 
@@ -96,11 +86,6 @@ const routeArea = ref(null);
 const voiceGuideBar = ref(null);
 const showSplash = ref(true);
 const autoChatHintVisible = ref(false);
-const fabHovered = ref(false);
-const fabFocused = ref(false);
-const showChatHint = computed(
-  () => autoChatHintVisible.value || fabHovered.value || fabFocused.value,
-);
 let chatHintTimer;
 let chatHintShown = false;
 
@@ -256,73 +241,6 @@ onBeforeUnmount(() => {
 /* 마지막 카드도 도우미 버튼 위로 올려서 누를 수 있게 여백을 둔다. */
 .chat-entry .overflow-y-auto {
   padding-bottom: 96px !important;
-}
-
-.chat-fab {
-  animation:
-    chat-fab-arrive 0.8s ease-out both,
-    chat-fab-float 4.5s ease-in-out 1s infinite;
-}
-
-.chat-hint::after {
-  position: absolute;
-  right: -8px;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  border-top: 2px solid #f1c232;
-  border-right: 2px solid #f1c232;
-  background: #fffdf5;
-  content: "";
-  transform: translateY(-50%) rotate(45deg);
-}
-
-.chat-hint-compact {
-  display: none;
-}
-
-.chat-hint-enter-active,
-.chat-hint-leave-active {
-  transition:
-    opacity 0.45s ease,
-    transform 0.45s ease;
-}
-
-.chat-hint-enter-from,
-.chat-hint-leave-to {
-  opacity: 0;
-  transform: translateX(10px);
-}
-
-@media (max-width: 390px) {
-  .chat-hint-full {
-    display: none;
-  }
-
-  .chat-hint-compact {
-    display: inline;
-  }
-}
-
-@keyframes chat-fab-arrive {
-  from { opacity: 0; transform: scale(0.82); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes chat-fab-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chat-fab {
-    animation: none;
-  }
-
-  .chat-hint-enter-active,
-  .chat-hint-leave-active {
-    transition: none;
-  }
 }
 
 .vbar-enter-active {
