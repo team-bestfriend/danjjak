@@ -54,6 +54,7 @@ Start with the [requirements index](docs/specs/requirements.md), then only the r
 - Keep changes small and demo-focused.
 - Do not add production-grade security, concurrency, idempotency, or deployment work unless requested.
 - Follow `CONTRIBUTING.md` for commit and code conventions.
+- Never use the `codex/` branch prefix. Use `<type>/<issue-number>-<summary>` from `CONTRIBUTING.md`.
 - Reuse the current database schema unless the requested behavior requires new persisted data.
 - Change the database schema by adding a new `db/migration/V{n}__description.sql` file. Never edit a migration that has already been applied.
 - Do not commit secrets, build output, IDE metadata, or local database data.
