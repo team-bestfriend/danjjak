@@ -1,9 +1,9 @@
 <template>
   <div class="nickname-view flex h-full flex-col bg-[#FAFAF8] px-6">
-    <main class="min-h-0 flex-1 pt-5">
+    <main class="flex min-h-0 flex-1 flex-col overflow-y-auto pb-6 pt-5">
       <!-- 할머니 프로필 이미지 -->
       <div
-        class="flex h-[138px] w-[138px] items-center justify-center overflow-hidden rounded-full border-[5px] border-[#FFBC00] bg-[#FFF3CC]"
+        class="mx-auto flex h-[138px] w-[138px] flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-[5px] border-[#FFBC00] bg-[#FFF3CC]"
       >
         <img
           :src="oldAgeWomanImage"
@@ -56,7 +56,8 @@
           maxlength="10"
           autocomplete="nickname"
           placeholder="예: 순자"
-          class="h-[66px] w-full rounded-[18px] border-2 border-[#FFBC00] bg-white px-5 text-[21px] font-bold text-[#111827] outline-none placeholder:font-normal placeholder:text-[#C4C8CF]"
+          class="h-[66px] w-full scroll-mb-40 rounded-[18px] border-2 border-[#FFBC00] bg-white px-5 text-[21px] font-bold text-[#111827] outline-none placeholder:font-normal placeholder:text-[#C4C8CF]"
+          @focus="keepNicknameInputVisible"
           @keyup.enter="saveNickname"
         />
 
@@ -72,32 +73,32 @@
       >
         {{ errorMessage }}
       </p>
+
+      <!-- 키보드가 열려도 입력란과 함께 스크롤할 수 있게 버튼을 본문 흐름에 둡니다. -->
+      <div class="mt-auto space-y-3 pt-8">
+        <button
+          type="button"
+          class="h-[64px] w-full rounded-[20px] border border-[#D1D5DB] bg-white text-[19px] font-medium text-[#374151] transition active:scale-[0.98]"
+          @click="showCustomInput"
+        >
+          {{ customInputVisible ? "추천 이름 사용" : "다른 이름 입력" }}
+        </button>
+
+        <button
+          type="button"
+          class="h-[66px] w-full rounded-[20px] text-[21px] font-bold transition active:scale-[0.98] disabled:cursor-not-allowed"
+          :class="
+            canSave
+              ? 'bg-[#FFBC00] text-[#111827]'
+              : 'bg-[#F0F1F3] text-[#A7ADBA]'
+          "
+          :disabled="!canSave || saving"
+          @click="saveNickname"
+        >
+          {{ saving ? "저장 중…" : "좋아요" }}
+        </button>
+      </div>
     </main>
-
-    <!-- 하단 버튼 -->
-    <div class="space-y-3 pb-9">
-      <button
-        type="button"
-        class="h-[64px] w-full rounded-[20px] border border-[#D1D5DB] bg-white text-[19px] font-medium text-[#374151] transition active:scale-[0.98]"
-        @click="showCustomInput"
-      >
-        {{ customInputVisible ? "추천 이름 사용" : "다른 이름 입력" }}
-      </button>
-
-      <button
-        type="button"
-        class="h-[66px] w-full rounded-[20px] text-[21px] font-bold transition active:scale-[0.98] disabled:cursor-not-allowed"
-        :class="
-          canSave
-            ? 'bg-[#FFBC00] text-[#111827]'
-            : 'bg-[#F0F1F3] text-[#A7ADBA]'
-        "
-        :disabled="!canSave || saving"
-        @click="saveNickname"
-      >
-        {{ saving ? "저장 중…" : "좋아요" }}
-      </button>
-    </div>
   </div>
 </template>
 
@@ -154,6 +155,15 @@ async function showCustomInput() {
   nicknameInput.value?.focus();
 }
 
+function keepNicknameInputVisible() {
+  window.setTimeout(() => {
+    nicknameInput.value?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, 250);
+}
+
 async function saveNickname() {
   if (!canSave.value || saving.value) return;
 
@@ -205,7 +215,7 @@ async function saveNickname() {
 <style scoped>
 .nickname-view {
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: max(36px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 </style>
