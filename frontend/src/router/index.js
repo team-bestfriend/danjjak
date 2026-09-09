@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAppStore } from "../stores/appStore.js";
 
 import AccountImportView from "../views/AccountImportView.vue";
+import AccountImportLoadingView from "../views/AccountImportLoadingView.vue";
+import AccountLinkIntroView from "../views/AccountLinkIntroView.vue";
 import AddPersonView from "../views/AddPersonView.vue";
 import AnalysisView from "../views/AnalysisView.vue";
 import AuthCallbackView from "../views/AuthCallbackView.vue";
@@ -171,6 +173,18 @@ const routes = [
   /*
    * 계좌 연결과 홈
    */
+  {
+    path: "/account-link-intro",
+    name: "account-link-intro",
+    component: AccountLinkIntroView,
+    meta: consentMeta,
+  },
+  {
+    path: "/account-import-loading",
+    name: "account-import-loading",
+    component: AccountImportLoadingView,
+    meta: consentMeta,
+  },
   {
     path: "/account-import",
     name: "account-import",
