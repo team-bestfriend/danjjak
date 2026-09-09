@@ -11,6 +11,9 @@
       <span v-if="person" class="text-[15px] font-bold" style="color: rgba(0,0,0,0.55);">
         {{ person.emoji }} {{ person.name }} · {{ person.relation }}
       </span>
+      <span v-if="linkedAccountLabel" class="text-center text-[14px] font-bold" style="color: rgba(0,0,0,0.55);">
+        {{ linkedAccountLabel }}
+      </span>
     </div>
 
     <div class="space-y-4 p-5">
@@ -87,6 +90,14 @@ const person = computed(() => {
     relation: props.pat.linkedAccount?.relationship,
     emoji: props.pat.linkedAccount?.relationship === '아들' ? '👨' : '👩',
   };
+});
+const linkedAccountLabel = computed(() => {
+  if (props.pat.taskType !== 'transfer') return '';
+  return [
+    props.pat.linkedAccount?.bankName,
+    props.pat.linkedAccount?.accountAlias,
+    props.pat.linkedAccount?.masked,
+  ].filter(Boolean).join(' · ');
 });
 const quote = computed(() => (
   props.pat.description || generatePatternDesc(props.pat, store.people, store.accountsByPerson)

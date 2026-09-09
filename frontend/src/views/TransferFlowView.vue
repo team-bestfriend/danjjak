@@ -14,7 +14,7 @@
       :onRight="store.cancelTransfer"
     />
 
-    <StepBar :current="1" :total="6" />
+    <StepBar v-bind="stepBar('transfer-source')" />
 
     <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-6 pt-4">
       <p class="text-[26px] font-bold text-[#111827]">
@@ -165,7 +165,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="2" :total="6" />
+    <StepBar v-bind="stepBar('direct-transfer')" />
     <div class="flex-1 flex flex-col overflow-y-auto px-5 pt-8 pb-6 gap-5">
       <p class="font-bold text-[#111827] text-[28px]">누구에게 보내시겠어요?</p>
       <div class="rounded-[28px] p-2 flex flex-col gap-3 bg-white">
@@ -215,7 +215,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="3" :total="6" />
+    <StepBar v-bind="stepBar('direct-newaccount')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <p class="font-bold text-[#111827] text-[26px]">
         받는 계좌를 입력해 주세요.
@@ -358,7 +358,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="3" :total="6" />
+    <StepBar v-bind="stepBar('guide-person')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
         보낼 사람을 선택해 주세요.
@@ -447,7 +447,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="3" :total="6" />
+    <StepBar v-bind="stepBar('guide-account')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
         보낼 계좌를 선택해 주세요.
@@ -466,8 +466,12 @@
           "
           @click="handleSelectAccount(account)"
           class="w-full text-left"
+          :aria-pressed="store.selectedRecipientAccountId === account.accountId"
         >
-          <Card class="p-5">
+          <Card
+            className="p-5"
+            :highlighted="store.selectedRecipientAccountId === account.accountId"
+          >
             <div class="flex items-center gap-4">
               <div
                 class="w-12 h-12 rounded-[14px] flex items-center justify-center font-black bg-[#FFBC00] text-[#111827] text-[12px]"
@@ -476,13 +480,17 @@
               </div>
               <div class="flex-1">
                 <p class="font-bold text-[#111827] text-[18px]">
-                  {{ account.bankName }}
+                  {{ account.accountAlias || account.bankName }}
                 </p>
                 <p class="font-mono text-[#374151] text-[14px]">
-                  {{ account.masked }}
+                  {{ account.bankName }} · {{ account.masked }}
                 </p>
               </div>
-              <Ic name="ChevR" />
+              <span
+                v-if="store.selectedRecipientAccountId === account.accountId"
+                class="whitespace-nowrap font-bold text-[#92650A]"
+              >✓ 선택됨</span>
+              <Ic v-else name="ChevR" />
             </div>
           </Card>
         </button>
@@ -508,7 +516,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="4" :total="6" />
+    <StepBar v-bind="stepBar('amount-input')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-3">
       <p
         v-if="store.transferError"
@@ -539,7 +547,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar :current="5" :total="6" />
+    <StepBar v-bind="stepBar('final-confirm')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <Card class="overflow-hidden">
         <div
@@ -589,7 +597,7 @@
       :onRight="store.cancelTransfer"
       :rightDisabled="store.transferSubmitting"
     />
-    <StepBar :current="6" :total="6" />
+    <StepBar v-bind="stepBar('pin-entry')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <h2 class="font-bold text-[#111827] text-[26px]">
         계좌 비밀번호를 입력해주세요.
@@ -894,6 +902,7 @@ import { directAccountPattern } from "../features/directRecipient.js";
 import SafeArea from "../components/common/SafeArea.vue";
 import TopBar from "../components/common/TopBar.vue";
 import StepBar from "../components/common/StepBar.vue";
+import { transferStepBar as stepBar } from "../features/transferSteps.js";
 import Card from "../components/common/Card.vue";
 import Btn from "../components/common/Btn.vue";
 import Ic from "../components/common/Ic.vue";
@@ -989,6 +998,7 @@ const reviewRows = computed(() => {
     ? store.directRecipient
     : {
         name: store.selectedPerson?.name,
+        accountAlias: store.selectedRecipientAccount?.accountAlias,
         bankName: store.selectedRecipientAccount?.bankName,
         masked: store.selectedRecipientAccount?.masked,
       };
@@ -1003,10 +1013,11 @@ const reviewRows = computed(() => {
     { label: "받는 사람", value: recipient?.name || "-" },
     {
       label: "받는 계좌",
-      value:
-        (recipient?.bankName || "-") +
-        " · " +
-        (recipient?.masked || store.selectedAccountMasked || "-"),
+      value: [
+        recipient?.accountAlias,
+        recipient?.bankName,
+        recipient?.masked || store.selectedAccountMasked,
+      ].filter(Boolean).join(" · ") || "-",
     },
     {
       label: "금액",
@@ -1092,15 +1103,8 @@ function handleSelectFamilyPerson(personId) {
   store.transferError = "";
   store.isNewAccountFlow = false;
   store.selectPerson(personId);
-  const accounts = store.accountsByPerson[personId] ?? [];
-  // 저장된 계좌 선택 단계는 수취 계좌가 하나여도 건너뛰지 않는다.
-  const hasAccountStep =
-    store.isPatternTransfer &&
-    store.activePatternDetail?.steps?.some(
-      (step) => step.screenCode === "guide-account",
-    );
-  if (accounts.length === 1 && !hasAccountStep) store.navigate("amount-input");
-  else store.navigate("guide-account");
+  // 받는 계좌가 하나뿐이어도 확인 화면을 생략하지 않는다.
+  store.navigate("guide-account");
 }
 
 function handleSelectAccount(account) {
