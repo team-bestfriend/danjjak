@@ -44,6 +44,21 @@ export function formatKoreanWon(value) {
   return `${groups.join(' ')}원`;
 }
 
+export function formatWonByUnits(value) {
+  let amount = normalizeWon(value);
+  if (amount === null || amount < 10000) return '';
+
+  const groups = [];
+  let position = 0;
+  while (amount > 0) {
+    const group = amount % 10000;
+    if (group > 0) groups.unshift(`${group}${largeUnits[position]}`);
+    amount = Math.floor(amount / 10000);
+    position += 1;
+  }
+  return `${groups.join(' ')}원`;
+}
+
 export function formatWonWithKorean(value) {
   const numeric = formatWon(value);
   const korean = formatKoreanWon(value);
