@@ -187,7 +187,7 @@ async function skipGuardian() {
 <style scoped>
 .guardian-view {
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: max(36px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 </style>
