@@ -1689,6 +1689,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          description: 송금 패턴에 연결된 특정 받는 계좌 ID
         bankCode:
           type: string
         bankName:
@@ -1803,6 +1804,7 @@ components:
           format: int64
           minimum: 1
           nullable: true
+          description: 송금 패턴에 연결할 등록 사람의 특정 받는 계좌 ID
         stepInstructions:
           type: array
           items:
@@ -1825,6 +1827,7 @@ components:
           format: int64
           minimum: 1
           nullable: true
+          description: 송금 패턴에 새로 연결할 등록 사람의 특정 받는 계좌 ID
         stepInstructions:
           type: array
           items:

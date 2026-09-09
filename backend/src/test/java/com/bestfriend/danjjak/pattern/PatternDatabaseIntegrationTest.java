@@ -6,13 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bestfriend.danjjak.config.RootConfig;
+import com.bestfriend.danjjak.account.dto.AccountDtos.RecipientAccountRequest;
 import com.bestfriend.danjjak.account.service.AccountService;
+import com.bestfriend.danjjak.config.RootConfig;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.ExecutionFinishRequest;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.ExecutionStartRequest;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.ExecutionStatus;
+import com.bestfriend.danjjak.pattern.dto.PatternDtos.PatternCreateRequest;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.PatternOrderItem;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.PatternOrderRequest;
+import com.bestfriend.danjjak.pattern.dto.PatternDtos.PatternType;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.VisitStartRequest;
 import com.bestfriend.danjjak.pattern.dto.PatternDtos.VisitUpdateRequest;
 import com.bestfriend.danjjak.pattern.service.PatternService;
@@ -84,6 +87,46 @@ class PatternDatabaseIntegrationTest {
         assertEquals("연금 입금 확인", saved.get(0).title());
         assertEquals(2, saved.get(1).shortcutNumber());
         assertEquals("아들에게 송금", saved.get(1).title());
+    }
+
+    @Test
+    void createsAndReloadsTransferPatternWithSelectedSecondRecipientAccount() {
+        var person = accountService.getRegisteredPersons(1L).stream()
+                .filter(item -> item.name().equals("김민수"))
+                .findFirst()
+                .orElseThrow();
+        var updatedPerson = accountService.addRecipientAccount(
+                1L,
+                person.registeredPersonId(),
+                new RecipientAccountRequest(
+                        "081", "하나은행", "355-910000-002", "저축 계좌"));
+        var selectedAccount = updatedPerson.accounts().stream()
+                .filter(account -> account.accountAlias().equals("저축 계좌"))
+                .findFirst()
+                .orElseThrow();
+
+        var created = patternService.createPattern(
+                1L,
+                new PatternCreateRequest(
+                        PatternType.TRANSFER,
+                        9,
+                        "저축 계좌로 송금",
+                        "김민수의 저축 계좌로 송금합니다.",
+                        selectedAccount.accountId(),
+                        null));
+        var reloaded = patternService.getPattern(1L, created.patternId());
+        var started = patternService.startExecution(
+                1L, created.patternId(), new ExecutionStartRequest(1L));
+
+        assertEquals(selectedAccount.accountId(), reloaded.linkedAccount().accountId());
+        assertEquals("저축 계좌", reloaded.linkedAccount().accountAlias());
+        assertEquals(selectedAccount.accountId(), started.pattern().linkedAccount().accountId());
+        assertEquals(
+                selectedAccount.accountId(),
+                jdbcTemplate.queryForObject(
+                        "SELECT linked_bank_account_id FROM financial_patterns WHERE financial_pattern_id = ?",
+                        Long.class,
+                        created.patternId()));
     }
 
     @Test
