@@ -60,9 +60,6 @@
         </button>
 
         <p id="voice-command-status" :class="{ 'mt-2': sttMessage }" class="text-[15px] leading-relaxed text-[#374151]" role="status" aria-live="polite" aria-atomic="true">{{ sttMessage }}</p>
-        <button v-if="highlightedPattern" type="button" class="mt-2 min-h-12 w-full rounded-[14px] border-2 border-[#B8860B] bg-[#FFFBEB] px-3 py-2 font-bold text-[#111827]" :disabled="store.patternLoading" @click="handleCardClick(highlightedPattern.num, highlightedPattern)">
-          {{ highlightedPattern.num }}번 업무 확인하기
-        </button>
       </div>
 
       <!-- 내 단축번호 + 그리드 + 페이지 도트 -->
@@ -129,13 +126,13 @@
       aria-modal="true"
       :aria-label="`${focusedPat.label} 실행 전 확인`"
       tabindex="-1"
-      @click="focusedPat = null"
-      @keydown.esc.stop.prevent="focusedPat = null"
+      @click="closeFocusedPattern"
+      @keydown.esc.stop.prevent="closeFocusedPattern"
       @keydown.tab="trapDialogFocus"
     >
       <FocusModeCard
         :pat="focusedPat"
-        @cancel="focusedPat = null"
+        @cancel="closeFocusedPattern"
         @start="startFocusedPattern"
       />
     </div>
@@ -166,7 +163,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useAppStore } from '../stores/appStore';
 import SafeArea from '../components/common/SafeArea.vue';
 import DanjjakMark from '../components/common/DanjjakMark.vue';
-import Card from '../components/common/Card.vue';
 import Btn from '../components/common/Btn.vue';
 import Ic from '../components/common/Ic.vue';
 import NavBar from '../components/common/NavBar.vue';
@@ -179,16 +175,10 @@ const store = useAppStore();
 
 const highlightedPatternId = ref(null);
 const highlightedPattern = computed(() => store.patterns.find((pattern) => pattern.patternId === highlightedPatternId.value));
+let voiceConfirmationRequestId = 0;
 const { supported: speechSupported, state: sttState, message: sttMessage, start: startSpeech, stop: stopSpeech, cancel: cancelSpeech } = useShortcutSpeech(
   () => store.patterns,
-  async (pattern) => {
-    highlightedPatternId.value = pattern.patternId;
-    store.homePage = Math.ceil(pattern.num / 4);
-    await nextTick();
-    if (highlightedPatternId.value === pattern.patternId) {
-      containerRef.value?.querySelector(`[data-slot-num="${pattern.num}"]`)?.scrollIntoView({ block: 'nearest' });
-    }
-  },
+  openVoicePatternConfirmation,
 );
 const focusedPat = ref(null);
 const focusDialog = ref(null);
@@ -255,8 +245,41 @@ function toggleStt() {
 }
 
 function resetSpeech() {
+  voiceConfirmationRequestId += 1;
   highlightedPatternId.value = null;
   cancelSpeech();
+}
+
+async function openPatternConfirmation(pattern, isCurrent = () => true) {
+  try {
+    await store.loadPatternDetail(pattern.patternId);
+    if (!isCurrent()) return false;
+    focusedPat.value = store.activePattern;
+    return true;
+  } catch {
+    if (isCurrent()) sttMessage.value = store.patternError;
+    return false;
+  }
+}
+
+async function openVoicePatternConfirmation(pattern) {
+  const requestId = ++voiceConfirmationRequestId;
+  highlightedPatternId.value = pattern.patternId;
+  store.homePage = Math.ceil(pattern.num / 4);
+  await nextTick();
+  const isCurrent = () => (
+    voiceConfirmationRequestId === requestId
+    && highlightedPatternId.value === pattern.patternId
+  );
+  if (!isCurrent()) return;
+  containerRef.value?.querySelector(`[data-slot-num="${pattern.num}"]`)?.scrollIntoView({ block: 'nearest' });
+  await openPatternConfirmation(pattern, isCurrent);
+}
+
+function closeFocusedPattern() {
+  voiceConfirmationRequestId += 1;
+  focusedPat.value = null;
+  highlightedPatternId.value = null;
 }
 
 function findSlotAtPoint(x, y) {
@@ -360,13 +383,7 @@ async function handleCardClick(num, pat) {
   if (store.patternLoading) return;
   resetSpeech();
   if (pat) {
-    try {
-      await store.loadPatternDetail(pat.patternId);
-      focusedPat.value = store.activePattern;
-    } catch {
-      // 저장소의 오류 문구와 새 목록을 유지해 다시 시도할 수 있게 한다.
-      sttMessage.value = store.patternError;
-    }
+    await openPatternConfirmation(pat);
   } else {
     store.navigate("pattern-register");
   }
@@ -382,6 +399,8 @@ async function startFocusedPattern() {
   if (!focusedPat.value) return;
   const pat = focusedPat.value;
   focusedPat.value = null;
+  highlightedPatternId.value = null;
+  voiceConfirmationRequestId += 1;
   try {
     await store.startPatternExecution(pat);
   } catch {
@@ -444,6 +463,7 @@ function guardSwipeClick(event) {
 }
 
 onUnmounted(() => {
+  voiceConfirmationRequestId += 1;
   if (longPressTimer) clearTimeout(longPressTimer);
   if (edgeTimer) clearTimeout(edgeTimer);
   removeDocListeners();
