@@ -4,19 +4,26 @@
     style="box-shadow: 0 8px 40px rgba(0,0,0,0.22);"
     @click.stop
   >
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 overflow-y-auto">
     <div class="flex flex-col items-center justify-center gap-2 px-8 pb-8 pt-10" style="background: #FFBC00;">
       <span class="font-black leading-none text-[#111827]" style="font-size: 76px;">{{ pat.num }}</span>
       <span class="text-center font-black text-[#111827]" style="font-size: 22px; margin-top: 4px;">{{ pat.label }}</span>
-      <span v-if="person" class="text-[15px] font-bold" style="color: rgba(0,0,0,0.55);">
-        {{ person.emoji }} {{ person.name }} · {{ person.relation }}
+      <span v-if="person" class="flex items-center gap-1.5 text-[15px] font-bold" style="color: rgba(0,0,0,0.55);">
+        <img
+          v-if="profileImageForPerson(person)"
+          :src="profileImageForPerson(person)"
+          alt=""
+          class="h-7 w-7 rounded-full border border-[#92650A] object-cover"
+          aria-hidden="true"
+        />
+        <span>{{ person.name }} · {{ person.relation }}</span>
       </span>
       <span v-if="linkedAccountLabel" class="text-center text-[14px] font-bold" style="color: rgba(0,0,0,0.55);">
         {{ linkedAccountLabel }}
       </span>
     </div>
 
-    <div class="space-y-4 p-5">
+    <div class="px-5 pb-0 pt-4">
       <div>
         <p class="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#9CA3AF]">업무 안내 · {{ voiceMode === 'FAMILY' ? '가족 음성' : 'AI 음성' }}</p>
         <div class="flex items-start gap-3">
@@ -56,7 +63,7 @@
 
     </div>
     </div>
-      <div class="flex flex-shrink-0 gap-2 border-t border-[#EEEEED] bg-white p-5">
+      <div class="flex flex-shrink-0 gap-2 border-t border-[#EEEEED] bg-white px-5 pb-5 pt-4">
         <button
           type="button"
           class="h-14 flex-1 rounded-[14px] border-2 border-[#E5E7EB] font-bold text-[#374151]"
@@ -77,6 +84,7 @@
 import { computed } from 'vue';
 import { useGuidanceAudio } from '../../composables/useGuidanceAudio.js';
 import { generatePatternDesc } from '../../constants/data.js';
+import { profileImageForPerson } from '../../constants/profileImages.js';
 import { useAppStore } from '../../stores/appStore.js';
 
 const props = defineProps({ pat: { type: Object, required: true } });
@@ -88,7 +96,7 @@ const person = computed(() => {
   return store.people.find((item) => item.id === props.pat.personId) ?? {
     name: props.pat.linkedAccount?.registeredPersonName,
     relation: props.pat.linkedAccount?.relationship,
-    emoji: props.pat.linkedAccount?.relationship === '아들' ? '👨' : '👩',
+    profileImageKey: props.pat.linkedAccount?.profileImageKey,
   };
 });
 const linkedAccountLabel = computed(() => {

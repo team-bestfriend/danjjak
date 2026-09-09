@@ -61,12 +61,15 @@
       <Btn variant="secondary" :disabled="busy" @click="changeMode">방식 변경</Btn>
       <Btn variant="secondary" :disabled="saving" @click="cancel">취소</Btn>
     </template>
+    <DiscardChangesDialog v-if="discardDialog" v-bind="discardDialog" @resolve="resolveDiscard" />
   </section>
 </template>
 
 <script setup>
 import { computed, onUnmounted, ref, useId, watch } from 'vue';
 import Btn from './Btn.vue';
+import DiscardChangesDialog from './DiscardChangesDialog.vue';
+import { useDiscardConfirmation } from '../../composables/useDiscardConfirmation.js';
 import { useTtsAudio } from '../../composables/useTtsAudio.js';
 import { useFamilyRecorder } from '../../composables/useFamilyRecorder.js';
 import { voiceLabel } from '../../api/guidanceApi.js';
@@ -86,6 +89,7 @@ const props = defineProps({
   actionLabel: { type: String, default: '이 음성 저장' },
 });
 const emit = defineEmits(['confirm', 'cancel', 'dirty']);
+const { discardDialog, confirmDiscard, resolveDiscard } = useDiscardConfirmation();
 const inputId = useId();
 const mode = ref(props.openFamily ? 'family' : 'select');
 const editing = ref(false);
@@ -155,9 +159,13 @@ function confirm() {
   emit('confirm', { text: draft.value.trim(), voiceMode: selectedMode.value, recording: recording.value });
 }
 
-function cancel() {
+async function cancel() {
   if (props.saving) return;
-  if (dirty.value && !window.confirm('저장하지 않은 문구와 녹음을 버리고 돌아갈까요?')) return;
+  if (dirty.value && !await confirmDiscard({
+    title: '편집을 그만둘까요?',
+    description: '저장하지 않은 문구와 녹음은 사라져요.',
+    confirmLabel: '돌아가기',
+  })) return;
   cleanup();
   emit('dirty', false);
   emit('cancel');

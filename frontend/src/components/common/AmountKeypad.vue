@@ -16,13 +16,14 @@
         {{ q.l }}
       </button>
     </div>
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-3">
       <button
         v-for="(k, i) in keys"
         :key="i"
+        :aria-label="k === 'DEL' ? '한 자리 지우기' : k"
         @click="k === 'DEL' ? del() : k ? add(k) : undefined"
         :class="[
-          'h-[54px] rounded-xl text-[22px] font-bold active:scale-95 flex items-center justify-center',
+          'min-h-[72px] rounded-2xl py-3 text-[28px] font-bold active:scale-95 flex items-center justify-center',
           k === '' ? 'bg-transparent pointer-events-none' : k === 'DEL' ? 'bg-[#F9FAFB] text-[#6B7280] border border-[#EBEBEA]' : 'bg-white border border-[#EBEBEA] text-[#111827]'
         ]"
       >

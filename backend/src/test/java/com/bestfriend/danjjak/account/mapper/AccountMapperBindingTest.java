@@ -43,6 +43,8 @@ class AccountMapperBindingTest {
                         "insertRecipientAccount",
                         "updateRegisteredPerson",
                         "updateRecipientAccount",
+                        "deleteRecipientAccountsForPerson",
+                        "deleteRegisteredPerson",
                         "findTransactions")
                 .forEach(name -> assertTrue(configuration.hasStatement(namespace + name)));
     }

@@ -1,6 +1,5 @@
 <template>
-  <!-- 출금 계좌 선택 -->
-  <!-- 출금 계좌 선택 -->
+  <!-- 보낼 계좌 선택 -->
   <div
     v-if="flowStep === 'transfer-source'"
     class="flex h-full flex-col bg-[#FAFAF8]"
@@ -8,7 +7,7 @@
     <SafeArea />
 
     <TopBar
-      title="출금 계좌 선택"
+      title="보낼 계좌 선택"
       :onBack="store.goBack"
       rightLabel="취소"
       :onRight="store.cancelTransfer"
@@ -85,7 +84,9 @@
               ? 'border-[#FFBC00]'
               : 'border-[#E5E7EB]',
           ]"
-          @click="store.selectedSourceAccountId = account.accountId"
+          :aria-pressed="store.selectedSourceAccountId === account.accountId"
+          :disabled="store.financeLoading || Boolean(store.financeError) || patternTargetMissing"
+          @click="handleSelectSourceAccount(account.accountId)"
         >
           <div class="flex items-center justify-between gap-3">
             <!-- 은행 로고와 계좌 정보 -->
@@ -141,18 +142,6 @@
         </Btn>
       </div>
 
-      <Btn
-        data-guide-exempt
-        :disabled="
-          !store.selectedSourceAccountId ||
-          store.financeLoading ||
-          Boolean(store.financeError) ||
-          patternTargetMissing
-        "
-        @click="proceedFromSource"
-      >
-        다음
-      </Btn>
     </div>
   </div>
 
@@ -176,11 +165,7 @@
           @click="selectFamily"
           class="w-full rounded-[20px] bg-white border border-[#FFBC00] p-6 flex flex-col items-center gap-3 active:scale-[0.97] transition-all"
         >
-          <div
-            class="w-16 h-16 rounded-full bg-[#FFBC00] flex items-center justify-center text-[32px]"
-          >
-            👨‍👩‍👧
-          </div>
+          <img :src="familyImage" alt="" class="h-16 w-16 object-contain" />
           <p class="font-bold text-[#111827] text-[21px]">
             등록된 가족에게 보내기
           </p>
@@ -192,11 +177,7 @@
           @click="store.navigate('direct-newaccount')"
           class="w-full rounded-[20px] bg-white border border-[#E5E7EB] p-6 flex flex-col items-center gap-3 active:scale-[0.97] transition-all"
         >
-          <div
-            class="w-16 h-16 rounded-full bg-[#374151] flex items-center justify-center text-white"
-          >
-            <Ic name="Transfer" />
-          </div>
+          <img :src="piggyBankImage" alt="" class="h-16 w-16 object-contain" />
           <p class="font-bold text-[#111827] text-[21px]">새 계좌로 보내기</p>
           <p class="text-[#6B7280] text-center text-[15px]">
             계좌 번호를 직접 입력해서 보내요.
@@ -364,7 +345,7 @@
     <StepBar v-bind="stepBar('guide-person')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
-        보낼 사람을 선택해 주세요.
+        받는 사람을 선택해 주세요.
       </p>
       <p
         v-if="store.transferError"
@@ -393,12 +374,9 @@
         class="rounded-2xl bg-white p-5 text-center space-y-3"
       >
         <p class="font-bold text-[#111827]">등록된 사람이 없어요.</p>
-        <Btn variant="secondary" @click="store.navigate('direct-newaccount')"
-          >새 계좌 직접 입력</Btn
-        >
       </div>
-      <div v-else class="space-y-3 rounded-[24px] p-2 bg-white">
-        <button
+      <div v-else role="radiogroup" aria-label="받는 사람" class="space-y-3 rounded-[24px] p-2 bg-white">
+        <label
           v-for="person in store.people"
           :key="person.id"
           :data-guide-target="
@@ -406,15 +384,21 @@
               ? 'registered-person-list'
               : null
           "
-          @click="handleSelectFamilyPerson(person.id)"
-          class="w-full text-left"
+          class="block w-full cursor-pointer rounded-[20px] text-left focus-within:outline-2 focus-within:outline-[#2563EB]"
         >
-          <Card class="p-5">
+          <Card class="p-5" :highlighted="store.selectedPersonId === person.id">
             <div class="flex items-center gap-4">
               <div
-                class="w-14 h-14 rounded-full bg-[#FFF3CC] border border-[#FFBC00] flex items-center justify-center text-[28px]"
+                class="w-14 h-14 shrink-0 overflow-hidden rounded-full border border-[#FFBC00] bg-white flex items-center justify-center text-[28px]"
               >
-                {{ person.emoji }}
+                <img
+                  v-if="profileImageForPerson(person)"
+                  :src="profileImageForPerson(person)"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  aria-hidden="true"
+                />
+                <span v-else>{{ person.emoji }}</span>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-bold text-[#111827] text-[21px]">
@@ -425,16 +409,23 @@
                   {{ getAccCount(person.id) }}개
                 </p>
               </div>
-              <span
-                v-if="store.selectedPersonId === person.id"
-                class="font-bold text-[#92650A]"
-                >선택됨</span
-              >
-              <Ic v-else name="ChevR" />
+              <input
+                type="radio"
+                name="transfer-person"
+                :value="person.id"
+                :checked="store.selectedPersonId === person.id"
+                class="selection-radio"
+                @click="handleSelectFamilyPerson(person.id)"
+              />
             </div>
           </Card>
-        </button>
+        </label>
       </div>
+      <Btn
+        v-if="!store.isPatternTransfer"
+        variant="secondary"
+        @click="store.navigate('direct-newaccount')"
+      >새 계좌 직접 입력</Btn>
     </div>
   </div>
 
@@ -453,13 +444,15 @@
     <StepBar v-bind="stepBar('guide-account')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
-        보낼 계좌를 선택해 주세요.
+        받는 계좌를 선택해 주세요.
       </p>
       <div
         v-if="personAccs.length"
+        role="radiogroup"
+        aria-label="받는 계좌"
         class="space-y-3 rounded-[24px] p-2 bg-white"
       >
-        <button
+        <label
           v-for="account in personAccs"
           :key="account.accountId"
           :data-guide-target="
@@ -467,21 +460,18 @@
               ? 'recipient-account-list'
               : null
           "
-          @click="handleSelectAccount(account)"
-          class="w-full text-left"
-          :aria-pressed="store.selectedRecipientAccountId === account.accountId"
+          class="block w-full cursor-pointer rounded-[20px] text-left focus-within:outline-2 focus-within:outline-[#2563EB]"
         >
           <Card
             className="p-5"
             :highlighted="store.selectedRecipientAccountId === account.accountId"
           >
             <div class="flex items-center gap-4">
-              <div
-                class="w-12 h-12 rounded-[14px] flex items-center justify-center font-black bg-[#FFBC00] text-[#111827] text-[12px]"
-              >
-                {{ account.bankName?.slice(0, 2) }}
-              </div>
-              <div class="flex-1">
+              <BankLogo
+                :bank-name="account.bankName"
+                size="medium"
+              />
+              <div class="min-w-0 flex-1 break-words">
                 <p class="font-bold text-[#111827] text-[18px]">
                   {{ account.accountAlias || account.bankName }}
                 </p>
@@ -489,14 +479,17 @@
                   {{ account.bankName }} · {{ account.masked }}
                 </p>
               </div>
-              <span
-                v-if="store.selectedRecipientAccountId === account.accountId"
-                class="whitespace-nowrap font-bold text-[#92650A]"
-              >✓ 선택됨</span>
-              <Ic v-else name="ChevR" />
+              <input
+                type="radio"
+                name="transfer-recipient-account"
+                :value="account.accountId"
+                :checked="store.selectedRecipientAccountId === account.accountId"
+                class="selection-radio"
+                @click="handleSelectAccount(account)"
+              />
             </div>
           </Card>
-        </button>
+        </label>
       </div>
       <div v-else class="rounded-2xl bg-white p-5 text-center space-y-3">
         <p class="font-bold text-[#111827]">등록된 수취 계좌가 없어요.</p>
@@ -965,6 +958,9 @@ import BankLogo from "../components/common/BankLogo.vue";
 import warningIcon from "../assets/icons/warning.png";
 import { formatWon, formatWonByUnits } from "../utils/money.js";
 import warningDanjjak from "../assets/danjjakee_warning.png";
+import familyImage from "../assets/family.png";
+import piggyBankImage from "../assets/piggy_bank.png";
+import { profileImageForPerson } from "../constants/profileImages.js";
 
 const props = defineProps({
   flowStep: { type: String, required: true },
@@ -1114,14 +1110,12 @@ function formatDate(value) {
   }).format(date);
 }
 
-function proceedFromSource() {
+function handleSelectSourceAccount(accountId) {
+  if (store.financeLoading || store.financeError || patternTargetMissing.value) return;
+  if (!store.ownedAccounts.some((account) => account.accountId === accountId)) return;
+  store.selectedSourceAccountId = accountId;
   store.transferError = "";
-  if (patternTargetMissing.value) return;
-  if (store.isPatternTransfer && store.selectedPersonId) {
-    store.navigate("guide-person");
-    return;
-  }
-  store.navigate("direct-transfer");
+  return store.navigate("guide-person");
 }
 
 function selectFamily() {
@@ -1153,7 +1147,8 @@ function getAccCount(personId) {
 function handleSelectFamilyPerson(personId) {
   store.transferError = "";
   store.isNewAccountFlow = false;
-  store.selectPerson(personId);
+  // 같은 사람을 다시 누르면 이전에 고른 받는 계좌를 유지한다.
+  if (store.selectedPersonId !== personId) store.selectPerson(personId);
   // 받는 계좌가 하나뿐이어도 확인 화면을 생략하지 않는다.
   store.navigate("guide-account");
 }
@@ -1252,6 +1247,22 @@ function finishToHome() {
 </script>
 
 <style scoped>
+.selection-radio {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 2px solid #9ca3af;
+  border-radius: 50%;
+  background-color: white;
+  cursor: pointer;
+}
+
+.selection-radio:checked {
+  border-color: #ffbc00;
+  background: radial-gradient(circle, white 0 5px, #ffbc00 6px);
+}
+
 .guardian-notification-glow {
   animation: guardian-notification-ring 1.5s ease-in-out infinite;
   border-radius: 24px;

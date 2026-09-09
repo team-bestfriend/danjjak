@@ -20,6 +20,9 @@ export const accountApi = {
     method: 'PUT',
     body: JSON.stringify(payload),
   }),
+  deleteRegisteredPerson: (registeredPersonId) => request(`/api/registered-persons/${registeredPersonId}`, {
+    method: 'DELETE',
+  }),
   addRecipientAccount: (registeredPersonId, payload) => request(`/api/registered-persons/${registeredPersonId}/accounts`, {
     method: 'POST',
     body: JSON.stringify(payload),

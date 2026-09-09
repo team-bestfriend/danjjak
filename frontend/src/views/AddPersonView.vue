@@ -23,6 +23,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAppStore } from '../stores/appStore';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
@@ -31,6 +32,7 @@ import Btn from '../components/common/Btn.vue';
 import RecipientAccountForm from '../components/common/RecipientAccountForm.vue';
 
 const store = useAppStore();
+const router = useRouter();
 const existingPerson = computed(() => {
   const person = store.people.find((item) => item.id === store.editingPersonId);
   return person ?? null;
@@ -57,8 +59,11 @@ const missingTarget = computed(() => (
 
 onMounted(() => store.loadFinancialData());
 
-function onSaved() {
-  closeForm();
+async function onSaved() {
+  store.editingPersonId = null;
+  store.accountFormPersonId = null;
+  store.editingRecipientAccountId = null;
+  await router.replace('/settings/people');
 }
 
 function closeForm() {

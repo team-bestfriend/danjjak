@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -86,13 +87,7 @@ public class AccountService {
     public RegisteredPersonResponse createRegisteredPerson(
             long userId, RegisteredPersonRequest request) {
         RegisteredPersonCommand command = toCommand(userId, null, request);
-        try {
-            accountMapper.insertRegisteredPerson(command);
-            accountMapper.insertRecipientAccount(command);
-        } catch (DuplicateKeyException exception) {
-            throw new ApiException(
-                    HttpStatus.CONFLICT, "ACCOUNT_ALREADY_EXISTS", "이미 등록된 계좌입니다.");
-        }
+        accountMapper.insertRegisteredPerson(command);
         return requireRegisteredPerson(userId, command.getRegisteredPersonId());
     }
 
@@ -106,6 +101,7 @@ public class AccountService {
         command.setRegisteredPersonId(registeredPersonId);
         command.setName(request.name().trim());
         command.setRelationship(request.relationship().trim());
+        command.setProfileImageKey(normalizeProfileImageKey(request.profileImageKey()));
         accountMapper.updateRegisteredPerson(command);
         return requireRegisteredPerson(userId, registeredPersonId);
     }
@@ -143,6 +139,20 @@ public class AccountService {
             throw duplicateAccountException();
         }
         return requireRegisteredPerson(userId, registeredPersonId);
+    }
+
+    @Transactional
+    public void deleteRegisteredPerson(long userId, long registeredPersonId) {
+        requireRegisteredPerson(userId, registeredPersonId);
+        try {
+            accountMapper.deleteRecipientAccountsForPerson(userId, registeredPersonId);
+            accountMapper.deleteRegisteredPerson(userId, registeredPersonId);
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "REGISTERED_PERSON_IN_USE",
+                    "연결된 송금 패턴이나 거래내역이 있어 삭제할 수 없습니다.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -227,7 +237,9 @@ public class AccountService {
                 person.getRegisteredPersonId(),
                 person.getName(),
                 person.getRelationship(),
+                person.getProfileImageKey(),
                 records.stream()
+                        .filter(record -> record.getAccountId() != null)
                         .map(
                                 record ->
                                         new RecipientAccountResponse(
@@ -246,13 +258,7 @@ public class AccountService {
         command.setRegisteredPersonId(registeredPersonId);
         command.setName(request.name().trim());
         command.setRelationship(request.relationship().trim());
-        command.setBankCode(request.bankCode().trim());
-        command.setBankName(request.bankName().trim());
-        command.setAccountNumber(request.accountNumber().trim());
-        command.setAccountAlias(
-                request.accountAlias() == null || request.accountAlias().isBlank()
-                        ? null
-                        : request.accountAlias().trim());
+        command.setProfileImageKey(normalizeProfileImageKey(request.profileImageKey()));
         return command;
     }
 
@@ -303,5 +309,11 @@ public class AccountService {
     private ApiException duplicateAccountException() {
         return new ApiException(
                 HttpStatus.CONFLICT, "ACCOUNT_ALREADY_EXISTS", "이미 등록된 계좌입니다.");
+    }
+
+    private String normalizeProfileImageKey(String profileImageKey) {
+        return profileImageKey == null || profileImageKey.isBlank()
+                ? null
+                : profileImageKey.trim();
     }
 }
