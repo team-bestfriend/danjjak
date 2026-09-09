@@ -2,7 +2,7 @@
   <div class="flex flex-col h-full" style="background: #FAFAF8;">
     <SafeArea />
     <div class="bg-white px-5 border-b border-[#EEEEED] flex-shrink-0" style="padding-top: 18px; padding-bottom: 16px;">
-      <h1 class="font-bold text-[#111827]" style="font-size: 26px;">어머님 이용 분석</h1>
+      <h1 class="font-bold text-[#111827]" style="font-size: 26px;">{{ store.userName }}님 이용 분석</h1>
       <p class="text-[#6B7280] mt-1 text-[15px]">최근 7일 · {{ report?.from ?? period.from }} ~ {{ report?.to ?? period.to }}</p>
     </div>
     <main class="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-4" :aria-busy="loading">
