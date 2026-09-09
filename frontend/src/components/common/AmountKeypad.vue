@@ -3,7 +3,7 @@
     <Card className="p-5 text-center border-2 border-[#F5B800]">
       <p className="break-keep text-[40px] font-black leading-tight text-[#111827]">{{ formatWon(val) }}</p>
       <p className="mt-2 min-h-6 break-keep text-[17px] font-bold text-[#6B7280]">
-        {{ formatKoreanWon(val) || '금액을 입력해 주세요.' }}
+        {{ val === '0' ? '금액을 입력해 주세요.' : formatWonByUnits(val) }}
       </p>
     </Card>
     <div className="flex gap-2">
@@ -39,7 +39,7 @@ import { ref } from 'vue';
 import Card from './Card.vue';
 import Btn from './Btn.vue';
 import Ic from './Ic.vue';
-import { formatKoreanWon, formatWon } from '../../utils/money.js';
+import { formatWon, formatWonByUnits } from '../../utils/money.js';
 
 defineEmits(['complete']);
 
