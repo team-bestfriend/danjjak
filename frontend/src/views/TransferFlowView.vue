@@ -79,9 +79,9 @@
           "
           data-guide-exempt
           :class="[
-            'min-h-[128px] w-full rounded-[20px] border-2 bg-white p-5 text-left transition active:scale-[0.99]',
+            'min-h-[128px] w-full rounded-[20px] border-2 bg-white p-5 text-left shadow-sm transition-all active:scale-[0.99]',
             store.selectedSourceAccountId === account.accountId
-              ? 'border-[#FFBC00]'
+              ? '-translate-y-0.5 border-[#FFBC00] shadow-md'
               : 'border-[#E5E7EB]',
           ]"
           :aria-pressed="store.selectedSourceAccountId === account.accountId"
@@ -174,7 +174,7 @@
     <SafeArea />
     <TopBar
       title="새 계좌로 송금"
-      :onBack="store.goBack"
+      :onBack="goBackFromDirectAccount"
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
@@ -183,18 +183,16 @@
       <p class="font-bold text-[#111827] text-[26px]">
         받는 계좌를 입력해 주세요.
       </p>
-      <p class="rounded-[14px] bg-[#FFFBEB] p-4 text-[15px] text-[#92650A]">
-        시연용 송금이에요. 계좌번호 형식을 확인한 뒤 시연 거래로 기록해요. 실제
-        은행의 계좌 존재 여부는 확인하지 않아요.
-      </p>
       <label class="block space-y-2">
         <span class="font-bold text-[#374151] text-[17px]">받는 분 이름</span>
         <input
           id="direct-recipient-name"
           v-model.trim="recipientName"
+          ref="directNameTarget"
+          :class="{ 'step-guide-target': directGuideStep === 'name' }"
           :aria-invalid="Boolean(directFieldErrors.name)"
           aria-describedby="direct-recipient-name-error"
-          @blur="directTouched.name = true"
+          @blur="handleDirectNameBlur"
           maxlength="100"
           placeholder="예: 박친구"
           class="w-full min-h-[58px] rounded-[16px] border-2 border-[#E5E7EB] focus:border-[#FFBC00] outline-none px-4 text-[18px] font-bold"
@@ -211,18 +209,19 @@
       <div class="space-y-2">
         <p class="font-bold text-[#374151] text-[17px]">은행 선택</p>
         <button
-          :aria-invalid="Boolean(directFieldErrors.bank)"
-          aria-describedby="direct-recipient-bank-error"
-          @click="
-            directTouched.bank = true;
-            showBanks = !showBanks;
-          "
+          ref="directBankTarget"
           :class="[
+            {
+              'step-guide-target': directGuideStep === 'bank',
+            },
             'w-full rounded-[16px] border-2 px-4 text-left flex items-center justify-between min-h-[58px] text-[18px] font-bold',
             selectedBank
               ? 'border-[#FFBC00] text-[#111827]'
               : 'border-[#E5E7EB] text-[#9CA3AF]',
           ]"
+          :aria-invalid="Boolean(directFieldErrors.bank)"
+          aria-describedby="direct-recipient-bank-error"
+          @click="handleDirectBankOpen"
         >
           <span>{{ selectedBank?.name || "은행 선택" }}</span>
           <Ic name="ChevR" />
@@ -239,10 +238,7 @@
           <button
             v-for="bankOption in BANKS"
             :key="bankOption.code"
-            @click="
-              bankCode = bankOption.code;
-              showBanks = false;
-            "
+            @click="selectDirectBank(bankOption.code)"
             :class="[
               'rounded-[12px] border-2 font-bold h-[52px]',
               bankCode === bankOption.code
@@ -257,17 +253,21 @@
       <label class="block space-y-2">
         <span class="font-bold text-[#374151] text-[17px]">계좌 번호</span>
         <input
+          ref="directAccountTarget"
+          :class="[
+            { 'step-guide-target': directGuideStep === 'account' },
+            'w-full min-h-[58px] rounded-[16px] border-2 border-[#E5E7EB] focus:border-[#FFBC00] outline-none px-4 text-[20px] font-bold',
+          ]"
           id="direct-recipient-account"
           type="tel"
           :value="accountNumber"
           :aria-invalid="Boolean(directFieldErrors.account)"
           aria-describedby="direct-recipient-account-help direct-recipient-account-error"
           @input="accountNumber = $event.target.value.replace(/[^0-9-]/g, '')"
-          @blur="directTouched.account = true"
+          @blur="handleDirectAccountBlur"
           maxlength="50"
           placeholder="000-00-000000"
           inputmode="numeric"
-          class="w-full min-h-[58px] rounded-[16px] border-2 border-[#E5E7EB] focus:border-[#FFBC00] outline-none px-4 text-[20px] font-bold"
         />
         <p
           id="direct-recipient-account-help"
@@ -298,14 +298,14 @@
         {{ store.transferError }}
       </p>
       <div
-        class="bg-[#FFF7ED] border border-[#FED7AA] rounded-[16px] p-4 flex items-start gap-2"
+        ref="directNextTarget"
       >
-        <Ic name="Warning" />
-        <p class="text-[#92400E] flex-1 text-[15px]">
-          입력한 계좌는 이번 송금에만 사용되고 등록 목록에는 저장되지 않아요.
-        </p>
+        <Btn
+          :className="directGuideStep === 'next' ? 'step-guide-target' : ''"
+          :disabled="!canProceedDirect"
+          @click="proceedNewAccount"
+        >다음</Btn>
       </div>
-      <Btn :disabled="!canProceedDirect" @click="proceedNewAccount">다음</Btn>
     </div>
   </div>
 
@@ -505,6 +505,7 @@
         role="group"
         aria-label="송금 금액 입력"
         :initialValue="store.transferAmount"
+        :highlightComplete="!store.isPatternTransfer"
         @complete="handleAmountComplete"
       />
     </div>
@@ -564,6 +565,7 @@
       <Btn
         v-else
         data-guide-target="transfer-summary"
+        :className="!store.isPatternTransfer ? 'step-guide-target' : ''"
         @click="store.navigate('pin-entry')"
         >확인했어요</Btn
       >
@@ -924,7 +926,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useAppStore } from "../stores/appStore";
 import { BANKS } from "../constants/banks";
 import { directAccountPattern } from "../features/directRecipient.js";
@@ -956,24 +958,34 @@ const accountNumber = ref(store.directRecipient?.accountNumber ?? "");
 const showBanks = ref(false);
 const directInputError = ref("");
 const directTouched = ref({ name: false, bank: false, account: false });
+const directGuideStep = ref("name");
+const directNameTarget = ref(null);
+const directBankTarget = ref(null);
+const directAccountTarget = ref(null);
+const directNextTarget = ref(null);
 
 const selectedBank = computed(
   () => BANKS.find((bank) => bank.code === bankCode.value) ?? null,
 );
+const isDirectNameValid = computed(() => recipientName.value.trim().length > 0);
 const personAccs = computed(
   () => store.accountsByPerson[store.selectedPersonId] ?? [],
 );
 const transferStepBar = (screenCode) =>
-  getTransferStepBar(screenCode, store.usesSavedPatternRecipient);
+  getTransferStepBar(
+    screenCode,
+    store.usesSavedPatternRecipient,
+    !store.isPatternTransfer,
+  );
 const canProceedDirect = computed(
   () =>
-    recipientName.value.length > 0 &&
+    isDirectNameValid.value &&
     Boolean(selectedBank.value) &&
     directAccountPattern.test(accountNumber.value),
 );
 const directFieldErrors = computed(() => ({
   name:
-    directTouched.value.name && recipientName.value.length === 0
+    directTouched.value.name && !isDirectNameValid.value
       ? "받는 분 이름을 입력해 주세요."
       : "",
   bank:
@@ -986,6 +998,26 @@ const directFieldErrors = computed(() => ({
       ? "숫자 8~20자리인지 확인해 주세요. 하이픈은 숫자 사이에 하나씩 넣어 주세요."
       : "",
 }));
+
+watch(
+  [recipientName, selectedBank, accountNumber],
+  () => {
+    if (!isDirectNameValid.value) {
+      setDirectGuideStep("name");
+      return;
+    }
+    if (!selectedBank.value && ["account", "next"].includes(directGuideStep.value)) {
+      setDirectGuideStep("bank");
+      return;
+    }
+    if (
+      directGuideStep.value === "next" &&
+      !directAccountPattern.test(accountNumber.value)
+    ) {
+      setDirectGuideStep("account");
+    }
+  },
+);
 const guardianPhone = computed(
   () => store.support?.guardian?.phoneNumber ?? "",
 );
@@ -1061,6 +1093,11 @@ const reviewRows = computed(() => {
 });
 
 onMounted(async () => {
+  if (props.flowStep === "direct-newaccount") {
+    if (canProceedDirect.value) setDirectGuideStep("next");
+    else if (isDirectNameValid.value && selectedBank.value) setDirectGuideStep("account");
+    else if (isDirectNameValid.value) setDirectGuideStep("bank");
+  }
   if (
     ["transfer-source", "guide-person", "guide-account"].includes(
       props.flowStep,
@@ -1096,9 +1133,61 @@ function handleSelectSourceAccount(accountId) {
   if (!store.ownedAccounts.some((account) => account.accountId === accountId)) return;
   store.selectedSourceAccountId = accountId;
   store.transferError = "";
-  return store.navigate(
-    store.usesSavedPatternRecipient ? "amount-input" : "guide-person",
-  );
+  if (store.usesSavedPatternRecipient) return store.navigate("amount-input");
+  if (!store.isPatternTransfer) return store.navigate("direct-newaccount");
+  return store.navigate("guide-person");
+}
+
+function setDirectGuideStep(step) {
+  if (directGuideStep.value === step) return;
+  directGuideStep.value = step;
+  void nextTick(() => {
+    const targets = {
+      name: directNameTarget.value,
+      bank: directBankTarget.value,
+      account: directAccountTarget.value,
+      next: directNextTarget.value,
+    };
+    targets[step]?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  });
+}
+
+function handleDirectNameBlur() {
+  directTouched.value.name = true;
+  if (!isDirectNameValid.value) {
+    setDirectGuideStep("name");
+    return;
+  }
+  if (!selectedBank.value) setDirectGuideStep("bank");
+  else if (!directAccountPattern.test(accountNumber.value)) {
+    setDirectGuideStep("account");
+  } else setDirectGuideStep("next");
+}
+
+function handleDirectBankOpen() {
+  directTouched.value.bank = true;
+  if (isDirectNameValid.value) setDirectGuideStep("bank");
+  else setDirectGuideStep("name");
+  showBanks.value = !showBanks.value;
+}
+
+function selectDirectBank(code) {
+  bankCode.value = code;
+  showBanks.value = false;
+  if (!isDirectNameValid.value) {
+    setDirectGuideStep("name");
+    return;
+  }
+  setDirectGuideStep("account");
+}
+
+function handleDirectAccountBlur() {
+  directTouched.value.account = true;
+  if (!isDirectNameValid.value) setDirectGuideStep("name");
+  else if (!selectedBank.value) setDirectGuideStep("bank");
+  else if (directAccountPattern.test(accountNumber.value)) {
+    setDirectGuideStep("next");
+  } else setDirectGuideStep("account");
 }
 
 function selectFamily() {
@@ -1173,7 +1262,7 @@ async function handlePinComplete(pin) {
 
 function goBackFromPin() {
   store.transferError = '';
-  if (store.usesSavedPatternRecipient) {
+  if (store.usesSavedPatternRecipient || !store.isPatternTransfer) {
     store.navigate("final-confirm", { replace: true });
     return;
   }
@@ -1185,15 +1274,23 @@ function goBackFromAmount() {
     store.navigate("transfer-source", { replace: true });
     return;
   }
+  if (!store.isPatternTransfer) {
+    store.navigate("direct-newaccount", { replace: true });
+    return;
+  }
   store.goBack();
 }
 
 function goBackFromConfirm() {
-  if (store.usesSavedPatternRecipient) {
+  if (store.usesSavedPatternRecipient || !store.isPatternTransfer) {
     store.navigate("amount-input", { replace: true });
     return;
   }
   store.goBack();
+}
+
+function goBackFromDirectAccount() {
+  store.navigate("transfer-source", { replace: true });
 }
 
 function replaceTransferStep(step) {

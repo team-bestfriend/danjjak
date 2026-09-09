@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { TRANSFER_STEPS, TRANSFER_STEP_TOTAL, SHORTCUT_TRANSFER_STEP_TOTAL, transferStepBar } from '../src/features/transferSteps.js';
+import { TRANSFER_STEPS, TRANSFER_STEP_TOTAL, SHORTCUT_TRANSFER_STEP_TOTAL, DIRECT_TRANSFER_STEP_TOTAL, transferStepBar } from '../src/features/transferSteps.js';
 
 const SHORTCUT_TRANSFER_FLOW = [
   'transfer-source',
@@ -11,7 +11,6 @@ const SHORTCUT_TRANSFER_FLOW = [
 
 const DIRECT_FLOW = [
   'transfer-source',
-  'direct-transfer',
   'direct-newaccount',
   'amount-input',
   'final-confirm',
@@ -29,9 +28,10 @@ test('저장된 수취 계좌가 유효한 단축번호 송금은 4단계를 연
   assert.ok(steps.every((step) => step.total === SHORTCUT_TRANSFER_STEP_TOTAL));
 });
 
-test('직접 입력 송금도 같은 6단계 뼈대를 연속으로 사용한다', () => {
-  const orders = DIRECT_FLOW.map((screen) => transferStepBar(screen).current);
-  assert.deepEqual(orders, [1, 2, 3, 4, 5, 6]);
+test('직접 송금은 수취 방법 선택 없이 5단계를 연속으로 사용한다', () => {
+  const steps = DIRECT_FLOW.map((screen) => transferStepBar(screen, false, true));
+  assert.deepEqual(steps.map((step) => step.current), [1, 2, 3, 4, 5]);
+  assert.ok(steps.every((step) => step.total === DIRECT_TRANSFER_STEP_TOTAL));
 });
 
 test('같은 번호를 쓰는 화면은 같은 단계 이름을 보여 준다', () => {
