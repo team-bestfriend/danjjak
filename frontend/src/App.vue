@@ -17,15 +17,38 @@
         <RouterView />
       </div>
 
-      <button
+      <div
         v-if="showChatFab(String(route.name)) && !showSplash"
-        class="chat-fab absolute right-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFBC00] text-[#111827] shadow-lg"
+        class="absolute right-5 h-16 w-16"
         style="bottom: 90px; z-index: 20;"
-        aria-label="단짝에게 물어보기"
-        @click="router.push({ name: 'chat' })"
       >
-        <img :src="chatIcon" alt="" class="h-10 w-10" />
-      </button>
+        <Transition name="chat-hint">
+          <div
+            v-if="showChatHint"
+            class="chat-hint absolute right-[84px] top-1/2 w-max -translate-y-1/2 whitespace-nowrap rounded-[18px] border-2 border-[#F1C232] bg-[#FFFDF5] px-3 py-2.5 text-[15px] font-semibold leading-none text-[#4B3A08] shadow-lg"
+            role="status"
+          >
+            <span class="chat-hint-full">궁금한 게 있으면 저한테 물어보세요!</span>
+            <span class="chat-hint-compact">단짝이에게 물어보세요!</span>
+          </div>
+        </Transition>
+
+        <button
+          class="chat-fab flex h-16 w-16 items-center justify-center rounded-full bg-[#FFCA3A] text-[#111827] shadow-lg"
+          aria-label="단짝에게 물어보기"
+          @mouseenter="fabHovered = true"
+          @mouseleave="fabHovered = false"
+          @focus="fabFocused = true"
+          @blur="fabFocused = false"
+          @click="openChat"
+        >
+          <img
+            :src="chatIcon"
+            alt=""
+            class="h-[52px] w-[52px] rounded-full object-contain"
+          />
+        </button>
+      </div>
 
       <VoiceGuideBar
         v-if="voiceText"
@@ -61,7 +84,7 @@ import {
   useStepGuidance,
 } from "./composables/useStepGuidance.js";
 import { showChatFab } from './features/chat/chatActions.js';
-import chatIcon from './assets/icons/robot.png';
+import chatIcon from './assets/danjjakee.png';
 import SplashScreen from "./components/common/SplashScreen.vue";
 import { RESULT_INQUIRY_CATEGORIES } from "./features/inquiry/resultGuidance.js";
 
@@ -70,6 +93,15 @@ const router = useRouter();
 const store = useAppStore();
 const routeArea = ref(null);
 const showSplash = ref(true);
+const autoChatHintVisible = ref(false);
+const fabHovered = ref(false);
+const fabFocused = ref(false);
+const showChatHint = computed(
+  () => autoChatHintVisible.value || fabHovered.value || fabFocused.value,
+);
+const CHAT_HINT_SESSION_KEY = "danjjak-chat-hint-shown";
+let chatHintTimer;
+let chatHintShown = false;
 
 const VOICE_TEXTS = {
   "transfer-source": "송금할 본인 계좌를 선택해 주세요.",
@@ -174,6 +206,40 @@ watch(
   { immediate: true },
 );
 
+watch(
+  [showSplash, () => route.name],
+  ([splashVisible, routeName]) => {
+    if (splashVisible || !showChatFab(String(routeName))) return;
+    showMobileChatHintOnce();
+  },
+  { immediate: true },
+);
+
+function showMobileChatHintOnce() {
+  if (typeof window === "undefined" || window.matchMedia("(hover: hover)").matches) return;
+  if (chatHintShown) return;
+  try {
+    if (window.sessionStorage.getItem(CHAT_HINT_SESSION_KEY)) {
+      chatHintShown = true;
+      return;
+    }
+    window.sessionStorage.setItem(CHAT_HINT_SESSION_KEY, "true");
+  } catch {
+    // 저장소를 사용할 수 없어도 현재 앱 실행 중에는 한 번만 보여준다.
+  }
+  chatHintShown = true;
+  autoChatHintVisible.value = true;
+  chatHintTimer = window.setTimeout(() => {
+    autoChatHintVisible.value = false;
+    chatHintTimer = undefined;
+  }, 3500);
+}
+
+function openChat() {
+  autoChatHintVisible.value = false;
+  void router.push({ name: 'chat' });
+}
+
 function handleSessionExpired() {
   store.clearSession("로그인이 만료되었습니다. 다시 로그인해 주세요.");
 
@@ -188,6 +254,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("danjjak:session-expired", handleSessionExpired);
+  window.clearTimeout(chatHintTimer);
 });
 </script>
 
@@ -195,6 +262,73 @@ onBeforeUnmount(() => {
 /* 마지막 카드도 도우미 버튼 위로 올려서 누를 수 있게 여백을 둔다. */
 .chat-entry .overflow-y-auto {
   padding-bottom: 96px !important;
+}
+
+.chat-fab {
+  animation:
+    chat-fab-arrive 0.8s ease-out both,
+    chat-fab-float 4.5s ease-in-out 1s infinite;
+}
+
+.chat-hint::after {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid #f1c232;
+  border-right: 2px solid #f1c232;
+  background: #fffdf5;
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.chat-hint-compact {
+  display: none;
+}
+
+.chat-hint-enter-active,
+.chat-hint-leave-active {
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+
+.chat-hint-enter-from,
+.chat-hint-leave-to {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+@media (max-width: 390px) {
+  .chat-hint-full {
+    display: none;
+  }
+
+  .chat-hint-compact {
+    display: inline;
+  }
+}
+
+@keyframes chat-fab-arrive {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes chat-fab-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-fab {
+    animation: none;
+  }
+
+  .chat-hint-enter-active,
+  .chat-hint-leave-active {
+    transition: none;
+  }
 }
 
 .vbar-enter-active {

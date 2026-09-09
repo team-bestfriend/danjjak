@@ -39,7 +39,7 @@ class ChatControllerTest {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("userId", 7L);
         when(service.reply(7L, "잔액 확인")).thenReturn(
-                new ChatResponse("잔액을 확인해 보세요.", Action.BALANCE_CHECK, 42L, false));
+                new ChatResponse("잔액을 확인해 보세요.", Action.BALANCE_CHECK, 42L, false, false));
         var result = mvc.perform(post("/api/chat/messages").session(session).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"message\":\"잔액 확인\"}"))
                 .andExpect(status().isOk())
@@ -48,6 +48,7 @@ class ChatControllerTest {
         assertEquals("BALANCE_CHECK", body.path("action").asText());
         assertEquals(42L, body.path("patternId").asLong());
         assertEquals(false, body.path("retryable").asBoolean());
+        assertEquals(false, body.path("showRecommendations").asBoolean());
         verify(service).reply(7L, "잔액 확인");
     }
 }

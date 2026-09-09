@@ -37,7 +37,7 @@ paths:
       tags: [Chat]
       operationId: sendChatMessage
       summary: 자연어로 원하는 단짝 업무 찾기
-      description: 대화 기록을 저장하지 않는다. AI는 업무만 분류하며 금융 업무를 실행하지 않는다. 송금 대상은 기존 화면에서 선택한다. 조회 patternId는 현재 사용자의 활성 패턴에서 선택하며 없으면 null이다. AI 오류는 200 응답의 NONE과 retryable로 안내한다.
+      description: 대화 기록을 저장하지 않는다. AI는 짧은 안내와 업무를 분류하며 금융 업무를 실행하지 않는다. 송금 대상은 기존 화면에서 선택한다. 조회 patternId는 현재 사용자의 활성 패턴에서 선택하며 없으면 null이다. AI 오류는 200 응답의 NONE과 retryable로 안내한다.
       requestBody:
         required: true
         content:
@@ -1167,7 +1167,7 @@ components:
           description: 원하는 업무. 공백만 있는 문장은 허용하지 않으며 비밀번호와 계좌번호는 입력하지 않는다.
     ChatResponse:
       type: object
-      required: [message, action, patternId, retryable]
+      required: [message, action, patternId, retryable, showRecommendations]
       properties:
         message:
           type: string
@@ -1184,6 +1184,9 @@ components:
         retryable:
           type: boolean
           description: AI 오류 또는 시간 초과일 때 true. 사용자 선택으로만 재시도한다.
+        showRecommendations:
+          type: boolean
+          description: action이 NONE이고 사용자에게 업무 선택을 안내할 때만 true. 인사·일상 대화·특정 금융 action은 false이다.
     InstructionSuggestion:
       type: object
       required: [patternId, patternTitle, stepId, stepOrder, stepCode, stepName, currentText, suggestedText, hasFamilyAudio, voiceScriptOutdated]

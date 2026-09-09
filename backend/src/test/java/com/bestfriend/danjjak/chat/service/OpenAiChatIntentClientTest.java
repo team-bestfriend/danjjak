@@ -23,14 +23,29 @@ class OpenAiChatIntentClientTest {
         assertEquals("json_schema", format.path("type").asText());
         assertTrue(format.path("strict").asBoolean());
         assertEquals(8, format.path("schema").path("properties").path("action").path("enum").size());
+        assertEquals(3, format.path("schema").path("required").size());
         assertFalse(body.has("tools"));
     }
 
     @Test
+    void promptShowsRecommendationsWhenReplyOffersMoreHelp() throws Exception {
+        String instructions = json.readTree(client.requestBody("안녕")).path("instructions").asText();
+
+        assertTrue(instructions.contains("무엇을 도와드릴까요?\", NONE, true"));
+        assertTrue(instructions.contains("다른 도움이 필요하면 말씀해 주세요.\", NONE, true"));
+        assertTrue(instructions.contains("피곤하다 → \"많이 피곤하셨군요. 잠시 쉬어 가세요.\", NONE, false"));
+    }
+
+    @Test
     void parsesOnlyCompletedStructuredAction() throws Exception {
-        assertEquals("TRANSFER", client.parseResponse(output("{\\\"action\\\":\\\"TRANSFER\\\"}")));
+        var parsed = client.parseResponse(output(
+                "{\\\"message\\\":\\\"송금을 도와드릴게요.\\\",\\\"action\\\":\\\"TRANSFER\\\",\\\"showRecommendations\\\":false}"));
+        assertEquals("송금을 도와드릴게요.", parsed.message());
+        assertEquals(com.bestfriend.danjjak.chat.dto.ChatDtos.Action.TRANSFER, parsed.action());
+        assertFalse(parsed.showRecommendations());
         assertThrows(IllegalArgumentException.class,
-                () -> client.parseResponse(output("{\\\"action\\\":\\\"BUY\\\"}")));
+                () -> client.parseResponse(output(
+                        "{\\\"message\\\":\\\"주식\\\",\\\"action\\\":\\\"BUY\\\",\\\"showRecommendations\\\":true}")));
         assertThrows(IllegalStateException.class, () -> client.parseResponse("{\"status\":\"incomplete\"}"));
         assertThrows(IllegalStateException.class, () -> client.parseResponse("{\"status\":\"completed\",\"output\":[]}"));
     }

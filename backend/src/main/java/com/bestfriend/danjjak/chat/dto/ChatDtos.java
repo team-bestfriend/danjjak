@@ -12,5 +12,6 @@ public final class ChatDtos {
     }
 
     public record ChatRequest(@NotBlank @Size(max = 500) String message) {}
-    public record ChatResponse(String message, Action action, Long patternId, boolean retryable) {}
+    public record ChatResponse(
+            String message, Action action, Long patternId, boolean retryable, boolean showRecommendations) {}
 }
