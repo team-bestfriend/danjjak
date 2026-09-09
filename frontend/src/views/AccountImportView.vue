@@ -40,7 +40,7 @@
                 </div>
                 <span class="rounded-full bg-[#DCFCE7] px-3 py-1 text-[14px] font-bold text-[#166534]">불러옴</span>
               </div>
-              <p class="mt-3 text-[16px] font-bold text-[#374151]">잔액 {{ formatWon(account.balance) }}</p>
+              <p class="mt-3 break-keep text-[16px] font-bold text-[#374151]">잔액 {{ formatWonWithKorean(account.balance) }}</p>
             </div>
           </div>
         </section>
@@ -70,7 +70,7 @@
                   </span>
                   <span class="mt-1 block text-[15px] text-[#6B7280]">{{ account.accountAlias || '내 계좌' }}</span>
                   <span class="mt-1 block font-mono text-[15px] text-[#6B7280]">{{ account.masked }}</span>
-                  <span class="mt-3 block text-[16px] font-bold text-[#374151]">잔액 {{ formatWon(account.balance) }}</span>
+                  <span class="mt-3 block break-keep text-[16px] font-bold text-[#374151]">잔액 {{ formatWonWithKorean(account.balance) }}</span>
                 </span>
               </div>
             </button>
@@ -109,6 +109,7 @@ import { useRoute, useRouter } from 'vue-router';
 import SafeArea from '../components/common/SafeArea.vue';
 import TopBar from '../components/common/TopBar.vue';
 import { useAppStore } from '../stores/appStore';
+import { formatWonWithKorean } from '../utils/money.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -146,7 +147,4 @@ async function importSelected() {
   }
 }
 
-function formatWon(amount) {
-  return `${Number(amount).toLocaleString('ko-KR')}원`;
-}
 </script>
