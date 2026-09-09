@@ -289,7 +289,8 @@ test('FAB는 주요 4개 화면에서만 표시하고 모든 금융 실행 route
   const app = await readFile(new URL('../src/App.vue', import.meta.url), 'utf8');
   assert.match(app, /v-if="showChatFab\(String\(route.name\)\) && !showSplash"/);
   assert.match(app, /궁금한 게 있으면 저한테 물어보세요!/);
-  assert.match(app, /sessionStorage\.setItem\(CHAT_HINT_SESSION_KEY/);
+  assert.match(app, /routeName !== "home"/);
+  assert.doesNotMatch(app, /sessionStorage/);
   assert.match(app, /@mouseenter="fabHovered = true"/);
   assert.match(app, /void router.push\(\{ name: 'chat' \}\)/);
   assert.match(app, /prefers-reduced-motion: reduce/);
