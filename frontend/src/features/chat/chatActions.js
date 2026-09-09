@@ -5,6 +5,7 @@ export const chatActions = Object.freeze({
   MANAGEMENT_FEE_CHECK: { label: '관리비 확인하기', route: 'task-3' },
   UTILITY_BILL_CHECK: { label: '공과금 확인하기', route: 'task-8' },
   CUSTOMER_CENTER: { label: '고객센터 보기', route: 'task-6' },
+  PATTERN: { label: '이 업무 시작하기', route: null },
   APP_HELP: { label: '단짝 사용 방법 보기', route: 'service-guide' },
 });
 
@@ -25,6 +26,12 @@ export const sensitiveNotice = '비밀번호나 계좌번호는 채팅에 쓰지
 export async function openChatAction(reply, store) {
   const action = actionFor(reply.action);
   if (!action) return;
+  if (reply.action === 'PATTERN' && reply.patternId != null) {
+    // 현재 사용자의 활성 패턴인지 다시 확인한 뒤 저장된 단계로 실행한다.
+    const detail = await store.loadPatternDetail(reply.patternId);
+    await store.startPatternExecution(detail);
+    return;
+  }
   if (reply.action === 'TRANSFER') {
     store.startTransfer();
   } else if (reply.action !== 'APP_HELP' && reply.patternId != null) {

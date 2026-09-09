@@ -247,6 +247,15 @@ test('조회 CTA는 실제 패턴을 검증하여 기존 패턴 실행을 재사
   }));
 });
 
+test('챗봇 단축번호 CTA는 패턴 종류와 관계없이 등록된 업무를 실행한다', async () => {
+  const calls = [];
+  await openChatAction({ action: 'PATTERN', patternId: 91 }, {
+    loadPatternDetail: async id => { calls.push(id); return { patternId: id, patternType: 'TRANSFER' }; },
+    startPatternExecution: async pattern => { calls.push(pattern); },
+  });
+  assert.deepEqual(calls, [91, { patternId: 91, patternType: 'TRANSFER' }]);
+});
+
 test('패턴 없는 조회와 사용 안내는 허용된 기존 route로만 이동한다', async () => {
   const calls = [];
   const store = { resetPatternExecution() {}, navigate: async name => { calls.push(name); } };
