@@ -118,8 +118,8 @@
             >
               <span class="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-[#FFBC00] bg-white">
                 <img
-                  v-if="profileImageForPerson(option)"
-                  :src="profileImageForPerson(option)"
+                  v-if="option.profileImage"
+                  :src="option.profileImage"
                   alt=""
                   class="h-full w-full object-cover"
                   aria-hidden="true"
@@ -273,7 +273,7 @@ const recipientAccountOptions = computed(() => store.people.flatMap((person) => 
     personId: person.id,
     personName: person.name,
     personRelation: person.relation,
-    profileImageKey: person.profileImageKey,
+    profileImage: profileImageForPerson(person),
   }))
 )));
 const selectedRecipientOption = computed(() => (
