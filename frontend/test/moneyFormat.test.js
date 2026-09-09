@@ -57,9 +57,10 @@ test('금액 입력 화면은 만원 이상부터 숫자 단위 표기를 우선
   assert.equal(formatWonByUnits(5000), '');
 });
 
-test('직접 송금 금액 입력은 금액 표시에서 다음 버튼으로 하이라이트가 이동한다', () => {
+test('송금 금액 입력은 실행 유형과 관계없이 금액 표시에서 다음 버튼으로 하이라이트가 이동한다', () => {
   assert.match(amountKeypadSource, /highlightComplete && val === '0' \? 'step-guide-target'/);
   assert.match(amountKeypadSource, /highlightComplete && val !== '0' \? 'step-guide-target'/);
+  assert.match(transferFlowSource, /<AmountKeypad[\s\S]*?\shighlightComplete[\s\S]*?@complete="handleAmountComplete"/);
 });
 
 test('송금 확인·경고·완료 화면은 숫자 금액과 단위 금액을 나누어 표시한다', () => {
