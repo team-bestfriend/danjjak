@@ -3,13 +3,17 @@
     <template v-if="mode === 'select'">
       <h2 class="text-[26px] font-bold text-[#111827]">{{ title }}</h2>
       <p class="text-[16px] text-[#6B7280]">안내 문구와 음성을 확인해 주세요.</p>
-      <button type="button" class="flex min-h-[96px] w-full items-center gap-4 rounded-[20px] border-2 border-[#FFBC00] bg-white p-5 text-left" @click="chooseMode('TTS')">
-        <span class="text-[30px]" aria-hidden="true">🤖</span>
-        <span><strong class="block text-[20px]">AI 음성</strong><span class="text-[15px] text-[#6B7280]">안내 문구를 편집하고 미리 들어요.</span></span>
+      <button type="button" class="flex min-h-[112px] w-full items-center gap-4 rounded-[20px] border-2 border-[#FFBC00] bg-white p-5 text-left" @click="chooseMode('TTS')">
+        <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-[#EFFCFB]" aria-hidden="true">
+          <img :src="robotIcon" alt="" class="h-14 w-14 object-contain" />
+        </span>
+        <span class="min-w-0"><strong class="block text-[20px]">AI 음성</strong><span class="text-[15px] text-[#6B7280]">안내 문구를 편집하고 미리 들어요.</span></span>
       </button>
-      <button type="button" class="flex min-h-[96px] w-full items-center gap-4 rounded-[20px] border border-[#E5E7EB] bg-white p-5 text-left" @click="chooseMode('FAMILY')">
-        <span class="text-[30px]" aria-hidden="true">🎙️</span>
-        <span><strong class="block text-[20px]">가족 음성</strong><span class="text-[15px] text-[#6B7280]">가족이 읽어 주는 안내를 녹음해요.</span></span>
+      <button type="button" class="flex min-h-[112px] w-full items-center gap-4 rounded-[20px] border border-[#E5E7EB] bg-white p-5 text-left" @click="chooseMode('FAMILY')">
+        <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-[#FFF7ED]" aria-hidden="true">
+          <img :src="micIcon" alt="" class="h-14 w-14 object-contain" />
+        </span>
+        <span class="min-w-0"><strong class="block text-[20px]">가족 음성</strong><span class="text-[15px] text-[#6B7280]">가족이 읽어 주는 안내를 녹음해요.</span></span>
       </button>
       <Btn variant="secondary" @click="chooseMode(null)">전체 음성 설정 따르기</Btn>
       <p class="text-[15px] text-[#6B7280]">현재 선택: {{ voiceLabel({ voiceMode: selectedMode, audioUrl }, defaultMode) }}</p>
@@ -73,6 +77,8 @@ import { useDiscardConfirmation } from '../../composables/useDiscardConfirmation
 import { useTtsAudio } from '../../composables/useTtsAudio.js';
 import { useFamilyRecorder } from '../../composables/useFamilyRecorder.js';
 import { voiceLabel } from '../../api/guidanceApi.js';
+import robotIcon from '../../assets/icons/robot.png';
+import micIcon from '../../assets/icons/mic.png';
 
 const props = defineProps({
   title: { type: String, required: true },

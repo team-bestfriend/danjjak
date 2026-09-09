@@ -135,8 +135,8 @@
               label="기본 음성 안내 방식"
               :disabled="settingsSaving"
               :options="[
-                { key: 'tts', label: 'AI 음성' },
-                { key: 'family', label: '가족 음성' },
+                { key: 'tts', label: 'AI 음성', icon: robotIcon },
+                { key: 'family', label: '가족 음성', icon: micIcon },
               ]"
               v-model:value="voiceMode"
             />
@@ -371,6 +371,8 @@ import Ic from "../components/common/Ic.vue";
 import NavBar from "../components/common/NavBar.vue";
 import SegControl from "../components/common/SegControl.vue";
 import oldAgeWoman from "../assets/icons/profile/old_age_woman.png";
+import robotIcon from "../assets/icons/robot.png";
+import micIcon from "../assets/icons/mic.png";
 import piggyBank from "../assets/piggy_bank.png";
 import family from "../assets/family.png";
 import book from "../assets/book.png";
