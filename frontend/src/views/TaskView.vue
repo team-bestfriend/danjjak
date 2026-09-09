@@ -307,7 +307,8 @@ async function leaveTask() {
   if (store.activePatternDetail) {
     store.recordPatternAction('back');
     await store.finishPatternExecution('CANCELLED');
-    await store.navigate('home', { replace: true });
+    // 시작 화면을 보존해 홈에서 왔으면 홈으로, 챗봇에서 왔으면 채팅으로 돌아간다.
+    store.goBack();
     return;
   }
   store.goBack();

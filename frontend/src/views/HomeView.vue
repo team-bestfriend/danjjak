@@ -8,7 +8,10 @@
         <DanjjakMark :size="20" />
         <span className="font-semibold" style="color: #B8860B; font-size: 13px; letter-spacing: 0.02em;">단짝</span>
       </div>
-      <p className="font-bold text-[#111827] leading-tight" style="font-size: 26px;">안녕하세요, {{ store.userName }}님 👵</p>
+      <div className="flex items-center gap-2">
+        <p className="font-bold text-[#111827] leading-tight" style="font-size: 26px;">안녕하세요, {{ store.userName }}님</p>
+        <img :src="oldAgeWoman" alt="" aria-hidden="true" className="h-8 w-8 flex-shrink-0 object-contain" />
+      </div>
       <p className="font-normal text-[#6B7280] mt-1" style="font-size: 15px;">오늘도 안전한 금융 생활 되세요.</p>
     </div>
 
@@ -168,6 +171,7 @@ import Ic from '../components/common/Ic.vue';
 import NavBar from '../components/common/NavBar.vue';
 import PatternGrid from '../components/common/PatternGrid.vue';
 import FocusModeCard from '../components/common/FocusModeCard.vue';
+import oldAgeWoman from '../assets/icons/profile/old_age_woman.png';
 import { useShortcutSpeech } from '../composables/useShortcutSpeech.js';
 import { swipePage } from '../features/shortcutSwipe.js';
 

@@ -79,6 +79,12 @@ const transferRoutes = [
 
 const routes = [
   {
+    path: '/chat',
+    name: 'chat',
+    component: () => import('../views/ChatView.vue'),
+    meta: consentMeta,
+  },
+  {
     path: "/",
     redirect: {
       name: "onboarding",
