@@ -1273,7 +1273,7 @@ test('단축번호 송금은 사람의 계좌가 여러 개여도 패턴에 연�
   };
 
   // 패턴에 연결한 계좌는 두 번째 계좌다.
-  store.startTransfer({ pattern: true, personId: 7, recipientAccountId: 4 });
+  store.startTransfer({ pattern: true, personId: 7, recipientAccountId: 4, usesSavedRecipient: true });
   store.selectedSourceAccountId = 1;
   store.selectRecipientAccount(store.accountsByPerson[7][1]);
   store.transferAmount = '10000';
@@ -1367,6 +1367,7 @@ test('단축번호 실행 응답의 특정 받는 계좌를 실행 상태에 그
   assert.equal(store.selectedRecipientAccountId, 4);
   assert.equal(store.selectedRecipientAccount.accountAlias, '저축 계좌');
   assert.equal(store.selectedAccountMasked, '355-****-002');
+  assert.equal(store.usesSavedPatternRecipient, true);
 });
 
 test('받는 계좌가 여러 개면 사람만 골라서는 계좌가 정해지지 않는다', () => {
@@ -1395,7 +1396,7 @@ test('패턴에 연결된 계좌는 같은 사람 확인 뒤에도 선택 상태
       { accountId: 4, bankCode: '081', bankName: '하나은행', masked: '355-****-002' },
     ],
   };
-  store.startTransfer({ pattern: true, personId: 7, recipientAccountId: 4 });
+  store.startTransfer({ pattern: true, personId: 7, recipientAccountId: 4, usesSavedRecipient: true });
 
   store.selectPerson(7);
 

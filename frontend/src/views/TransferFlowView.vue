@@ -13,7 +13,7 @@
       :onRight="store.cancelTransfer"
     />
 
-    <StepBar v-bind="stepBar('transfer-source')" />
+    <StepBar v-bind="transferStepBar('transfer-source')" />
 
     <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-6 pt-4">
       <p class="text-[26px] font-bold text-[#111827]">
@@ -85,7 +85,7 @@
               : 'border-[#E5E7EB]',
           ]"
           :aria-pressed="store.selectedSourceAccountId === account.accountId"
-          :disabled="store.financeLoading || Boolean(store.financeError) || patternTargetMissing"
+          :disabled="store.financeLoading || Boolean(store.financeError)"
           @click="handleSelectSourceAccount(account.accountId)"
         >
           <div class="flex items-center justify-between gap-3">
@@ -121,27 +121,6 @@
         </button>
       </div>
 
-      <div
-        v-if="patternTargetMissing"
-        class="space-y-3 rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4"
-      >
-        <p class="font-bold text-[#991B1B]">
-          단축번호에 연결된 받는 사람이나 계좌를 찾을 수 없어요.
-        </p>
-
-        <p class="text-[#991B1B]">
-          사람 및 계좌 관리에서 연결 정보를 먼저 확인해 주세요.
-        </p>
-
-        <Btn
-          data-guide-exempt
-          variant="secondary"
-          @click="store.navigate('contact-manage')"
-        >
-          사람 및 계좌 관리
-        </Btn>
-      </div>
-
     </div>
   </div>
 
@@ -157,7 +136,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar v-bind="stepBar('direct-transfer')" />
+    <StepBar v-bind="transferStepBar('direct-transfer')" />
     <div class="flex-1 flex flex-col overflow-y-auto px-5 pt-8 pb-6 gap-5">
       <p class="font-bold text-[#111827] text-[28px]">누구에게 보내시겠어요?</p>
       <div class="rounded-[28px] p-2 flex flex-col gap-3 bg-white">
@@ -199,7 +178,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar v-bind="stepBar('direct-newaccount')" />
+    <StepBar v-bind="transferStepBar('direct-newaccount')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <p class="font-bold text-[#111827] text-[26px]">
         받는 계좌를 입력해 주세요.
@@ -342,7 +321,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar v-bind="stepBar('guide-person')" />
+    <StepBar v-bind="transferStepBar('guide-person')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
         받는 사람을 선택해 주세요.
@@ -441,7 +420,7 @@
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar v-bind="stepBar('guide-account')" />
+    <StepBar v-bind="transferStepBar('guide-account')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <p class="font-bold text-[#111827] text-[26px]">
         받는 계좌를 선택해 주세요.
@@ -508,11 +487,11 @@
     <SafeArea />
     <TopBar
       title="얼마를 보낼까요?"
-      :onBack="store.goBack"
+      :onBack="goBackFromAmount"
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar v-bind="stepBar('amount-input')" />
+    <StepBar v-bind="transferStepBar('amount-input')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-3">
       <p
         v-if="store.transferError"
@@ -539,11 +518,11 @@
     <SafeArea />
     <TopBar
       title="보내기 전에 확인해 주세요"
-      :onBack="store.goBack"
+      :onBack="goBackFromConfirm"
       rightLabel="취소"
       :onRight="store.cancelTransfer"
     />
-    <StepBar v-bind="stepBar('final-confirm')" />
+    <StepBar v-bind="transferStepBar('final-confirm')" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
       <Card class="overflow-hidden">
         <div
@@ -588,7 +567,7 @@
         @click="store.navigate('pin-entry')"
         >확인했어요</Btn
       >
-      <Btn data-guide-exempt variant="secondary" @click="store.goBack"
+      <Btn data-guide-exempt variant="secondary" @click="goBackFromConfirm"
         >내용 수정하기</Btn
       >
     </div>
@@ -608,7 +587,7 @@
       :onRight="store.cancelTransfer"
       :rightDisabled="store.transferSubmitting"
     />
-    <StepBar v-bind="stepBar('pin-entry')" />
+    <StepBar v-bind="transferStepBar('pin-entry')" />
     <div class="flex-1 overflow-y-auto px-4 pt-5 pb-6 space-y-5">
       <h2 class="font-bold text-[#111827] text-[26px]">
         계좌 비밀번호를 입력해주세요.
@@ -952,7 +931,7 @@ import { directAccountPattern } from "../features/directRecipient.js";
 import SafeArea from "../components/common/SafeArea.vue";
 import TopBar from "../components/common/TopBar.vue";
 import StepBar from "../components/common/StepBar.vue";
-import { transferStepBar as stepBar } from "../features/transferSteps.js";
+import { transferStepBar as getTransferStepBar } from "../features/transferSteps.js";
 import Card from "../components/common/Card.vue";
 import Btn from "../components/common/Btn.vue";
 import Ic from "../components/common/Ic.vue";
@@ -984,12 +963,8 @@ const selectedBank = computed(
 const personAccs = computed(
   () => store.accountsByPerson[store.selectedPersonId] ?? [],
 );
-const patternTargetMissing = computed(
-  () =>
-    store.isPatternTransfer &&
-    store.financeLoaded &&
-    (!store.selectedPerson || !store.selectedRecipientAccount),
-);
+const transferStepBar = (screenCode) =>
+  getTransferStepBar(screenCode, store.usesSavedPatternRecipient);
 const canProceedDirect = computed(
   () =>
     recipientName.value.length > 0 &&
@@ -1117,11 +1092,13 @@ function formatDate(value) {
 }
 
 function handleSelectSourceAccount(accountId) {
-  if (store.financeLoading || store.financeError || patternTargetMissing.value) return;
+  if (store.financeLoading || store.financeError) return;
   if (!store.ownedAccounts.some((account) => account.accountId === accountId)) return;
   store.selectedSourceAccountId = accountId;
   store.transferError = "";
-  return store.navigate("guide-person");
+  return store.navigate(
+    store.usesSavedPatternRecipient ? "amount-input" : "guide-person",
+  );
 }
 
 function selectFamily() {
@@ -1196,6 +1173,26 @@ async function handlePinComplete(pin) {
 
 function goBackFromPin() {
   store.transferError = '';
+  if (store.usesSavedPatternRecipient) {
+    store.navigate("final-confirm", { replace: true });
+    return;
+  }
+  store.goBack();
+}
+
+function goBackFromAmount() {
+  if (store.usesSavedPatternRecipient) {
+    store.navigate("transfer-source", { replace: true });
+    return;
+  }
+  store.goBack();
+}
+
+function goBackFromConfirm() {
+  if (store.usesSavedPatternRecipient) {
+    store.navigate("amount-input", { replace: true });
+    return;
+  }
   store.goBack();
 }
 

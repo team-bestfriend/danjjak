@@ -658,6 +658,7 @@ async function beginPatternTransfer() {
     pattern: true,
     personId: person.value.id,
     recipientAccountId: account.value.accountId,
+    usesSavedRecipient: true,
   });
 
   store.selectRecipientAccount(account.value);
