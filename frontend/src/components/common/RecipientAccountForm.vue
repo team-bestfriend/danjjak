@@ -188,7 +188,7 @@ async function handleSave() {
   saving.value = true;
   formError.value = "";
   try {
-    const saved = await store.saveRecipientAccount(
+    await store.saveRecipientAccount(
       props.registeredPersonId,
       {
         bankCode: selectedBank.value.code,
@@ -198,7 +198,7 @@ async function handleSave() {
       },
       props.existingAccount?.accountId ?? null,
     );
-    emit("saved", saved.registeredPersonId);
+    emit("saved");
   } catch (error) {
     formError.value =
       error instanceof ApiError

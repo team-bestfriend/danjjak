@@ -220,6 +220,30 @@
           AND registered_person_id = #{registeredPersonId}
     </update>
 
+    <select id="countPatternsLinkedToRecipientAccount" resultType="int">
+        SELECT COUNT(*)
+        FROM financial_patterns
+        WHERE user_id = #{userId}
+          AND linked_bank_account_id = #{accountId}
+    </select>
+
+    <select id="countPatternsLinkedToRegisteredPerson" resultType="int">
+        SELECT COUNT(*)
+        FROM financial_patterns fp
+        JOIN bank_accounts ba
+          ON ba.bank_account_id = fp.linked_bank_account_id
+         AND ba.user_id = fp.user_id
+        WHERE fp.user_id = #{userId}
+          AND ba.registered_person_id = #{registeredPersonId}
+    </select>
+
+    <delete id="deleteRecipientAccount">
+        DELETE FROM bank_accounts
+        WHERE bank_account_id = #{accountId}
+          AND user_id = #{userId}
+          AND registered_person_id = #{registeredPersonId}
+    </delete>
+
     <delete id="deleteRecipientAccountsForPerson">
         DELETE FROM bank_accounts
         WHERE user_id = #{userId}

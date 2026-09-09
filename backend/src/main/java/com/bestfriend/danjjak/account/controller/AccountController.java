@@ -122,4 +122,14 @@ public class AccountController {
         return accountService.updateRecipientAccount(
                 userResolver.resolveUserId(session), registeredPersonId, accountId, request);
     }
+
+    @DeleteMapping("/registered-persons/{registeredPersonId}/accounts/{accountId}")
+    public ResponseEntity<Void> deleteRecipientAccount(
+            @PathVariable long registeredPersonId,
+            @PathVariable long accountId,
+            HttpSession session) {
+        accountService.deleteRecipientAccount(
+                userResolver.resolveUserId(session), registeredPersonId, accountId);
+        return ResponseEntity.noContent().build();
+    }
 }

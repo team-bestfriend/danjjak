@@ -3,7 +3,7 @@
     <SafeArea />
     <TopBar :title="pageTitle" :onBack="closeForm" />
     <div class="flex-1 overflow-y-auto px-4 pt-4 pb-6">
-      <p v-if="store.financeLoading" class="rounded-2xl bg-[#FAFAF8] p-5 text-[#6B7280]">등록 정보를 불러오고 있어요…</p>
+      <p v-if="initialLoading" class="rounded-2xl bg-[#FAFAF8] p-5 text-[#6B7280]">등록 정보를 불러오고 있어요…</p>
       <div v-else-if="missingTarget" class="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-5 space-y-3">
         <p class="text-[#991B1B]">수정할 등록 정보를 찾을 수 없어요.</p>
         <Btn variant="secondary" @click="closeForm">목록으로 돌아가기</Btn>
@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAppStore } from '../stores/appStore';
 import SafeArea from '../components/common/SafeArea.vue';
@@ -33,6 +33,7 @@ import RecipientAccountForm from '../components/common/RecipientAccountForm.vue'
 
 const store = useAppStore();
 const router = useRouter();
+const initialLoading = ref(!store.financeLoaded);
 const existingPerson = computed(() => {
   const person = store.people.find((item) => item.id === store.editingPersonId);
   return person ?? null;
@@ -57,13 +58,16 @@ const missingTarget = computed(() => (
     || (store.editingRecipientAccountId && !existingAccount.value))
 ));
 
-onMounted(() => store.loadFinancialData());
+onMounted(async () => {
+  await store.loadFinancialData();
+  initialLoading.value = false;
+});
 
 async function onSaved() {
   store.editingPersonId = null;
   store.accountFormPersonId = null;
   store.editingRecipientAccountId = null;
-  await router.replace('/settings/people');
+  await router.replace({ name: 'contact-manage' });
 }
 
 function closeForm() {

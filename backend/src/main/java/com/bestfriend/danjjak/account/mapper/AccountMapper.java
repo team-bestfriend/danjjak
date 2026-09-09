@@ -54,6 +54,18 @@ public interface AccountMapper {
 
     int updateRecipientAccount(RegisteredPersonCommand command);
 
+    int countPatternsLinkedToRecipientAccount(
+            @Param("userId") long userId, @Param("accountId") long accountId);
+
+    int countPatternsLinkedToRegisteredPerson(
+            @Param("userId") long userId,
+            @Param("registeredPersonId") long registeredPersonId);
+
+    int deleteRecipientAccount(
+            @Param("userId") long userId,
+            @Param("registeredPersonId") long registeredPersonId,
+            @Param("accountId") long accountId);
+
     int deleteRecipientAccountsForPerson(
             @Param("userId") long userId,
             @Param("registeredPersonId") long registeredPersonId);

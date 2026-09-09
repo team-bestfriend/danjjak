@@ -291,6 +291,8 @@ export const useAppStore = defineStore("app", () => {
   const accountImportLoading = ref(false);
   const accountImportError = ref("");
   const accountImportSavingId = ref(null);
+  const registeredPersonDeletingId = ref(null);
+  const recipientAccountDeletingId = ref(null);
   let pendingAccountImportOptionsLoad = null;
 
   const selectedInquiryAccountId = ref(null);
@@ -447,6 +449,8 @@ export const useAppStore = defineStore("app", () => {
     mockAccountImportOptions.value = [];
     accountImportError.value = "";
     accountImportSavingId.value = null;
+    registeredPersonDeletingId.value = null;
+    recipientAccountDeletingId.value = null;
     support.value = null;
     supportLoaded.value = false;
     transferAmount.value = "0";
@@ -876,6 +880,38 @@ export const useAppStore = defineStore("app", () => {
     if (pendingFinancialDataLoad) await pendingFinancialDataLoad;
     await loadFinancialData(true);
     return saved;
+  }
+
+  async function deleteRegisteredPerson(registeredPersonId) {
+    if (
+      registeredPersonDeletingId.value !== null
+      || recipientAccountDeletingId.value !== null
+    ) return false;
+    registeredPersonDeletingId.value = registeredPersonId;
+    try {
+      await accountApi.deleteRegisteredPerson(registeredPersonId);
+      if (pendingFinancialDataLoad) await pendingFinancialDataLoad;
+      await loadFinancialData(true);
+      return true;
+    } finally {
+      registeredPersonDeletingId.value = null;
+    }
+  }
+
+  async function deleteRecipientAccount(registeredPersonId, accountId) {
+    if (
+      registeredPersonDeletingId.value !== null
+      || recipientAccountDeletingId.value !== null
+    ) return false;
+    recipientAccountDeletingId.value = accountId;
+    try {
+      await accountApi.deleteRecipientAccount(registeredPersonId, accountId);
+      if (pendingFinancialDataLoad) await pendingFinancialDataLoad;
+      await loadFinancialData(true);
+      return true;
+    } finally {
+      recipientAccountDeletingId.value = null;
+    }
   }
 
   async function loadInquiry(accountId, category = null) {
@@ -1376,6 +1412,8 @@ export const useAppStore = defineStore("app", () => {
     accountImportLoading,
     accountImportError,
     accountImportSavingId,
+    registeredPersonDeletingId,
+    recipientAccountDeletingId,
     selectedInquiryAccountId,
     inquiryBalance,
     inquiryTransactions,
@@ -1440,6 +1478,8 @@ export const useAppStore = defineStore("app", () => {
     importMockAccount,
     saveRegisteredPerson,
     saveRecipientAccount,
+    deleteRegisteredPerson,
+    deleteRecipientAccount,
     loadInquiry,
     loadSupport,
     saveGuardian,
