@@ -63,7 +63,6 @@ export function useStepGuidance(root, step, ready, onWrongTouch) {
     // 취소·뒤로가기·오류 복구는 허용하고, 다른 조작으로 단계가 진행되는 것만 막는다.
     event.preventDefault();
     event.stopImmediatePropagation();
-    notice.value = '테두리로 표시한 곳을 눌러 주세요. 뒤로 가기와 취소도 사용할 수 있어요.';
     onWrongTouch();
   }
 
