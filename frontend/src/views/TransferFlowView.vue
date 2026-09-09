@@ -505,7 +505,7 @@
         role="group"
         aria-label="송금 금액 입력"
         :initialValue="store.transferAmount"
-        :highlightComplete="!store.isPatternTransfer"
+        highlightComplete
         @complete="handleAmountComplete"
       />
     </div>
