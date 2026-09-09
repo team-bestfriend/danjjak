@@ -113,7 +113,10 @@
           </div>
 
           <p class="mt-4 break-keep text-[23px] font-black leading-relaxed text-[#111827]">
-            잔액 {{ formatWonWithKorean(account.balance) }}
+            잔액 {{ formatWon(account.balance) }}
+          </p>
+          <p v-if="formatWonByUnits(account.balance)" class="mt-1 break-keep text-[16px] font-semibold text-[#6B7280]">
+            {{ formatWonByUnits(account.balance) }}
           </p>
         </button>
       </div>
@@ -554,11 +557,18 @@
           <span class="text-[#6B7280] text-[16px]">{{ row.label }}</span>
           <span
             :class="[
-              'font-bold text-right text-[#111827]',
+              'text-right text-[#111827]',
               row.emphasis ? 'text-[26px]' : 'text-[17px]',
             ]"
-            >{{ row.value }}</span
           >
+            <strong class="block">{{ row.value }}</strong>
+            <span
+              v-if="row.unitValue"
+              class="mt-1 block text-[16px] font-bold text-[#6B7280]"
+            >
+              {{ row.unitValue }}
+            </span>
+          </span>
         </div>
       </Card>
       <Btn v-if="store.anomaly" @click="returnToWarning"
@@ -701,7 +711,13 @@
             {{ store.anomaly?.recipient?.masked }}
           </p>
           <p class="break-keep font-black text-[#111827] text-[28px]">
-            {{ formatWonWithKorean(store.anomaly?.amount) }}
+            {{ formatWon(store.anomaly?.amount) }}
+          </p>
+          <p
+            v-if="formatWonByUnits(store.anomaly?.amount)"
+            class="break-keep font-bold text-[#6B7280] text-[18px]"
+          >
+            {{ formatWonByUnits(store.anomaly?.amount) }}
           </p>
         </Card>
         <p
@@ -843,7 +859,13 @@
           {{ store.transferResult.recipientName }}님에게
         </p>
         <p class="break-keep font-black leading-relaxed text-[#111827] text-[32px]">
-          {{ formatWonWithKorean(store.transferResult.amount) }}
+          {{ formatWon(store.transferResult.amount) }}
+        </p>
+        <p
+          v-if="formatWonByUnits(store.transferResult.amount)"
+          class="break-keep font-bold text-[#6B7280] text-[18px]"
+        >
+          {{ formatWonByUnits(store.transferResult.amount) }}
         </p>
       </div>
       <Card class="w-full p-5 space-y-2">
@@ -852,8 +874,16 @@
           ><strong>#{{ store.transferResult.transactionId }}</strong>
         </div>
         <div class="flex justify-between gap-4">
-          <span class="text-[#6B7280]">송금 후 잔액</span
-          ><strong class="break-keep text-right">{{ formatWonWithKorean(store.transferResult.balanceAfter) }}</strong>
+          <span class="text-[#6B7280]">송금 후 잔액</span>
+          <span class="break-keep text-right">
+            <strong class="block">{{ formatWon(store.transferResult.balanceAfter) }}</strong>
+            <span
+              v-if="formatWonByUnits(store.transferResult.balanceAfter)"
+              class="mt-1 block text-[14px] font-bold text-[#6B7280]"
+            >
+              {{ formatWonByUnits(store.transferResult.balanceAfter) }}
+            </span>
+          </span>
         </div>
       </Card>
       <div
@@ -926,7 +956,7 @@ import AmountKeypad from "../components/common/AmountKeypad.vue";
 import PinEntry from "../components/common/PinEntry.vue";
 import BankLogo from "../components/common/BankLogo.vue";
 import warningIcon from "../assets/icons/warning.png";
-import { formatWonWithKorean } from "../utils/money.js";
+import { formatWon, formatWonByUnits } from "../utils/money.js";
 import warningDanjjak from "../assets/danjjakee_warning.png";
 import familyImage from "../assets/family.png";
 import piggyBankImage from "../assets/piggy_bank.png";
@@ -1041,7 +1071,8 @@ const reviewRows = computed(() => {
     },
     {
       label: "금액",
-      value: formatWonWithKorean(Number(store.transferAmount)),
+      value: formatWon(Number(store.transferAmount)),
+      unitValue: formatWonByUnits(Number(store.transferAmount)),
       emphasis: true,
     },
     { label: "수수료", value: "0원" },
