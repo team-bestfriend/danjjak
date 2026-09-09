@@ -31,8 +31,11 @@
 .app-shell :is([class~="text-[28px]"], [style*="font-size: 28px"], [style*="font-size:28px"]) { font-size: calc(28px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[30px]"], [style*="font-size: 30px"], [style*="font-size:30px"]) { font-size: calc(30px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[32px]"], [style*="font-size: 32px"], [style*="font-size:32px"]) { font-size: calc(32px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[34px]"], [style*="font-size: 34px"], [style*="font-size:34px"]) { font-size: calc(34px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[38px]"], [style*="font-size: 38px"], [style*="font-size:38px"]) { font-size: calc(38px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[40px]"], [style*="font-size: 40px"], [style*="font-size:40px"]) { font-size: calc(40px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[43px]"], [style*="font-size: 43px"], [style*="font-size:43px"]) { font-size: calc(43px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[54px]"], [style*="font-size: 54px"], [style*="font-size:54px"]) { font-size: calc(54px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[64px]"], [style*="font-size: 64px"], [style*="font-size:64px"]) { font-size: calc(64px * var(--text-scale)) !important; }
+.app-shell :is([class~="text-[72px]"], [style*="font-size: 72px"], [style*="font-size:72px"]) { font-size: calc(72px * var(--text-scale)) !important; }
 .app-shell :is([class~="text-[76px]"], [style*="font-size: 76px"], [style*="font-size:76px"]) { font-size: calc(76px * var(--text-scale)) !important; }
