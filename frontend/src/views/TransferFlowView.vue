@@ -111,8 +111,8 @@
             </span>
           </div>
 
-          <p class="mt-4 text-[23px] font-black text-[#111827]">
-            {{ formatWon(account.balance) }}
+          <p class="mt-4 break-keep text-[23px] font-black leading-relaxed text-[#111827]">
+            잔액 {{ formatWonWithKorean(account.balance) }}
           </p>
         </button>
       </div>
@@ -692,8 +692,8 @@
             {{ store.anomaly?.recipient?.bankName }} ·
             {{ store.anomaly?.recipient?.masked }}
           </p>
-          <p class="font-black text-[#111827] text-[28px]">
-            {{ formatWon(store.anomaly?.amount) }}
+          <p class="break-keep font-black text-[#111827] text-[28px]">
+            {{ formatWonWithKorean(store.anomaly?.amount) }}
           </p>
         </Card>
         <p
@@ -826,8 +826,8 @@
         <p class="text-[#374151] text-[18px]">
           {{ store.transferResult.recipientName }}님에게
         </p>
-        <p class="font-black text-[#111827] text-[32px]">
-          {{ formatWon(store.transferResult.amount) }}
+        <p class="break-keep font-black leading-relaxed text-[#111827] text-[32px]">
+          {{ formatWonWithKorean(store.transferResult.amount) }}
         </p>
       </div>
       <Card class="w-full p-5 space-y-2">
@@ -837,7 +837,7 @@
         </div>
         <div class="flex justify-between gap-4">
           <span class="text-[#6B7280]">송금 후 잔액</span
-          ><strong>{{ formatWon(store.transferResult.balanceAfter) }}</strong>
+          ><strong class="break-keep text-right">{{ formatWonWithKorean(store.transferResult.balanceAfter) }}</strong>
         </div>
       </Card>
       <div
@@ -910,6 +910,7 @@ import AmountKeypad from "../components/common/AmountKeypad.vue";
 import PinEntry from "../components/common/PinEntry.vue";
 import BankLogo from "../components/common/BankLogo.vue";
 import warningIcon from "../assets/icons/warning.png";
+import { formatWonWithKorean } from "../utils/money.js";
 
 const props = defineProps({
   flowStep: { type: String, required: true },
@@ -1021,7 +1022,7 @@ const reviewRows = computed(() => {
     },
     {
       label: "금액",
-      value: formatWon(Number(store.transferAmount)),
+      value: formatWonWithKorean(Number(store.transferAmount)),
       emphasis: true,
     },
     { label: "수수료", value: "0원" },
@@ -1045,10 +1046,6 @@ onMounted(async () => {
   }
   if (props.flowStep === "fraud-warning") await store.loadSupport();
 });
-
-function formatWon(value) {
-  return Number(value ?? 0).toLocaleString("ko-KR") + "원";
-}
 
 function formatDate(value) {
   if (!value) return "-";

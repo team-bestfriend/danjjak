@@ -1,8 +1,10 @@
 <template>
   <div className="space-y-4">
     <Card className="p-5 text-center border-2 border-[#F5B800]">
-      <p className="text-[40px] font-black text-[#111827]">{{ Number(val).toLocaleString("ko-KR") }}</p>
-      <p className="text-[15px] text-[#6B7280] mt-1">원</p>
+      <p className="break-keep text-[40px] font-black leading-tight text-[#111827]">{{ formatWon(val) }}</p>
+      <p className="mt-2 min-h-6 break-keep text-[17px] font-bold text-[#6B7280]">
+        {{ formatKoreanWon(val) || '금액을 입력해 주세요.' }}
+      </p>
     </Card>
     <div className="flex gap-2">
       <button
@@ -37,6 +39,7 @@ import { ref } from 'vue';
 import Card from './Card.vue';
 import Btn from './Btn.vue';
 import Ic from './Ic.vue';
+import { formatKoreanWon, formatWon } from '../../utils/money.js';
 
 defineEmits(['complete']);
 
