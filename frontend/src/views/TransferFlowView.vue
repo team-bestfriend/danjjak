@@ -551,8 +551,16 @@
             index < reviewRows.length - 1 ? 'border-b border-[#F3F4F6]' : '',
           ]"
         >
-          <span class="text-[#6B7280] text-[16px]">{{ row.label }}</span>
+          <span class="shrink-0 whitespace-nowrap text-[#6B7280] text-[16px]">{{ row.label }}</span>
           <span
+            v-if="row.account"
+            class="flex min-w-0 flex-wrap justify-end gap-x-1 text-right text-[17px] font-bold text-[#111827]"
+          >
+            <span class="whitespace-nowrap">{{ row.account.nameAndBank }}</span>
+            <span class="whitespace-nowrap">{{ row.account.number }}</span>
+          </span>
+          <span
+            v-else
             :class="[
               'font-bold text-right text-[#111827]',
               row.emphasis ? 'text-[26px]' : 'text-[17px]',
@@ -847,13 +855,10 @@
         </p>
       </div>
       <Card class="w-full p-5 space-y-2">
-        <div class="flex justify-between gap-4">
-          <span class="text-[#6B7280]">거래 번호</span
-          ><strong>#{{ store.transferResult.transactionId }}</strong>
-        </div>
-        <div class="flex justify-between gap-4">
-          <span class="text-[#6B7280]">송금 후 잔액</span
-          ><strong class="break-keep text-right">{{ formatWonWithKorean(store.transferResult.balanceAfter) }}</strong>
+
+        <div class="flex justify-between gap-3">
+          <span class="shrink-0 whitespace-nowrap text-[#6B7280]">송금 후 잔액</span
+          ><strong class="whitespace-nowrap text-right">{{ formatWonWithKorean(store.transferResult.balanceAfter) }}</strong>
         </div>
       </Card>
       <div
@@ -1033,11 +1038,13 @@ const reviewRows = computed(() => {
     { label: "받는 사람", value: recipient?.name || "-" },
     {
       label: "받는 계좌",
-      value: [
-        recipient?.accountAlias,
-        recipient?.bankName,
-        recipient?.masked || store.selectedAccountMasked,
-      ].filter(Boolean).join(" · ") || "-",
+      account: {
+        nameAndBank:
+          [recipient?.accountAlias, recipient?.bankName]
+            .filter(Boolean)
+            .join(" · ") || "-",
+        number: recipient?.masked || store.selectedAccountMasked || "-",
+      },
     },
     {
       label: "금액",
