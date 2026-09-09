@@ -108,9 +108,12 @@ const {
   notice: fallbackNotice,
   toggle: togglePlay,
   replay,
+  replayWhenIdle,
 } = useGuidanceAudio(() => props.text, {
   speed: () => props.speed,
   voiceMode: () => props.voiceMode,
   familyAudioUrl: () => props.familyAudioUrl,
 });
+
+defineExpose({ replayWhenIdle });
 </script>

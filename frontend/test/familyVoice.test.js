@@ -135,3 +135,83 @@ test('가족 음성은 선택 속도로 재생하고 실패 시 같은 자막의
   assert.equal(audio.notice.value, '가족 음성을 재생하지 못해 AI 음성으로 안내해요.');
   assert.equal(audios[0].paused, true);
 });
+
+for (const voiceMode of ['TTS', 'FAMILY']) {
+  test(`${voiceMode} 오조작 안내는 멈췄을 때 처음부터 재생하고 로딩·재생·연속 요청 중에는 끊지 않는다`, async (t) => {
+    const originalAudio = globalThis.Audio;
+    const originalFetch = globalThis.fetch;
+    const audios = [];
+    let requests = 0;
+    globalThis.Audio = class extends EventTarget {
+      constructor() {
+        super();
+        this.paused = true;
+        this.currentTime = 0;
+        this.playCount = 0;
+        audios.push(this);
+      }
+      play() {
+        this.playCount++;
+        return new Promise((resolve) => {
+          this.finishPlay = () => {
+            this.paused = false;
+            this.onplaying?.();
+            this.dispatchEvent(new Event('play'));
+            resolve();
+          };
+        });
+      }
+      pause() {
+        this.paused = true;
+        this.onpause?.();
+        this.dispatchEvent(new Event('pause'));
+      }
+      removeAttribute() {}
+      load() {}
+    };
+    globalThis.fetch = async () => {
+      requests++;
+      return new Response(new Blob(['tts'], { type: 'audio/mpeg' }));
+    };
+    let guidance;
+    const app = renderer.createApp({ setup() {
+      guidance = useGuidanceAudio('현재 단계 안내', { voiceMode, familyAudioUrl: '/api/family' });
+      return () => null;
+    } });
+    t.after(() => { app.unmount(); globalThis.Audio = originalAudio; globalThis.fetch = originalFetch; });
+    app.mount({});
+    await settle();
+    const audio = audios[0];
+    await guidance.replayWhenIdle();
+    assert.equal(audio.playCount, 1);
+
+    audio.finishPlay();
+    await settle();
+    audio.currentTime = 3;
+    await guidance.replayWhenIdle();
+    assert.equal(audio.playCount, 1);
+    assert.equal(audio.currentTime, 3);
+
+    audio.pause();
+    const replay = guidance.replayWhenIdle();
+    assert.equal(audio.playCount, 2);
+    assert.equal(audio.currentTime, 0);
+    await guidance.replayWhenIdle();
+    assert.equal(audio.playCount, 2);
+    audio.finishPlay();
+    await replay;
+    assert.equal(guidance.playing.value, true);
+
+    audio.paused = true;
+    audio.ended = true;
+    audio.currentTime = 8;
+    audio.onended?.();
+    audio.dispatchEvent(new Event('ended'));
+    const replayAfterEnd = guidance.replayWhenIdle();
+    assert.equal(audio.playCount, 3);
+    assert.equal(audio.currentTime, 0);
+    audio.finishPlay();
+    await replayAfterEnd;
+    assert.equal(requests, voiceMode === 'TTS' ? 1 : 0);
+  });
+}

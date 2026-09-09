@@ -18,6 +18,7 @@
 
       <VoiceGuideBar
         v-if="voiceText"
+        ref="voiceGuideBar"
         :key="`${route.name}:${activeStep?.stepId ?? ''}`"
         :text="voiceText"
         :speed="voiceSpeed"
@@ -56,6 +57,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useAppStore();
 const routeArea = ref(null);
+const voiceGuideBar = ref(null);
 const showSplash = ref(true);
 
 const VOICE_TEXTS = {
@@ -104,6 +106,7 @@ const guidanceReady = computed(
 
 const { notice: guidanceNotice, handleClick: handleGuidanceClick } =
   useStepGuidance(routeArea, activeStep, guidanceReady, () => {
+    void voiceGuideBar.value?.replayWhenIdle();
     if (store.currentStepVisit?.stepId === activeStep.value?.stepId) {
       store.recordPatternAction("wrongTouch");
     }
