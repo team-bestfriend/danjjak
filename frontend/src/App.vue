@@ -101,7 +101,6 @@ const fabFocused = ref(false);
 const showChatHint = computed(
   () => autoChatHintVisible.value || fabHovered.value || fabFocused.value,
 );
-const CHAT_HINT_SESSION_KEY = "danjjak-chat-hint-shown";
 let chatHintTimer;
 let chatHintShown = false;
 
@@ -213,30 +212,21 @@ watch(
 watch(
   [showSplash, () => route.name],
   ([splashVisible, routeName]) => {
-    if (splashVisible || !showChatFab(String(routeName))) return;
-    showMobileChatHintOnce();
+    if (splashVisible || routeName !== "home") return;
+    showChatHintOnce();
   },
   { immediate: true },
 );
 
-function showMobileChatHintOnce() {
-  if (typeof window === "undefined" || window.matchMedia("(hover: hover)").matches) return;
+function showChatHintOnce() {
+  if (typeof window === "undefined") return;
   if (chatHintShown) return;
-  try {
-    if (window.sessionStorage.getItem(CHAT_HINT_SESSION_KEY)) {
-      chatHintShown = true;
-      return;
-    }
-    window.sessionStorage.setItem(CHAT_HINT_SESSION_KEY, "true");
-  } catch {
-    // 저장소를 사용할 수 없어도 현재 앱 실행 중에는 한 번만 보여준다.
-  }
   chatHintShown = true;
   autoChatHintVisible.value = true;
   chatHintTimer = window.setTimeout(() => {
     autoChatHintVisible.value = false;
     chatHintTimer = undefined;
-  }, 3500);
+  }, 2000);
 }
 
 function openChat() {
