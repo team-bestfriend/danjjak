@@ -12,7 +12,7 @@
       </div>
       <div v-else-if="person" class="text-center">
         <p class="font-bold text-[#111827] text-[28px]">{{ person.emoji }} {{ person.name }}</p>
-        <p class="text-[#6B7280] mt-1 text-[16px]">{{ account?.bankName }} · {{ account?.masked }}</p>
+        <p class="text-[#6B7280] mt-1 text-[16px]">{{ [account?.accountAlias, account?.bankName, account?.masked].filter(Boolean).join(' · ') }}</p>
       </div>
       <div v-else class="w-full rounded-2xl bg-white p-5 text-center">
         <p class="font-bold text-[#111827]">연결된 수취인을 찾을 수 없어요.</p>
@@ -219,7 +219,17 @@ const person = computed(() => (
   store.people.find((item) => item.id === (store.activePattern?.personId ?? store.selectedPersonId))
     ?? null
 ));
-const account = computed(() => store.accountsByPerson[person.value?.id]?.[0] ?? null);
+// 저장된 송금 패턴은 연결 계좌가 사라져도 다른 계좌로 임의 대체하지 않는다.
+const account = computed(() => {
+  const accounts = store.accountsByPerson[person.value?.id] ?? [];
+  const linkedAccountId = store.activePattern?.recipientAccountId ?? null;
+  if (store.activePattern?.patternType === 'TRANSFER') {
+    return linkedAccountId
+      ? accounts.find((item) => item.accountId === linkedAccountId) ?? null
+      : null;
+  }
+  return accounts[0] ?? null;
+});
 
 onMounted(async () => {
   if (props.taskName === 'task-6') {
@@ -258,8 +268,13 @@ async function changeAccount(event) {
 async function beginPatternTransfer() {
   await store.loadFinancialData();
   if (!person.value || !account.value) return;
-  store.startTransfer({ pattern: true, personId: person.value.id });
-  store.selectPerson(person.value.id);
+  // 패턴에 저장된 받는 계좌를 송금 흐름으로 그대로 이어 준다.
+  store.startTransfer({
+    pattern: true,
+    personId: person.value.id,
+    recipientAccountId: account.value.accountId,
+  });
+  store.selectRecipientAccount(account.value);
   store.navigate('transfer-source');
 }
 

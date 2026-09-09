@@ -77,19 +77,25 @@
 
           <div v-if="selectedType === 'TRANSFER'" class="space-y-3">
             <p class="text-[17px] font-bold text-[#374151]">받는 사람과 계좌</p>
+            <p v-if="recipientAccountOptions.length === 0" class="rounded-[16px] bg-[#F9FAFB] p-4 text-[15px] text-[#6B7280]">
+              등록된 받는 계좌가 없어요. 설정에서 사람 및 계좌를 먼저 등록해 주세요.
+            </p>
             <button
-              v-for="person in store.people"
-              :key="person.id"
+              v-for="option in recipientAccountOptions"
+              :key="option.accountId"
               type="button"
-              :disabled="!store.accountsByPerson[person.id]?.[0]"
+              :aria-pressed="linkedBankAccountId === option.accountId"
               :class="[
-                'w-full rounded-[16px] border-2 bg-white p-4 text-left disabled:opacity-40',
-                linkedBankAccountId === store.accountsByPerson[person.id]?.[0]?.accountId ? 'border-[#FFBC00]' : 'border-[#E5E7EB]',
+                'flex w-full items-center gap-3 rounded-[16px] border-2 bg-white p-4 text-left',
+                linkedBankAccountId === option.accountId ? 'border-[#FFBC00]' : 'border-[#E5E7EB]',
               ]"
-              @click="linkedBankAccountId = store.accountsByPerson[person.id][0].accountId"
+              @click="linkedBankAccountId = option.accountId"
             >
-              <span class="text-[18px] font-bold text-[#111827]">{{ person.emoji }} {{ person.name }} · {{ person.relation }}</span>
-              <span class="mt-1 block text-[14px] text-[#6B7280]">{{ store.accountsByPerson[person.id]?.[0]?.bankName }} · {{ store.accountsByPerson[person.id]?.[0]?.masked }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="text-[18px] font-bold text-[#111827]">{{ option.personEmoji }} {{ option.personName }} · {{ option.personRelation }}</span>
+                <span class="mt-1 block text-[14px] text-[#6B7280]">{{ option.bankName }} · {{ option.masked }}<template v-if="option.accountAlias"> · {{ option.accountAlias }}</template></span>
+              </span>
+              <span v-if="linkedBankAccountId === option.accountId" class="whitespace-nowrap text-[15px] font-bold text-[#92650A]">✓ 선택됨</span>
             </button>
           </div>
         </section>
@@ -209,9 +215,27 @@ const voiceDirty = ref(false);
 const voiceDraftChanged = ref(false);
 
 const selectedTemplate = computed(() => store.patternTemplates.find((item) => item.patternType === selectedType.value));
-const selectedPerson = computed(() => store.people.find((person) => (
-  store.accountsByPerson[person.id]?.[0]?.accountId === linkedBankAccountId.value
+/*
+ * 한 사람에게 등록된 모든 받는 계좌를 계좌 단위로 펼쳐 보여 준다.
+ * 사람 단위로 첫 계좌만 노출하면 두 번째 계좌를 패턴에 연결할 수 없다.
+ */
+const recipientAccountOptions = computed(() => store.people.flatMap((person) => (
+  (store.accountsByPerson[person.id] ?? []).map((account) => ({
+    ...account,
+    personId: person.id,
+    personName: person.name,
+    personRelation: person.relation,
+    personEmoji: person.emoji,
+  }))
 )));
+const selectedRecipientOption = computed(() => (
+  recipientAccountOptions.value.find((option) => option.accountId === linkedBankAccountId.value) ?? null
+));
+const selectedPerson = computed(() => (
+  selectedRecipientOption.value
+    ? store.people.find((person) => person.id === selectedRecipientOption.value.personId) ?? null
+    : null
+));
 const canContinue = computed(() => {
   if (stage.value === 'template') return Boolean(selectedTemplate.value?.available);
   if (stage.value === 'shortcut') return Number.isInteger(shortcutNumber.value) && !isUsed(shortcutNumber.value);
@@ -231,6 +255,7 @@ const summaryRows = computed(() => [
   { label: '시작 전 설명', value: description.value },
   { label: '시작 안내 음성', value: voiceLabel(descriptionVoice.value, store.currentUser?.settings?.guideVoiceType) },
   ...(selectedPerson.value ? [{ label: '받는 사람', value: `${selectedPerson.value.name} · ${selectedPerson.value.relation}` }] : []),
+  ...(selectedRecipientOption.value ? [{ label: '받는 계좌', value: `${selectedRecipientOption.value.bankName} · ${selectedRecipientOption.value.masked}` }] : []),
   { label: '안내 단계', value: `${stepInstructions.value.length}단계` },
   ...stepInstructions.value.map((step) => ({ label: `${step.stepOrder}. ${step.stepName}`, value: `${step.instructionText}\n${voiceLabel(step.guidance, store.currentUser?.settings?.guideVoiceType)}` })),
 ]);

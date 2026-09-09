@@ -104,6 +104,30 @@ class PatternServiceTest {
     }
 
     @Test
+    void rejectsRecipientAccountThatDoesNotBelongToCurrentUser() {
+        when(patternMapper.findActivePatternIdsForUpdate(1L)).thenReturn(List.of());
+        when(patternMapper.countShortcut(1L, 9)).thenReturn(0);
+        when(patternMapper.countRegisteredRecipientAccount(1L, 30L)).thenReturn(0);
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () ->
+                                patternService.createPattern(
+                                        1L,
+                                        new PatternCreateRequest(
+                                                PatternType.TRANSFER,
+                                                9,
+                                                null,
+                                                null,
+                                                30L,
+                                                null)));
+
+        assertEquals("TRANSFER_RECIPIENT_REQUIRED", exception.getCode());
+        verify(patternMapper, never()).insertPattern(any());
+    }
+
+    @Test
     void consentDeclineReturnsPatternWithoutCreatingExecution() {
         when(patternMapper.findActivePattern(1L, 4L)).thenReturn(patternRecord(4L, "BALANCE_CHECK"));
         when(patternMapper.findPatternSteps(4L)).thenReturn(List.of(stepRecord(41L, 1)));
