@@ -54,6 +54,14 @@ public interface AccountMapper {
 
     int updateRecipientAccount(RegisteredPersonCommand command);
 
+    int deleteRecipientAccountsForPerson(
+            @Param("userId") long userId,
+            @Param("registeredPersonId") long registeredPersonId);
+
+    int deleteRegisteredPerson(
+            @Param("userId") long userId,
+            @Param("registeredPersonId") long registeredPersonId);
+
     List<TransactionRecord> findTransactions(
             @Param("userId") long userId,
             @Param("accountId") long accountId,

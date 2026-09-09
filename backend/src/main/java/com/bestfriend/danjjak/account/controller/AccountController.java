@@ -15,6 +15,7 @@ import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -91,6 +92,14 @@ public class AccountController {
             HttpSession session) {
         return accountService.updateRegisteredPerson(
                 userResolver.resolveUserId(session), registeredPersonId, request);
+    }
+
+    @DeleteMapping("/registered-persons/{registeredPersonId}")
+    public ResponseEntity<Void> deleteRegisteredPerson(
+            @PathVariable long registeredPersonId, HttpSession session) {
+        accountService.deleteRegisteredPerson(
+                userResolver.resolveUserId(session), registeredPersonId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/registered-persons/{registeredPersonId}/accounts")

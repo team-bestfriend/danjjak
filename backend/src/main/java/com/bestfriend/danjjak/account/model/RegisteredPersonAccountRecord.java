@@ -5,6 +5,7 @@ public class RegisteredPersonAccountRecord {
     private Long registeredPersonId;
     private String name;
     private String relationship;
+    private String profileImageKey;
     private Long accountId;
     private String bankCode;
     private String bankName;
@@ -73,5 +74,13 @@ public class RegisteredPersonAccountRecord {
 
     public void setAccountAlias(String accountAlias) {
         this.accountAlias = accountAlias;
+    }
+
+    public String getProfileImageKey() {
+        return profileImageKey;
+    }
+
+    public void setProfileImageKey(String profileImageKey) {
+        this.profileImageKey = profileImageKey;
     }
 }

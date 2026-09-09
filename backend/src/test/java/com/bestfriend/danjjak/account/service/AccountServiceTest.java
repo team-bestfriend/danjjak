@@ -111,11 +111,15 @@ class AccountServiceTest {
     }
 
     @Test
-    void createsRegisteredPersonAndRecipientAccountTogether() {
+    void createsRegisteredPersonWithoutRecipientAccount() {
         RegisteredPersonRequest request =
-                new RegisteredPersonRequest(
-                        "김민수", "아들", "020", "우리은행", "1002-000-000001", "민수 계좌");
+                new RegisteredPersonRequest("김민수", "아들", "adult_man");
         RegisteredPersonAccountRecord saved = registeredPersonRecord();
+        saved.setAccountId(null);
+        saved.setBankCode(null);
+        saved.setBankName(null);
+        saved.setAccountNumber(null);
+        saved.setAccountAlias(null);
         doAnswer(
                         invocation -> {
                             RegisteredPersonCommand command = invocation.getArgument(0);
@@ -129,9 +133,10 @@ class AccountServiceTest {
         var result = accountService.createRegisteredPerson(1L, request);
 
         assertEquals("김민수", result.name());
-        assertEquals("우리은행", result.accounts().get(0).bankName());
+        assertEquals("adult_man", result.profileImageKey());
+        assertEquals(0, result.accounts().size());
         verify(accountMapper).insertRegisteredPerson(org.mockito.ArgumentMatchers.any());
-        verify(accountMapper).insertRecipientAccount(org.mockito.ArgumentMatchers.any());
+        verify(accountMapper, never()).insertRecipientAccount(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -157,7 +162,7 @@ class AccountServiceTest {
         when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(List.of(current));
 
         accountService.updateRegisteredPerson(
-                1L, 10L, new RegisteredPersonUpdateRequest("김민준", "보호자"));
+                1L, 10L, new RegisteredPersonUpdateRequest("김민준", "보호자", "adult_woman"));
 
         verify(accountMapper).updateRegisteredPerson(org.mockito.ArgumentMatchers.any());
         verify(accountMapper, never()).updateRecipientAccount(org.mockito.ArgumentMatchers.any());
@@ -230,6 +235,30 @@ class AccountServiceTest {
     }
 
     @Test
+    void deletesRegisteredPersonAndRecipientAccounts() {
+        RegisteredPersonAccountRecord current = registeredPersonRecord();
+        when(accountMapper.findRegisteredPerson(1L, 10L)).thenReturn(List.of(current));
+
+        accountService.deleteRegisteredPerson(1L, 10L);
+
+        verify(accountMapper).deleteRecipientAccountsForPerson(1L, 10L);
+        verify(accountMapper).deleteRegisteredPerson(1L, 10L);
+    }
+
+    @Test
+    void rejectsDeletingRegisteredPersonOwnedByAnotherUser() {
+        when(accountMapper.findRegisteredPerson(1L, 99L)).thenReturn(List.of());
+
+        ApiException exception =
+                assertThrows(
+                        ApiException.class,
+                        () -> accountService.deleteRegisteredPerson(1L, 99L));
+
+        assertEquals("REGISTERED_PERSON_NOT_FOUND", exception.getCode());
+        verify(accountMapper, never()).deleteRegisteredPerson(1L, 99L);
+    }
+
+    @Test
     void rejectsUnsupportedTransactionCategory() {
         AccountRecord account = new AccountRecord();
         account.setAccountId(1L);
@@ -259,6 +288,7 @@ class AccountServiceTest {
         record.setRegisteredPersonId(10L);
         record.setName("김민수");
         record.setRelationship("아들");
+        record.setProfileImageKey("adult_man");
         record.setAccountId(20L);
         record.setBankCode("020");
         record.setBankName("우리은행");

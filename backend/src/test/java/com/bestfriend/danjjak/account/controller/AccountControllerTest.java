@@ -2,9 +2,11 @@ package com.bestfriend.danjjak.account.controller;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -116,33 +118,26 @@ class AccountControllerTest {
                                 10L,
                                 "김민수",
                                 "아들",
-                                List.of(
-                                        new RecipientAccountResponse(
-                                                20L,
-                                                "020",
-                                                "우리은행",
-                                                "1002-000-000001",
-                                                "민수 계좌"))));
+                                "adult_man",
+                                List.of()));
 
         mockMvc.perform(
                         post("/api/registered-persons")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         "{\"name\":\"김민수\",\"relationship\":\"아들\","
-                                                + "\"bankCode\":\"020\",\"bankName\":\"우리은행\","
-                                                + "\"accountNumber\":\"1002-000-000001\"}"))
+                                                + "\"profileImageKey\":\"adult_man\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(content().string(containsString("김민수")));
     }
 
     @Test
-    void rejectsRegisteredPersonWithInvalidAccountNumber() throws Exception {
+    void rejectsRecipientAccountWithInvalidAccountNumber() throws Exception {
         mockMvc.perform(
-                        post("/api/registered-persons")
+                        post("/api/registered-persons/10/accounts")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
-                                        "{\"name\":\"김민수\",\"relationship\":\"아들\","
-                                                + "\"bankCode\":\"020\",\"bankName\":\"우리은행\","
+                                        "{\"bankCode\":\"020\",\"bankName\":\"우리은행\","
                                                 + "\"accountNumber\":\"ABC\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("\"code\":\"INVALID_REQUEST\"")));
@@ -161,6 +156,7 @@ class AccountControllerTest {
                                 10L,
                                 "김민수",
                                 "아들",
+                                "adult_man",
                                 List.of(
                                         new RecipientAccountResponse(
                                                 21L,
@@ -191,6 +187,7 @@ class AccountControllerTest {
                                 10L,
                                 "김민수",
                                 "아들",
+                                "adult_man",
                                 List.of(
                                         new RecipientAccountResponse(
                                                 21L,
@@ -208,5 +205,13 @@ class AccountControllerTest {
                                                 + "\"accountAlias\":\"수정 계좌\"}"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("수정 계좌")));
+    }
+
+    @Test
+    void deletesRegisteredPerson() throws Exception {
+        mockMvc.perform(delete("/api/registered-persons/10"))
+                .andExpect(status().isNoContent());
+
+        verify(accountService).deleteRegisteredPerson(1L, 10L);
     }
 }

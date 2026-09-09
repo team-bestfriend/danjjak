@@ -38,25 +38,21 @@ public final class AccountDtos {
             String accountAlias) {}
 
     public record RegisteredPersonResponse(
-            long registeredPersonId,
-            String name,
-            String relationship,
-            List<RecipientAccountResponse> accounts) {}
+        long registeredPersonId,
+        String name,
+        String relationship,
+        String profileImageKey,
+        List<RecipientAccountResponse> accounts) {}
 
     public record RegisteredPersonRequest(
-            @NotBlank @Size(max = 50) String name,
-            @NotBlank @Size(max = 30) String relationship,
-            @NotBlank @Size(max = 20) String bankCode,
-            @NotBlank @Size(max = 50) String bankName,
-            @NotBlank
-                    @Size(max = 50)
-                    @Pattern(regexp = "^(?=(?:[0-9]-?){8,20}$)[0-9]+(?:-[0-9]+)*$")
-                    String accountNumber,
-            @Size(max = 50) String accountAlias) {}
+        @NotBlank @Size(max = 50) String name,
+        @NotBlank @Size(max = 30) String relationship,
+        @Size(max = 50) String profileImageKey) {}
 
     public record RegisteredPersonUpdateRequest(
-            @NotBlank @Size(max = 50) String name,
-            @NotBlank @Size(max = 30) String relationship) {}
+        @NotBlank @Size(max = 50) String name,
+        @NotBlank @Size(max = 30) String relationship,
+        @Size(max = 50) String profileImageKey) {}
 
     public record RecipientAccountRequest(
             @NotBlank @Size(max = 20) String bankCode,
