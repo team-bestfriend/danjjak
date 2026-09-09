@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { parse, compileScript } from '@vue/compiler-sfc';
-import { createRenderer, proxyRefs } from 'vue';
+import { createRenderer, nextTick, proxyRefs } from 'vue';
 import { createPinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { useAppStore } from '../src/stores/appStore.js';
@@ -88,66 +88,138 @@ for (const previousScreen of ['pin-entry', 'fraud-warning']) {
   }
 }
 
-for (const pattern of [false, true]) {
-  test(`${pattern ? '송금 패턴' : '직접 송금'}: 계좌를 눌러 진행하고 뒤로 이동·재선택해도 선택을 유지한다`, async (t) => {
-    const pinia = createPinia();
-    const store = useAppStore(pinia);
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: ['home', 'transfer-source', 'guide-person', 'guide-account', 'amount-input'].map((name) => ({
-        name, path: '/' + name, component: { render: () => null },
-      })),
-    });
-    bindRouter(router);
-    t.after(() => bindRouter(null));
-    store.ownedAccounts = [{ accountId: 1, primary: true }, { accountId: 2 }];
-    store.people = [{ id: 10 }, { id: 20 }];
-    store.accountsByPerson = {
-      10: [{ accountId: 101, masked: '111-***' }, { accountId: 102, masked: '222-***' }],
-      20: [{ accountId: 201, masked: '333-***' }],
-    };
-    store.financeLoaded = true;
-    store.startTransfer(pattern ? { pattern: true, personId: 10, recipientAccountId: 102 } : {});
-    await router.push({ name: 'home' });
-    await router.push({ name: 'transfer-source' });
-    const source = mountView(t, TransferFlow, { flowStep: 'transfer-source' }, pinia);
-    await Promise.resolve();
-    assert.equal(router.currentRoute.value.name, 'transfer-source');
-    assert.equal(store.selectedSourceAccountId, 1);
-
-    store.financeLoading = true;
-    await source.handleSelectSourceAccount(2);
-    assert.equal(router.currentRoute.value.name, 'transfer-source');
-    assert.equal(store.selectedSourceAccountId, 1);
-    store.financeLoading = false;
-
-    await source.handleSelectSourceAccount(2);
-    assert.equal(router.currentRoute.value.name, 'guide-person');
-    assert.equal(store.selectedSourceAccountId, 2);
-    await nextNavigation(router, () => store.goBack());
-    assert.equal(router.currentRoute.value.name, 'transfer-source');
-    assert.equal(store.selectedSourceAccountId, 2);
-    await source.handleSelectSourceAccount(2);
-    assert.equal(router.currentRoute.value.name, 'guide-person');
-
-    const person = mountView(t, TransferFlow, { flowStep: 'guide-person' }, pinia);
-    await nextNavigation(router, () => person.handleSelectFamilyPerson(10));
-    assert.equal(router.currentRoute.value.name, 'guide-account');
-    assert.equal(store.selectedRecipientAccountId, pattern ? 102 : null);
-    const account = mountView(t, TransferFlow, { flowStep: 'guide-account' }, pinia);
-    await nextNavigation(router, () => account.handleSelectAccount(store.accountsByPerson[10][1]));
-    assert.equal(router.currentRoute.value.name, 'amount-input');
-    await nextNavigation(router, () => store.goBack());
-    assert.equal(store.selectedRecipientAccountId, 102);
-    await nextNavigation(router, () => store.goBack());
-    assert.equal(store.selectedPersonId, 10);
-    await nextNavigation(router, () => person.handleSelectFamilyPerson(10));
-    assert.equal(store.selectedRecipientAccountId, 102);
-    assert.equal(store.selectedRecipientAccount.accountId, 102);
-
-    await nextNavigation(router, () => store.goBack());
-    await nextNavigation(router, () => person.handleSelectFamilyPerson(20));
-    assert.equal(store.selectedPersonId, 20);
-    assert.equal(store.selectedRecipientAccountId, 201);
+test('직접 송금은 보낼 계좌 다음에 받는 계좌를 바로 입력한다', async (t) => {
+  const pinia = createPinia();
+  const store = useAppStore(pinia);
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: ['home', 'transfer-source', 'direct-newaccount', 'amount-input'].map((name) => ({
+      name, path: '/' + name, component: { render: () => null },
+    })),
   });
-}
+  bindRouter(router);
+  t.after(() => bindRouter(null));
+  store.ownedAccounts = [{ accountId: 1, primary: true }, { accountId: 2 }];
+  store.financeLoaded = true;
+  store.startTransfer();
+  await router.push({ name: 'home' });
+  await router.push({ name: 'transfer-source' });
+
+  const source = mountView(t, TransferFlow, { flowStep: 'transfer-source' }, pinia);
+  await source.handleSelectSourceAccount(2);
+  assert.equal(router.currentRoute.value.name, 'direct-newaccount');
+  assert.equal(store.selectedSourceAccountId, 2);
+
+  const directAccount = mountView(t, TransferFlow, { flowStep: 'direct-newaccount' }, pinia);
+  await nextNavigation(router, () => directAccount.goBackFromDirectAccount());
+  assert.equal(router.currentRoute.value.name, 'transfer-source');
+  await source.handleSelectSourceAccount(2);
+
+  directAccount.recipientName = '김민수';
+  directAccount.handleDirectNameBlur();
+  directAccount.selectDirectBank('020');
+  directAccount.accountNumber = '100200000001';
+  directAccount.handleDirectAccountBlur();
+  await nextNavigation(router, () => directAccount.proceedNewAccount());
+  assert.equal(router.currentRoute.value.name, 'amount-input');
+
+  const amount = mountView(t, TransferFlow, { flowStep: 'amount-input' }, pinia);
+  await nextNavigation(router, () => amount.goBackFromAmount());
+  assert.equal(router.currentRoute.value.name, 'direct-newaccount');
+});
+
+test('받는 계좌 입력은 유효성 확인 후 하나의 하이라이트만 순서대로 이동한다', async (t) => {
+  const pinia = createPinia();
+  const store = useAppStore(pinia);
+  store.startTransfer();
+  const view = mountView(t, TransferFlow, { flowStep: 'direct-newaccount' }, pinia);
+
+  assert.equal(view.directGuideStep, 'name');
+  view.recipientName = '김민수';
+  assert.equal(view.directGuideStep, 'name');
+  view.handleDirectNameBlur();
+  assert.equal(view.directGuideStep, 'bank');
+  view.selectDirectBank('020');
+  assert.equal(view.directGuideStep, 'account');
+  view.accountNumber = '100200000001';
+  assert.equal(view.directGuideStep, 'account');
+  view.handleDirectAccountBlur();
+  assert.equal(view.directGuideStep, 'next');
+
+  view.accountNumber = '123';
+  await nextTick();
+  assert.equal(view.directGuideStep, 'account');
+  view.recipientName = '';
+  await nextTick();
+  assert.equal(view.directGuideStep, 'name');
+});
+
+test('단축번호 송금은 수취인 화면을 건너뛰고 4단계 순서로 뒤로 간다', async (t) => {
+  const pinia = createPinia();
+  const store = useAppStore(pinia);
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: ['home', 'transfer-source', 'guide-person', 'guide-account', 'amount-input', 'final-confirm', 'pin-entry'].map((name) => ({
+      name, path: '/' + name, component: { render: () => null },
+    })),
+  });
+  bindRouter(router);
+  t.after(() => bindRouter(null));
+  store.ownedAccounts = [{ accountId: 1, primary: true }, { accountId: 2 }];
+  store.people = [{ id: 10, name: '김민수' }];
+  store.accountsByPerson = {
+    10: [{ accountId: 102, bankName: '우리은행', accountAlias: '민수 계좌', masked: '100-****-001' }],
+  };
+  store.financeLoaded = true;
+  store.startTransfer({ pattern: true, personId: 10, recipientAccountId: 102, usesSavedRecipient: true });
+  await router.push({ name: 'home' });
+  await router.push({ name: 'transfer-source' });
+
+  const source = mountView(t, TransferFlow, { flowStep: 'transfer-source' }, pinia);
+  await source.handleSelectSourceAccount(2);
+  assert.equal(router.currentRoute.value.name, 'amount-input');
+
+  const amount = mountView(t, TransferFlow, { flowStep: 'amount-input' }, pinia);
+  await nextNavigation(router, () => amount.goBackFromAmount());
+  assert.equal(router.currentRoute.value.name, 'transfer-source');
+  await source.handleSelectSourceAccount(2);
+  await nextNavigation(router, () => amount.handleAmountComplete('10000'));
+  assert.equal(router.currentRoute.value.name, 'final-confirm');
+
+  const confirm = mountView(t, TransferFlow, { flowStep: 'final-confirm' }, pinia);
+  await nextNavigation(router, () => confirm.goBackFromConfirm());
+  assert.equal(router.currentRoute.value.name, 'amount-input');
+  await router.replace({ name: 'pin-entry' });
+
+  const pin = mountView(t, TransferFlow, { flowStep: 'pin-entry' }, pinia);
+  await nextNavigation(router, () => pin.goBackFromPin());
+  assert.equal(router.currentRoute.value.name, 'final-confirm');
+  assert.equal(store.selectedPerson.name, '김민수');
+  assert.equal(store.selectedRecipientAccount.accountId, 102);
+});
+
+test('연결된 수취 계좌가 없는 단축번호는 임의 계좌 없이 기존 선택 흐름으로 이동한다', async (t) => {
+  const pinia = createPinia();
+  const store = useAppStore(pinia);
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: ['transfer-source', 'guide-person', 'amount-input'].map((name) => ({
+      name, path: '/' + name, component: { render: () => null },
+    })),
+  });
+  bindRouter(router);
+  t.after(() => bindRouter(null));
+  store.ownedAccounts = [{ accountId: 1, primary: true }];
+  store.people = [{ id: 10, name: '김민수' }];
+  store.accountsByPerson = { 10: [] };
+  store.financeLoaded = true;
+  store.startTransfer({ pattern: true, personId: 10, recipientAccountId: null });
+  await router.push({ name: 'transfer-source' });
+
+  const source = mountView(t, TransferFlow, { flowStep: 'transfer-source' }, pinia);
+  await source.handleSelectSourceAccount(1);
+
+  assert.equal(store.usesSavedPatternRecipient, false);
+  assert.equal(store.selectedRecipientAccount, null);
+  assert.equal(router.currentRoute.value.name, 'guide-person');
+});

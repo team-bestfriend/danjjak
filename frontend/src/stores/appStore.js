@@ -312,6 +312,7 @@ export const useAppStore = defineStore("app", () => {
   const transferAmount = ref("0");
   const isNewAccountFlow = ref(false);
   const isPatternTransfer = ref(false);
+  const usesSavedPatternRecipient = ref(false);
   const selectedSourceAccountId = ref(null);
   const selectedPersonId = ref(null);
   const selectedRecipientAccountId = ref(null);
@@ -1011,17 +1012,17 @@ export const useAppStore = defineStore("app", () => {
       const mapped = toUiPattern(detail);
 
       if (detail.patternType === "TRANSFER") {
+        const linkedAccount = (
+          accountsByPerson.value[mapped.personId] ?? []
+        ).find((account) => account.accountId === mapped.recipientAccountId);
         startTransfer({
           pattern: true,
           personId: mapped.personId,
-          recipientAccountId: mapped.recipientAccountId,
+          recipientAccountId: linkedAccount?.accountId ?? null,
+          usesSavedRecipient: Boolean(mapped.personId && linkedAccount),
         });
         if (mapped.personId) {
           selectedPersonId.value = mapped.personId;
-          selectedRecipientAccountId.value = mapped.recipientAccountId;
-          const linkedAccount = (
-            accountsByPerson.value[mapped.personId] ?? []
-          ).find((account) => account.accountId === mapped.recipientAccountId);
           selectedAccountMasked.value = linkedAccount?.masked ?? null;
         }
       } else {
@@ -1162,6 +1163,9 @@ export const useAppStore = defineStore("app", () => {
     transferAmount.value = "0";
     isNewAccountFlow.value = false;
     isPatternTransfer.value = Boolean(options.pattern);
+    usesSavedPatternRecipient.value = Boolean(
+      options.pattern && options.usesSavedRecipient,
+    );
     selectedSourceAccountId.value =
       defaultOwnedAccount.value?.accountId ?? null;
     selectedPersonId.value = options.personId ?? null;
@@ -1192,8 +1196,17 @@ export const useAppStore = defineStore("app", () => {
   }
 
   function selectPerson(personId) {
+    const previousPersonId = selectedPersonId.value;
     selectedPersonId.value = personId;
     const accounts = accountsByPerson.value[personId] ?? [];
+    const previousAccount = accounts.find(
+      (account) => account.accountId === selectedRecipientAccountId.value,
+    );
+    // 같은 사람을 다시 선택하면 이미 확인한 수취 계좌를 유지한다.
+    if (previousPersonId === personId && previousAccount) {
+      selectedAccountMasked.value = previousAccount.masked;
+      return;
+    }
     selectedRecipientAccountId.value =
       accounts.length === 1 ? accounts[0].accountId : null;
     selectedAccountMasked.value =
@@ -1414,6 +1427,7 @@ export const useAppStore = defineStore("app", () => {
     transferAmount,
     isNewAccountFlow,
     isPatternTransfer,
+    usesSavedPatternRecipient,
     selectedSourceAccountId,
     selectedPersonId,
     selectedRecipientAccountId,

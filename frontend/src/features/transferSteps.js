@@ -1,10 +1,7 @@
-/*
- * 송금 화면의 단계 번호와 이름을 한 곳에서 정한다.
- * 단축번호 송금의 6단계를 기준으로 직접 입력 화면도 대응 단계에 표시한다.
- * 화면을 건너뛰거나 같은 번호가 서로 다른 뜻으로 쓰이지 않는다.
- * 명세: 보낼 계좌 → 받는 사람 → 받는 계좌 → 보낼 금액 → 최종 확인 → 본인 확인
- */
+/* 직접 송금은 5단계, 저장된 수취 계좌를 사용하는 단축번호 송금은 4단계로 표시한다. */
 export const TRANSFER_STEP_TOTAL = 6;
+export const SHORTCUT_TRANSFER_STEP_TOTAL = 4;
+export const DIRECT_TRANSFER_STEP_TOTAL = 5;
 
 export const TRANSFER_STEPS = {
   'transfer-source': { order: 1, label: '보낼 계좌' },
@@ -17,7 +14,38 @@ export const TRANSFER_STEPS = {
   'pin-entry': { order: 6, label: '본인 확인' },
 };
 
-export function transferStepBar(screenCode) {
+const SHORTCUT_TRANSFER_STEPS = {
+  'transfer-source': { order: 1, label: '보낼 계좌' },
+  'amount-input': { order: 2, label: '보낼 금액' },
+  'final-confirm': { order: 3, label: '최종 확인' },
+  'pin-entry': { order: 4, label: '본인 확인' },
+};
+
+const DIRECT_TRANSFER_STEPS = {
+  'transfer-source': { order: 1, label: '보낼 계좌' },
+  'direct-newaccount': { order: 2, label: '받는 계좌' },
+  'amount-input': { order: 3, label: '보낼 금액' },
+  'final-confirm': { order: 4, label: '최종 확인' },
+  'pin-entry': { order: 5, label: '본인 확인' },
+};
+
+export function transferStepBar(
+  screenCode,
+  usesSavedPatternRecipient = false,
+  isDirectTransfer = false,
+) {
+  if (usesSavedPatternRecipient) {
+    const shortcutStep = SHORTCUT_TRANSFER_STEPS[screenCode];
+    if (shortcutStep) {
+      return { current: shortcutStep.order, total: SHORTCUT_TRANSFER_STEP_TOTAL, label: shortcutStep.label };
+    }
+  }
+  if (isDirectTransfer) {
+    const directStep = DIRECT_TRANSFER_STEPS[screenCode];
+    if (directStep) {
+      return { current: directStep.order, total: DIRECT_TRANSFER_STEP_TOTAL, label: directStep.label };
+    }
+  }
   const step = TRANSFER_STEPS[screenCode];
   if (!step) return { current: 1, total: TRANSFER_STEP_TOTAL, label: '' };
   return { current: step.order, total: TRANSFER_STEP_TOTAL, label: step.label };
