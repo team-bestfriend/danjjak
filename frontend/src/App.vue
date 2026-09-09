@@ -10,11 +10,22 @@
 
       <div
         ref="routeArea"
+        :class="{ 'chat-entry': showChatFab(String(route.name)) }"
         class="min-h-0 flex-1 overflow-hidden"
         @click.capture="handleGuidanceClick"
       >
         <RouterView />
       </div>
+
+      <button
+        v-if="showChatFab(String(route.name)) && !showSplash"
+        class="chat-fab absolute right-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFBC00] text-[#111827] shadow-lg"
+        style="bottom: 90px; z-index: 20;"
+        aria-label="단짝에게 물어보기"
+        @click="router.push({ name: 'chat' })"
+      >
+        <img :src="chatIcon" alt="" class="h-10 w-10" />
+      </button>
 
       <VoiceGuideBar
         v-if="voiceText"
@@ -49,6 +60,8 @@ import {
   stepInstruction,
   useStepGuidance,
 } from "./composables/useStepGuidance.js";
+import { showChatFab } from './features/chat/chatActions.js';
+import chatIcon from './assets/icons/robot.png';
 import SplashScreen from "./components/common/SplashScreen.vue";
 import { RESULT_INQUIRY_CATEGORIES } from "./features/inquiry/resultGuidance.js";
 
@@ -179,6 +192,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
+/* 마지막 카드도 도우미 버튼 위로 올려서 누를 수 있게 여백을 둔다. */
+.chat-entry .overflow-y-auto {
+  padding-bottom: 96px !important;
+}
+
 .vbar-enter-active {
   transition:
     opacity 0.3s ease,

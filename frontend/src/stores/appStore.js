@@ -1162,6 +1162,7 @@ export const useAppStore = defineStore('app', () => {
     createPattern,
     updatePattern,
     deactivatePattern,
+    resetPatternExecution,
     startPatternExecution,
     syncPatternStep,
     recordPatternAction,

@@ -9,6 +9,8 @@ servers:
 security:
   - sessionCookie: []
 tags:
+  - name: Chat
+    description: 단짝 업무 찾기 도우미
   - name: Health
     description: 애플리케이션 상태 확인
   - name: Accounts
@@ -30,6 +32,29 @@ tags:
   - name: Usage Analysis
     description: 이용 기록 기반 수행 횟수와 단계별 행동 분석
 paths:
+  /api/chat/messages:
+    post:
+      tags: [Chat]
+      operationId: sendChatMessage
+      summary: 자연어로 원하는 단짝 업무 찾기
+      description: 대화 기록을 저장하지 않는다. AI는 업무만 분류하며 금융 업무를 실행하지 않는다. 송금 대상은 기존 화면에서 선택한다. 조회 patternId는 현재 사용자의 활성 패턴에서 선택하며 없으면 null이다. AI 오류는 200 응답의 NONE과 retryable로 안내한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: 업무 안내 또는 재시도 가능한 안내
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/usage-analysis/instruction-suggestion:
     get:
       tags: [Usage Analysis]
@@ -1131,6 +1156,34 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: 원하는 업무. 공백만 있는 문장은 허용하지 않으며 비밀번호와 계좌번호는 입력하지 않는다.
+    ChatResponse:
+      type: object
+      required: [message, action, patternId, retryable]
+      properties:
+        message:
+          type: string
+          description: 쉽고 짧은 한국어 안내. 금융 상담과 실제 조회 결과는 포함하지 않는다.
+        action:
+          type: string
+          enum: [TRANSFER, BALANCE_CHECK, PENSION_CHECK, MANAGEMENT_FEE_CHECK, UTILITY_BILL_CHECK, CUSTOMER_CENTER, APP_HELP, NONE]
+        patternId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+          description: 현재 사용자의 조회·고객센터 패턴 ID. 송금·사용 안내·미지원 또는 일치 패턴이 없으면 null.
+        retryable:
+          type: boolean
+          description: AI 오류 또는 시간 초과일 때 true. 사용자 선택으로만 재시도한다.
     InstructionSuggestion:
       type: object
       required: [patternId, patternTitle, stepId, stepOrder, stepCode, stepName, currentText, suggestedText, hasFamilyAudio, voiceScriptOutdated]
